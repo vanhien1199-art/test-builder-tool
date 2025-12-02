@@ -15,24 +15,37 @@ export async function onRequest(context) {
         try {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
-            if (!env.TEST_TOOL) throw new Error("Thiếu KV Database");
+            
+            // Kiểm tra DB (Bỏ comment dòng dưới nếu bạn đã cấu hình KV TEST_TOOL)
+            // if (!env.TEST_TOOL) throw new Error("Thiếu KV Database (TEST_TOOL)");
 
             const body = await request.json();
+            
+            // 1. Lấy dữ liệu từ Frontend
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics } = body;
 
-            // --- KIỂM TRA LICENSE (Pay-per-use) ---
-            const creditStr = await env.TEST_TOOL.get(license_key);
-            if (creditStr === null) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
-            let currentCredit = parseInt(creditStr);
-            if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
+            // --- KIỂM TRA LICENSE ---
+            if (env.TEST_TOOL && license_key) {
+                const creditStr = await env.TEST_TOOL.get(license_key);
+                if (creditStr === null) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
+                let currentCredit = parseInt(creditStr);
+                if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
+            }
 
-            // --- CHUẨN BỊ DỮ LIỆU PROMPT ---
-            // Format danh sách chủ đề thành chuỗi văn bản để AI đọc
+            // 2. Chuẩn bị dữ liệu Prompt
+            const requestObj = {
+                subject: subject,
+                grade: grade,
+                semester: semester,
+                totalPeriodsHalf1: totalPeriodsHalf1,
+                totalPeriodsHalf2: totalPeriodsHalf2
+            };
+
             let topicsDescription = topics.map((t, index) => {
-                return `${index + 1}. Chủ đề: "${t.name}"
-                   - Nội dung: ${t.content}
-                   - Số tiết (Nửa đầu): ${t.p1}
-                   - Số tiết (Nửa sau): ${t.p2}`;
+                return `Chủ đề ${index + 1}: ${t.name}
+   - Nội dung: ${t.content}
+   - Số tiết nửa đầu: ${t.p1}
+   - Số tiết nửa sau: ${t.p2}`;
             }).join("\n");
 
             // --- PROMPT CỰC KỲ CHI TIẾT THEO YÊU CẦU ---
@@ -74,25 +87,34 @@ export async function onRequest(context) {
             - Nội dung chuyên môn phải chính xác với chương trình GDPT 2018.
             `;
 
+            // --- 4. GỌI MODEL MỚI NHẤT (GEMINI 2.5 PRO - STABLE) ---
             const genAI = new GoogleGenerativeAI(apiKey);
-            // Dùng model Pro để xử lý logic phức tạp tốt hơn Flash
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            
+            // Cập nhật quan trọng: Sử dụng gemini-2.5-pro
+            // Đây là bản ổn định, mạnh mẽ, thay thế cho 1.5 và 3.0 preview
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+            
             const result = await model.generateContent(prompt);
             const text = result.response.text();
 
             // Trừ tiền
-            await env.TEST_TOOL.put(license_key, (currentCredit - 1).toString());
+            if (env.TEST_TOOL && license_key) {
+                const creditStr = await env.TEST_TOOL.get(license_key);
+                if (creditStr) {
+                    let current = parseInt(creditStr);
+                    if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                }
+            }
 
-            return new Response(JSON.stringify({ result: text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ result: text }), { 
+                headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            });
 
         } catch (error) {
-            return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+            // Hiển thị lỗi chi tiết để bạn biết nếu model không chạy
+            return new Response(JSON.stringify({ 
+                error: `Lỗi kết nối AI: ${error.message}. (Đang dùng model: gemini-2.5-pro)` 
+            }), { status: 500, headers: corsHeaders });
         }
     }
-
 }
-
-
-
-
-
