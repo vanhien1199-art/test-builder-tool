@@ -16,10 +16,7 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
             
-            // --- CẤU HÌNH MODEL 2025 (QUAN TRỌNG) ---
-            // 'gemini-1.5' đã ngừng hoạt động.
-            // 'gemini-3.0' đang preview (chưa ổn định).
-            // 'gemini-2.5-flash' là bản chuẩn nhất hiện nay.
+            // --- CẤU HÌNH MODEL 2025 ---
             const MODEL_NAME = "gemini-2.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
@@ -28,7 +25,7 @@ export async function onRequest(context) {
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics } = body;
 
-            // --- KIỂM TRA LICENSE (Nếu có dùng) ---
+            // --- KIỂM TRA LICENSE (Dùng biến TEST_TOOL theo code của bạn) ---
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
@@ -41,7 +38,7 @@ export async function onRequest(context) {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
 
-            // --- PROMPT CỰC KỲ CHI TIẾT THEO YÊU CẦU ---
+            // --- PROMPT GIỮ NGUYÊN VĂN TUYỆT ĐỐI ---
             const prompt = `
             Bạn là một trợ lý AI chuyên tạo công cụ tự động hóa việc xây dựng ma trận đề kiểm tra định kì theo Công văn số 7991/BGDĐT-GDTrH.
             
@@ -84,7 +81,7 @@ export async function onRequest(context) {
             Dòng “Tỉ lệ %”: đúng như mẫu công văn (30% – 20% – 20% – 30% – 40% – 30% – 30% …)
 
             ## 2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
-            (Vẽ bảng Markdown Bản đặc tả, chi tiết hóa Yêu cầu cần đạt cho từng chủ đề tương ứng với các mức độ đánh giá).
+            (Dựa vào ma trận chi tiết hóa Yêu cầu cần đạt cho từng chủ đề tương ứng với các mức độ đánh giá).
             Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
              * phần header
             Dòng 1 đến dòng 4  cột 1 (TT) gộp A1:A4; cột 2 (Chủ đề/Chương) gộp B1:B4; cột 3 (Nội dung/đơn vị kiến thức) gộp C1:C4; cột 4 (Yêu cầu cần đạt) gộp D1:D4
@@ -103,7 +100,7 @@ export async function onRequest(context) {
             - Cột 3: Nội dung chi tiết (giống ma trận)
             - Cột 4 (Yêu cầu cần đạt): mỗi mức độ ghi trên 1 dòng riêng, bắt đầu bằng “- Biết …”, “- Hiểu …”, “- Vận dụng …”
               → Nếu là Vận dụng thì ghi thêm ở cuối dòng (NL: THTN) hoặc (NL: GQVĐ) hoặc (NL: MĐKH) tùy năng lực
-            - Cột 5 đến cột 16 (E đến P): ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
+            - Cột 5 đến cột 16 (E đến P) phải dựa vào ma trận ở trên: ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
             - Dòng cuối: Tổng số câu, Tổng số điểm, Tỉ lệ % (đúng như mẫu công văn)
             ## 3. ĐỀ KIỂM TRA ĐỊNH KÌ
             (Soạn đề thi thực tế dựa trên ma trận trên. Đảm bảo câu hỏi đa dạng: Trắc nghiệm 4 chọn 1, Đúng/Sai, Trả lời ngắn, Tự luận. Nội dung phải chuẩn kiến thức ${subject} lớp ${grade}).
@@ -140,4 +137,3 @@ export async function onRequest(context) {
         }
     }
 }
-
