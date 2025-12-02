@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Ma Trận & Đề Kiểm Tra (CV 7991)</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css"> 
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js-typescript@0.1.5/dist/index.min.js"></script>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-inner">
+            <div class="logo-area">
+                <i class="fas fa-file-signature"></i> 
+                <span>ExamMatrix AI</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container main-content">
+        <h2 class="page-title">📝 Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
+        <p class="sub-title">Theo Công văn 7991/BGDĐT-GDTrH (Định dạng Word)</p>
+        <hr>
+        
+        <div class="section-box">
+            <h5 class="section-title"><i class="fas fa-info-circle"></i> Thông tin chung</h5>
+            <div class="row">
+                <div class="six columns">
+                    <label>Môn học</label>
+                    <input class="u-full-width" type="text" id="subject" placeholder="VD: Khoa học tự nhiên">
+                </div>
+                <div class="six columns">
+                    <label>Lớp</label>
+                    <input class="u-full-width" type="text" id="grade" placeholder="VD: 8">
+                </div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                    <label>Học kì</label>
+                    <select class="u-full-width" id="semester">
+                        <option value="1">Học kì 1</option>
+                        <option value="2">Học kì 2</option>
+                    </select>
+                </div>
+                <div class="six columns">
+                    <label>Thời gian làm bài</label>
+                    <select class="u-full-width" id="time_limit">
+                        <option value="45 phút">45 phút</option>
+                        <option value="60 phút">60 phút</option>
+                        <option value="90 phút">90 phút</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                    <label>Tổng tiết (Nửa đầu HK - 25%)</label>
+                    <input class="u-full-width" type="number" id="total_half1" placeholder="VD: 18">
+                </div>
+                <div class="six columns">
+                    <label>Tổng tiết (Nửa sau HK - 75%)</label>
+                    <input class="u-full-width" type="number" id="total_half2" placeholder="VD: 16">
+                </div>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h5 class="section-title"><i class="fas fa-list"></i> Danh sách Chủ đề / Chương</h5>
+            <div id="topics-container">
+                </div>
+            <button class="button" id="btnAddTopic" style="margin-top: 10px;">
+                <i class="fas fa-plus"></i> Thêm Chủ đề
+            </button>
+        </div>
+
+        <div class="license-box">
+            <label>🔑 Mã kích hoạt (License Key)</label>
+            <input type="text" id="license_key" placeholder="Nhập mã bản quyền...">
+        </div>
+
+        <button class="button-primary" id="btnGenerate">
+            <i class="fas fa-robot"></i> TẠO MA TRẬN & ĐỀ
+        </button>
+        
+        <div id="statusArea">
+            <p class="loading" id="loadingMsg" style="display: none;">AI đang tính toán ma trận và soạn đề (Mất khoảng 30-60s)...</p>
+            <p class="error" id="errorMsg" style="display: none;"></p>
+        </div>
+
+        <div id="previewSection" style="display: none;">
+            <h4 style="text-align: center; color: #2563eb;">📄 Xem Trước Nội Dung</h4>
+            
+            <div class="preview-content markdown-body" id="previewContent">
+                </div>
+
+            <button class="button-success" id="btnDownloadWord">
+                <i class="fas fa-file-word"></i> TẢI FILE WORD (.DOCX)
+            </button>
+        </div>
+    </div>
+
+    <template id="topic-template">
+        <div class="topic-row">
+            <div class="row">
+                <div class="four columns">
+                    <label>Tên Chủ đề/Chương</label>
+                    <input type="text" class="u-full-width topic-name" placeholder="VD: Chất và sự biến đổi">
+                </div>
+                <div class="four columns">
+                    <label>Nội dung kiến thức (cách nhau bởi ;)</label>
+                    <textarea class="u-full-width topic-content" placeholder="VD: Tính chất nước; Bay hơi..."></textarea>
+                </div>
+                <div class="two columns">
+                    <label>Số tiết (Nửa đầu)</label>
+                    <input type="number" class="u-full-width topic-period-1" value="0" min="0">
+                </div>
+                <div class="two columns">
+                    <label>Số tiết (Nửa sau)</label>
+                    <input type="number" class="u-full-width topic-period-2" value="0" min="0">
+                </div>
+            </div>
+            <button class="remove-topic-btn" onclick="this.parentElement.remove()">
+                <i class="fas fa-trash"></i> Xóa
+            </button>
+            <hr style="margin: 10px 0; border-top: 1px dashed #ccc;">
+        </div>
+    </template>
+
+    <script src="js/app.js"></script> </body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "hoc-lieu-ai-backend",
+  "version": "1.0.0",
+  "description": "Dependencies for Cloudflare Functions",
+  "dependencies": {
+    "@google/generative-ai": "^0.14.1"
+  }
+}

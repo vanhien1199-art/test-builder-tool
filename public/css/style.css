@@ -1,0 +1,41 @@
+/* File: public/css/style.css */
+/* ... (Giữ lại các biến root và style cơ bản cũ) ... */
+
+:root {
+    --primary-color: #2563eb;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --radius: 8px;
+}
+
+body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: #1e293b; padding: 20px; }
+.container { background-color: var(--card-bg); max-width: 1000px; margin: 0 auto; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+h2 { color: var(--primary-color); font-weight: 800; text-align: center; }
+.section-box { background: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+.section-title { color: #334155; font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+
+/* Topic Row Styling */
+.topic-row { position: relative; background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #ddd; }
+.remove-topic-btn { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; float: right; margin-top: -10px; }
+.remove-topic-btn:hover { background: #fecaca; }
+
+/* Preview Content (Markdown Table Style) */
+.preview-content {
+    background: #fff;
+    padding: 30px;
+    border: 1px solid #ddd;
+    margin-top: 20px;
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: 'Times New Roman', serif; /* Font chuẩn văn bản */
+}
+.preview-content table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.preview-content th, .preview-content td { border: 1px solid #000; padding: 8px; font-size: 14px; }
+.preview-content h2, .preview-content h3 { text-align: center; color: #000; }
+
+/* Buttons & License (Giữ nguyên style cũ) */
+.license-box { background: #eff6ff; border: 2px solid #bfdbfe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;}
+.license-box input { font-size: 1.5rem; text-align: center; font-family: monospace; border: 2px solid #60a5fa; max-width: 400px;}
+.button-primary { width: 100%; height: 55px; font-size: 1.2rem; background: var(--primary-color); color: white; border: none; font-weight: 700; }
+.button-success { width: 100%; background: #10b981; color: white; border: none; height: 50px; font-weight: 700; margin-top: 20px; }
