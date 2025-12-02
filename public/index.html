@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ma Trận & Đề Kiểm Tra (CV 7991)</title>
+    <title>ExamMatrix AI - Xây Dựng Ma Trận & Đề 7991</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,7 +11,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-docx-js-typescript@0.1.5/dist/index.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
 </head>
 <body>
 
@@ -25,8 +25,7 @@
     </header>
 
     <div class="container main-content">
-        <h2 class="page-title">📝 Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
-        <p class="sub-title">Theo Công văn 7991/BGDĐT-GDTrH (Định dạng Word)</p>
+        <h2 class="page-title">📝 Xây Dựng Ma Trận & Đề Kiểm Tra (7991)</h2>
         <hr>
         
         <div class="section-box">
@@ -89,7 +88,7 @@
         </button>
         
         <div id="statusArea">
-            <p class="loading" id="loadingMsg" style="display: none;">AI đang tính toán ma trận và soạn đề (Mất khoảng 30-60s)...</p>
+            <p class="loading" id="loadingMsg" style="display: none;">AI đang tính toán ma trận và soạn đề (30-60s)...</p>
             <p class="error" id="errorMsg" style="display: none;"></p>
         </div>
 
@@ -117,20 +116,21 @@
                     <textarea class="u-full-width topic-content" placeholder="VD: Tính chất nước; Bay hơi..."></textarea>
                 </div>
                 <div class="two columns">
-                    <label>Số tiết (Nửa đầu)</label>
+                    <label>Tiết (Nửa đầu)</label>
                     <input type="number" class="u-full-width topic-period-1" value="0" min="0">
                 </div>
                 <div class="two columns">
-                    <label>Số tiết (Nửa sau)</label>
+                    <label>Tiết (Nửa sau)</label>
                     <input type="number" class="u-full-width topic-period-2" value="0" min="0">
                 </div>
             </div>
-            <button class="remove-topic-btn" onclick="this.parentElement.remove()">
+            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="background: #fee2e2; border:none; padding:5px; float:right;">
                 <i class="fas fa-trash"></i> Xóa
             </button>
-            <hr style="margin: 10px 0; border-top: 1px dashed #ccc;">
+            <hr style="margin: 10px 0; border-top: 1px dashed #ccc; clear:both;">
         </div>
     </template>
 
-    <script src="js/app.js"></script> </body>
+    <script src="js/app.js"></script>
+</body>
 </html>
