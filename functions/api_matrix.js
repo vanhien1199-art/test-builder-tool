@@ -76,7 +76,7 @@ export async function onRequest(context) {
 
             const genAI = new GoogleGenerativeAI(apiKey);
             // Dùng model Pro để xử lý logic phức tạp tốt hơn Flash
-            const model = genAI.getGenerativeModel({ model: "Gemini 2.5 Flash" });
+            const model = genAI.getGenerativeModel({ model: "Gemini 2.5 Pro" });
             const result = await model.generateContent(prompt);
             const text = result.response.text();
 
@@ -91,5 +91,6 @@ export async function onRequest(context) {
     }
 
 }
+
 
 
