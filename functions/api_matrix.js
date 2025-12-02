@@ -18,31 +18,30 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- 1. CẤU HÌNH ---
-            const MODEL_NAME = "gemini-2.5-flash"; // Dùng bản Flash cho nhanh
+            // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
+            // Lưu ý: Đây là bản Experimental, tốc độ cực nhanh và thông minh hơn 1.5
+            const MODEL_NAME = "gemini-2.0-flash-exp"; 
+
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
             const body = await request.json();
-            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics } = body;
+            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // --- 2. KIỂM TRA LICENSE ---
-            // Lưu ý: Với streaming, ta trừ tiền trước khi chạy để đảm bảo
+            // --- KIỂM TRA LICENSE ---
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
-                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
-                let currentCredit = parseInt(creditStr);
-                if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
-                
-                // Trừ tiền ngay
-                await env.TEST_TOOL.put(license_key, (currentCredit - 1).toString());
+                if (!creditStr || parseInt(creditStr) <= 0) {
+                    return new Response(JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }), { status: 403, headers: corsHeaders });
+                }
             }
 
-            // --- 3. CHUẨN BỊ PROMPT ---
+            // Chuẩn bị dữ liệu Prompt
             let topicsDescription = topics.map((t, index) => {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
 
+            // --- PROMPT GIỮ NGUYÊN VĂN 100% ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo, hãy tạo các tài liệu sau:
 
@@ -51,9 +50,12 @@ export async function onRequest(context) {
 
             1. **Môn học:** ${subject} lớp ${grade}
             2. **Học kì:** ${semester}, năm học 2024-2025
-            3. **Thời lượng kiểm tra:** ${time} phút
-            4. **Nội dung/đơn vị kiến thức:** ${topicsDescription}
-            5. **Tổng tiết:** ${totalPeriodsHalf1} (Nửa đầu) + ${totalPeriodsHalf2} (Nửa sau)
+            3. **Loại kiểm tra:** ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
+            4. **Chủ đề/Chương cần kiểm tra:** (Xem danh sách bên dưới)
+            5. **Nội dung/đơn vị kiến thức:** ${topicsDescription}
+            6. **Thời lượng kiểm tra:** ${time} phút
+            7. **Có sử dụng câu hỏi "Trả lời ngắn" không?** ${use_short_answer ? 'Có' : 'Không'}
+            8. **Tỉ lệ điểm phân bổ:** Theo mẫu chuẩn 7991
 
             ## KẾT QUẢ ĐẦU RA
             Tạo ra 1 tài liệu sau đúng định dạng:
@@ -180,7 +182,7 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-            // --- 4. TẠO STREAM ---
+            // --- STREAMING (BẮT BUỘC) ---
             const { stream } = await model.generateContentStream(prompt);
 
             const readableStream = new ReadableStream({
@@ -190,6 +192,14 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
+                        // Trừ tiền khi hoàn tất stream thành công
+                        if (env.TEST_TOOL && license_key) {
+                            const creditStr = await env.TEST_TOOL.get(license_key);
+                            if (creditStr) {
+                                let current = parseInt(creditStr);
+                                if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                            }
+                        }
                         controller.close();
                     } catch (e) {
                         controller.error(e);
@@ -197,7 +207,6 @@ export async function onRequest(context) {
                 }
             });
 
-            // Trả về stream (Không phải JSON)
             return new Response(readableStream, {
                 headers: {
                     ...corsHeaders,
@@ -209,7 +218,7 @@ export async function onRequest(context) {
 
         } catch (error) {
             return new Response(JSON.stringify({ 
-                error: `Lỗi AI: ${error.message}` 
+                error: `Lỗi AI (${error.message}). Hãy kiểm tra API Key.` 
             }), { status: 500, headers: corsHeaders });
         }
     }
