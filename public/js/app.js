@@ -1,23 +1,30 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Thêm 1 dòng chủ đề mặc định
-    addTopicRow();
+    addTopicRow(); // Thêm 1 dòng chủ đề mặc định
 
-    document.getElementById('btnAddTopic').addEventListener('click', addTopicRow);
-    document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
-    document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
+    // Gán sự kiện
+    const btnAdd = document.getElementById('btnAddTopic');
+    if(btnAdd) btnAdd.addEventListener('click', addTopicRow);
+
+    const btnGen = document.getElementById('btnGenerate');
+    if(btnGen) btnGen.addEventListener('click', handleGenerate);
+
+    const btnDown = document.getElementById('btnDownloadWord');
+    if(btnDown) btnDown.addEventListener('click', handleDownloadWord);
 });
 
 // Thêm dòng nhập liệu chủ đề
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
-    const clone = template.content.cloneNode(true);
-    container.appendChild(clone);
+    if(container && template) {
+        const clone = template.content.cloneNode(true);
+        container.appendChild(clone);
+    }
 }
 
-// XỬ LÝ CHÍNH
+// XỬ LÝ CHÍNH: GỌI API
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -32,10 +39,10 @@ async function handleGenerate() {
     btn.disabled = true;
 
     try {
-        // 1. Thu thập dữ liệu
         const licenseKey = document.getElementById('license_key').value.trim();
         if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
 
+        // Thu thập dữ liệu từ Form
         const requestData = {
             license_key: licenseKey,
             subject: document.getElementById('subject').value.trim(),
@@ -51,7 +58,6 @@ async function handleGenerate() {
             throw new Error("Vui lòng nhập Tổng số tiết hợp lệ (lớn hơn 0).");
         }
 
-        // Duyệt qua danh sách chủ đề
         const topicRows = document.querySelectorAll('.topic-row');
         topicRows.forEach(row => {
             const name = row.querySelector('.topic-name').value.trim();
@@ -66,8 +72,8 @@ async function handleGenerate() {
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // 2. Gọi API
-        const response = await fetch('/api_matrix', { // Gọi endpoint mới
+        // Gọi API (Lưu ý: API endpoint là /api_matrix)
+        const response = await fetch('/api_matrix', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestData)
@@ -84,16 +90,21 @@ async function handleGenerate() {
         const data = JSON.parse(rawText);
         const markdownResult = data.result;
 
-        // 3. Hiển thị kết quả (Dùng Marked để chuyển MD sang HTML)
-        previewContent.innerHTML = marked.parse(markdownResult);
+        // Render Markdown thành HTML
+        if(typeof marked !== 'undefined') {
+            previewContent.innerHTML = marked.parse(markdownResult);
+        } else {
+            previewContent.innerText = markdownResult;
+        }
+
+        // Lưu HTML vào biến toàn cục để dùng khi tải Word
+        window.generatedHTML = previewContent.innerHTML;
+
         previewSection.style.display = 'block';
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
-        // Lưu nội dung HTML để xuất Word
-        window.generatedHTML = previewContent.innerHTML;
-
     } catch (err) {
-        error.textContent = "⚠️ Lỗi: " + err.message;
+        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
         error.style.display = 'block';
     } finally {
         loading.style.display = 'none';
@@ -101,27 +112,32 @@ async function handleGenerate() {
     }
 }
 
-// XUẤT FILE WORD
+// XỬ LÝ TẢI FILE WORD (QUAN TRỌNG: ĐỊNH DẠNG BẢNG)
 function handleDownloadWord() {
     if (!window.generatedHTML) {
         alert("Chưa có nội dung để tải!");
         return;
     }
 
-    // Tạo nội dung HTML chuẩn cho Word
+    // CSS In-line cho file Word (Bắt buộc để hiện bảng)
+    const css = `
+        <style>
+            body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.3; }
+            h1, h2, h3, h4 { text-align: center; color: #000; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #000; padding: 5px; vertical-align: top; font-size: 11pt; }
+            th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
+            .text-center { text-align: center; }
+            .bold { font-weight: bold; }
+        </style>
+    `;
+
     const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
-            <style>
-                body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.5; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                th, td { border: 1px solid black; padding: 5px; vertical-align: top; }
-                h1, h2, h3 { text-align: center; }
-                .text-center { text-align: center; }
-                .text-bold { font-weight: bold; }
-            </style>
+            ${css}
         </head>
         <body>
             ${window.generatedHTML}
@@ -129,12 +145,16 @@ function handleDownloadWord() {
         </html>
     `;
 
-    // Sử dụng thư viện html-docx-js để convert
-    // Lưu ý: Thư viện này chạy tốt nhất qua CDN đã khai báo ở index.html
     try {
-        const converted = htmlDocx.asBlob(htmlContent);
-        saveAs(converted, `De_Kiem_Tra_${new Date().getTime()}.docx`);
+        // Sử dụng html-docx-js (đã được load ở index.html)
+        if(typeof htmlDocx !== 'undefined') {
+            const converted = htmlDocx.asBlob(htmlContent, { orientation: 'landscape' }); // Khổ ngang cho ma trận rộng
+            saveAs(converted, `Ma_Tran_De_Kiem_Tra_${new Date().getTime()}.docx`);
+        } else {
+            alert("Lỗi: Thư viện tạo file Word chưa tải xong. Vui lòng thử lại.");
+        }
     } catch (e) {
         alert("Lỗi khi tạo file Word: " + e.message);
+        console.error(e);
     }
 }
