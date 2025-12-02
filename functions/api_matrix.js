@@ -17,7 +17,7 @@ export async function onRequest(context) {
             if (!apiKey) throw new Error("Thiếu API Key");
             
             // --- CẤU HÌNH MODEL 2025 ---
-            const MODEL_NAME = "gemini-2.5-flash"; 
+            const MODEL_NAME = "gemini-1.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -137,3 +137,4 @@ export async function onRequest(context) {
         }
     }
 }
+
