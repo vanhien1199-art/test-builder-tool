@@ -54,8 +54,18 @@
             <div class="row">
                 <label>
                     <input type="checkbox" id="use_short"> 
-                    <span class="label-body">Sử dụng câu hỏi "Trả lời ngắn" (Nếu không chọn sẽ chuyển điểm sang Đúng/Sai)</span>
+                    <span class="label-body">Sử dụng câu hỏi "Trả lời ngắn"</span>
                 </label>
+            </div>
+            <div class="row hk-only" style="display: none; background: #fff3cd; padding: 15px; border-radius: 4px; margin-top: 10px;">
+                <div class="six columns">
+                    <label>Tiết (Nửa đầu HK - 25%)</label>
+                    <input class="u-full-width" type="number" id="total_half1" placeholder="VD: 18">
+                </div>
+                <div class="six columns">
+                    <label>Tiết (Nửa sau HK - 75%)</label>
+                    <input class="u-full-width" type="number" id="total_half2" placeholder="VD: 16">
+                </div>
             </div>
         </div>
 
@@ -73,7 +83,7 @@
         <button class="button-primary" id="btnGenerate"><i class="fas fa-robot"></i> TẠO MA TRẬN & ĐỀ</button>
         
         <div id="statusArea">
-            <p class="loading" id="loadingMsg" style="display: none;">Đang xử lý (30-60s)...</p>
+            <p class="loading" id="loadingMsg" style="display: none;">Đang xử lý...</p>
             <p class="error" id="errorMsg" style="display: none;"></p>
         </div>
 
@@ -85,7 +95,7 @@
     </div>
 
     <template id="topic-template">
-        <div class="topic-row">
+        <div class="topic-row" style="background: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
             <div class="row">
                 <div class="six columns">
                     <label>Tên Chủ đề</label>
@@ -96,18 +106,17 @@
                     <input type="text" class="u-full-width topic-content" placeholder="Nội dung chi tiết...">
                 </div>
             </div>
-            <div class="row hk-only" style="display: none; margin-top: 10px; background: #fff3cd; padding: 10px; border-radius: 4px;">
+            <div class="row hk-only" style="display: none; margin-top: 10px;">
                 <div class="six columns">
-                    <label>Tiết (Nửa đầu HK)</label>
+                    <label>Tiết (Nửa đầu)</label>
                     <input type="number" class="u-full-width topic-period-1" value="0" min="0">
                 </div>
                 <div class="six columns">
-                    <label>Tiết (Nửa sau HK)</label>
+                    <label>Tiết (Nửa sau)</label>
                     <input type="number" class="u-full-width topic-period-2" value="0" min="0">
                 </div>
             </div>
-            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="margin-top: 10px;">Xóa</button>
-            <hr>
+            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="margin-top: 10px; background: #fee2e2; border:none; color: #c0392b;">Xóa chủ đề này</button>
         </div>
     </template>
 
