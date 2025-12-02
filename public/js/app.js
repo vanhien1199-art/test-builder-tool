@@ -6,12 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
     document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
     
-    // Ẩn hiện cột học kì
     document.getElementById('exam_type').addEventListener('change', function() {
         const isHK = this.value === 'hk';
-        document.querySelectorAll('.hk-only').forEach(el => {
-            el.style.display = isHK ? 'block' : 'none';
-        });
+        document.querySelectorAll('.hk-only').forEach(el => el.style.display = isHK ? 'block' : 'none');
     });
 });
 
@@ -31,14 +28,13 @@ async function handleGenerate() {
     const previewContent = document.getElementById('previewContent');
 
     loading.style.display = 'block';
-    loading.innerText = "Đang kết nối AI và viết từng dòng...";
+    loading.innerText = "Đang kết nối Gemini 2.0 và tạo đề...";
     error.style.display = 'none';
     previewSection.style.display = 'none';
-    previewContent.innerHTML = ""; // Xóa nội dung cũ
+    previewContent.innerHTML = ""; 
     btn.disabled = true;
 
     try {
-        // 1. Thu thập dữ liệu
         const licenseKey = document.getElementById('license_key').value.trim();
         if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
 
@@ -68,23 +64,21 @@ async function handleGenerate() {
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // 2. GỌI API (STREAMING)
         const response = await fetch('/api_matrix', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestData)
         });
 
-        // Xử lý lỗi ban đầu (nếu API trả về lỗi JSON ngay lập tức)
         if (!response.ok) {
             const errText = await response.text();
             let errMsg = errText;
             try { errMsg = JSON.parse(errText).error; } catch(e){}
-            throw new Error(errMsg);
+            throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // 3. ĐỌC STREAM (QUAN TRỌNG: KHÔNG JSON.PARSE Ở ĐÂY)
-        previewSection.style.display = 'block'; // Hiện khung trước
+        // --- ĐỌC STREAM VĂN BẢN (KHÔNG PHẢI JSON) ---
+        previewSection.style.display = 'block';
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
         const reader = response.body.getReader();
@@ -98,7 +92,7 @@ async function handleGenerate() {
             const chunk = decoder.decode(value, { stream: true });
             fullMarkdown += chunk;
             
-            // Render Realtime bằng Marked
+            // Render Markdown Realtime
             if(typeof marked !== 'undefined') {
                 previewContent.innerHTML = marked.parse(fullMarkdown);
             } else {
@@ -106,7 +100,6 @@ async function handleGenerate() {
             }
         }
 
-        // Lưu kết quả cuối cùng để tải Word
         window.generatedHTML = previewContent.innerHTML;
         loading.style.display = 'none';
 
@@ -119,7 +112,7 @@ async function handleGenerate() {
     }
 }
 
-// XỬ LÝ TẢI WORD
+// XUẤT FILE WORD
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
@@ -142,8 +135,12 @@ function handleDownloadWord() {
     `;
 
     try {
-        const converted = htmlDocx.asBlob(htmlContent, { orientation: 'landscape' });
-        saveAs(converted, `De_Kiem_Tra_7991_${new Date().getTime()}.docx`);
+        if(typeof htmlDocx !== 'undefined') {
+            const converted = htmlDocx.asBlob(htmlContent, { orientation: 'landscape' });
+            saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
+        } else {
+            alert("Lỗi thư viện. Vui lòng tải lại trang.");
+        }
     } catch (e) {
         alert("Lỗi tải file: " + e.message);
     }
