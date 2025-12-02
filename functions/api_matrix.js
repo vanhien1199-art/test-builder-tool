@@ -15,13 +15,13 @@ export async function onRequest(context) {
         try {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
-            if (!env.USER_CREDITS) throw new Error("Thiếu KV Database");
+            if (!env.TEST_TOOL) throw new Error("Thiếu KV Database");
 
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics } = body;
 
             // --- KIỂM TRA LICENSE (Pay-per-use) ---
-            const creditStr = await env.USER_CREDITS.get(license_key);
+            const creditStr = await env.TEST_TOOL.get(license_key);
             if (creditStr === null) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
             let currentCredit = parseInt(creditStr);
             if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
@@ -76,13 +76,13 @@ export async function onRequest(context) {
 
             const genAI = new GoogleGenerativeAI(apiKey);
             // Dùng model Pro để xử lý logic phức tạp tốt hơn Flash
-            const model = genAI.getGenerativeModel({ model: "" });
+            const model = genAI.getGenerativeModel({ model: "Gemini 3 Pro Preview" });
             
             const result = await model.generateContent(prompt);
             const text = result.response.text();
 
             // Trừ tiền
-            await env.USER_CREDITS.put(license_key, (currentCredit - 1).toString());
+            await env.TEST_TOOL.put(license_key, (currentCredit - 1).toString());
 
             return new Response(JSON.stringify({ result: text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -90,4 +90,5 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
         }
     }
+
 }
