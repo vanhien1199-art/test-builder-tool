@@ -92,7 +92,7 @@ export async function onRequest(context) {
             
             // Cập nhật quan trọng: Sử dụng gemini-2.5-pro
             // Đây là bản ổn định, mạnh mẽ, thay thế cho 1.5 và 3.0 preview
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             
             const result = await model.generateContent(prompt);
             const text = result.response.text();
@@ -118,3 +118,4 @@ export async function onRequest(context) {
         }
     }
 }
+
