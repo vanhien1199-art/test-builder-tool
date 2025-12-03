@@ -1,4 +1,4 @@
-// File: fun// File: functions/api_matrix.js
+// File: functions/api_matrix.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function onRequest(context) {
@@ -19,11 +19,16 @@ export async function onRequest(context) {
             if (!apiKey) throw new Error("Thiếu API Key");
 
             // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
-            // Lưu ý: Đây là bản Experimental, tốc độ cực nhanh và thông minh hơn 1.5
             const MODEL_NAME = "gemini-2.0-flash-exp"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+            const model = genAI.getGenerativeModel({ 
+                model: MODEL_NAME,
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 8192,
+                }
+            });
 
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
@@ -32,48 +37,19 @@ export async function onRequest(context) {
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
-                    return new Response(JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }), { status: 403, headers: corsHeaders });
+                    return new Response(JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }), { 
+                        status: 403, 
+                        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+                    });
                 }
             }
 
-            // Chuẩn bị dữ liệu Prompt
-            let topicsDescription = topics.map((t, index) => {
-                return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
-            }).join("\n");ctions/api_matrix.js
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-export async function onRequest(context) {
-    const { request, env } = context;
-    
-    // Cấu hình CORS
-    const corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-    };
-
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-
-    if (request.method === "POST") {
-        try {
-            const apiKey = env.GOOGLE_API_KEY;
-            if (!apiKey) throw new Error("Thiếu API Key");
-
-            // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
-            const MODEL_NAME = "gemini-2.0-flash-exp";
-
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-
-            const body = await request.json();
-            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
-
-            // --- KIỂM TRA LICENSE ---
-            if (env.TEST_TOOL && license_key) {
-                const creditStr = await env.TEST_TOOL.get(license_key);
-                if (!creditStr || parseInt(creditStr) <= 0) {
-                    return new Response(JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }), { status: 403, headers: corsHeaders });
-                }
+            // --- KIỂM TRA DỮ LIỆU ĐẦU VÀO ---
+            if (!subject || !grade || !topics || topics.length === 0) {
+                return new Response(JSON.stringify({ error: "Thiếu dữ liệu đầu vào" }), {
+                    status: 400,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
             }
 
             // Chuẩn bị dữ liệu Prompt
@@ -81,135 +57,121 @@ export async function onRequest(context) {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
 
-            // --- PROMPT CẬP NHẬT: YÊU CẦU HTML TABLE ---
-            const prompt = `
-Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam.
+            console.log("Đang gọi Gemini với model:", MODEL_NAME);
+            console.log("Số chủ đề:", topics.length);
+            
+            // --- PROMPT TỐI ƯU CHO HTML OUTPUT ---
+            const prompt = `[QUAN TRỌNG: TRẢ VỀ HTML, KHÔNG MARKDOWN]
 
-## YÊU CẦU QUAN TRỌNG:
-Bạn PHẢI trả về nội dung dưới dạng HTML với đầy đủ thẻ <table>, <tr>, <td>, <th> và sử dụng rowspan, colspan để merge ô theo đúng mẫu 7991.
-KHÔNG sử dụng markdown table. CHỈ sử dụng HTML table.
+Bạn là trợ lý tạo ma trận đề kiểm tra theo CV 7991.
 
-## THÔNG TIN ĐẦU VÀO:
+THÔNG TIN ĐẦU VÀO:
 - Môn: ${subject} lớp ${grade}
-- Học kì: ${semester}
-- Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
-- Thời lượng: ${time} phút
-- Sử dụng câu hỏi ngắn: ${use_short_answer ? 'Có' : 'Không'}
-- Chủ đề: ${topicsDescription}
+- Học kì: ${semester === '1' ? 'Học kì 1' : 'Học kì 2'}
+- Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra giữa kì'}
+- Thời gian: ${time} phút
+- Chủ đề: ${topics.length} chủ đề
+- Chi tiết chủ đề: ${topicsDescription}
 
-## ĐẦU RA PHẢI BAO GỒM 3 PHẦN DƯỚI DẠNG HTML:
+YÊU CẦU:
+Tạo HTML cho 3 phần sau:
 
-### PHẦN 1: MA TRẬN ĐỀ KIỂM TRA (HTML TABLE - 19 cột)
-Tạo bảng HTML với cấu trúc CHÍNH XÁC sau:
-1. Dùng <table border="1"> với đầy đủ border
-2. Hàng 1-4: Header với các ô gộp dùng rowspan và colspan
-3. Ví dụ: <th rowspan="4">TT</th>, <th colspan="12">Mức độ đánh giá</th>
-4. Từ hàng 5: Nội dung các chủ đề
-5. Các dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %"
+PHẦN 1: MA TRẬN ĐỀ KIỂM TRA (19 cột)
+- Dùng <table border="1">
+- Header: dòng 1-4 với rowspan/colspan
+- Nội dung: từ dòng 5, liệt kê các chủ đề
+- Tổng điểm: 10 điểm
+- Phân bổ: TNKQ 60-70%, TL 30-40%
 
-### PHẦN 2: BẢN ĐẶC TẢ (HTML TABLE - 16 cột)
-Tạo bảng HTML với:
-1. Cột 1-4: TT, Chủ đề, Nội dung, Yêu cầu cần đạt
-2. Cột 5-16: Phân bổ câu hỏi theo mức độ và hình thức
-3. Dùng rowspan/colspan cho header
+PHẦN 2: BẢN ĐẶC TẢ (16 cột)
+- Bảng HTML với đầy đủ rowspan/colspan
+- Yêu cầu cần đạt cho từng chủ đề
 
-### PHẦN 3: ĐỀ KIỂM TRA MẪU
-Tạo đề kiểm tra hoàn chỉnh dạng HTML:
-1. Phần trắc nghiệm (60-70%)
-2. Phần tự luận (30-40%)
-3. Đáp án và hướng dẫn chấm
+PHẦN 3: ĐỀ KIỂM TRA MẪU
+- Câu hỏi trắc nghiệm (nhiều lựa chọn, đúng-sai)
+- Câu hỏi tự luận
+- Đáp án
 
-## CẤU TRÚC HTML BẮT BUỘC:
+ĐỊNH DẠNG HTML BẮT BUỘC:
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Ma trận đề kiểm tra</title>
-</head>
+<head><meta charset="UTF-8"></head>
 <body>
-    <h1>BỘ GIÁO DỤC VÀ ĐÀO TẠO</h1>
-    <h2>Theo Công văn 7991/BGDĐT-GDTrH</h2>
-    
-    <!-- PHẦN 1: MA TRẬN -->
-    <h3>PHẦN 1: MA TRẬN ĐỀ KIỂM TRA</h3>
-    <table border="1" style="border-collapse: collapse; width: 100%;">
-        <!-- Cấu trúc 19 cột với rowspan/colspan -->
-        <tr>
-            <th rowspan="4">TT</th>
-            <th rowspan="4">Chủ đề/Chương</th>
-            <th rowspan="4">Nội dung/đơn vị kiến thức</th>
-            <th colspan="12">Mức độ đánh giá</th>
-            <th colspan="3">Tổng</th>
-            <th rowspan="4">Tỉ lệ % điểm</th>
-        </tr>
-        <!-- ... tiếp tục theo mẫu 7991 ... -->
-    </table>
-    
-    <!-- PHẦN 2: BẢN ĐẶC TẢ -->
-    <h3>PHẦN 2: BẢN ĐẶC TẢ ĐỀ KIỂM TRA</h3>
-    <table border="1" style="border-collapse: collapse; width: 100%;">
-        <!-- Cấu trúc 16 cột với rowspan/colspan -->
-    </table>
-    
-    <!-- PHẦN 3: ĐỀ MẪU -->
-    <h3>PHẦN 3: ĐỀ KIỂM TRA MẪU</h3>
-    <!-- Nội dung đề -->
+<h1>MA TRẬN ĐỀ KIỂM TRA</h1>
+<!-- Bảng HTML tại đây -->
 </body>
 </html>
 
-## QUY TẮC PHÂN BỔ:
-1. Tổng điểm = 10 điểm
-2. Phân bổ: TNKQ (60-70%), Tự luận (30-40%)
-3. Mức độ: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
-4. Nếu là đề học kì: 25% nửa đầu + 75% nửa sau
-5. Mỗi câu TNKQ: 0.25-0.5 điểm, Tự luận: 1.0-2.0 điểm
+LƯU Ý: Chỉ trả về HTML, không giải thích thêm.`;
 
-## LƯU Ý CUỐI:
-1. DÙNG HTML THUẦN, KHÔNG MARKDOWN
-2. Dùng thẻ table với border="1"
-3. Dùng rowspan và colspan chính xác
-4. Ngôn ngữ: Tiếng Việt
-5. Ghi rõ: "Theo Công văn 7991/BGDĐT-GDTrH"
-`;
-
-            // --- STREAMING ---
-            const { stream } = await model.generateContentStream(prompt);
-
-            const readableStream = new ReadableStream({
-                async start(controller) {
-                    try {
-                        for await (const chunk of stream) {
-                            const chunkText = chunk.text();
-                            controller.enqueue(new TextEncoder().encode(chunkText));
-                        }
-                        // Trừ tiền khi hoàn tất
-                        if (env.TEST_TOOL && license_key) {
-                            const creditStr = await env.TEST_TOOL.get(license_key);
-                            if (creditStr) {
-                                let current = parseInt(creditStr);
-                                if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+            // --- THỬ GỌI GEMINI VÀ XỬ LÝ LỖI CHI TIẾT ---
+            try {
+                const { stream } = await model.generateContentStream(prompt);
+                
+                const readableStream = new ReadableStream({
+                    async start(controller) {
+                        try {
+                            for await (const chunk of stream) {
+                                const chunkText = chunk.text();
+                                controller.enqueue(new TextEncoder().encode(chunkText));
                             }
+                            // Trừ tiền khi hoàn tất
+                            if (env.TEST_TOOL && license_key) {
+                                const creditStr = await env.TEST_TOOL.get(license_key);
+                                if (creditStr) {
+                                    let current = parseInt(creditStr);
+                                    if (current > 0) {
+                                        await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                                        console.log("Đã trừ 1 credit, còn lại:", current - 1);
+                                    }
+                                }
+                            }
+                            controller.close();
+                        } catch (streamError) {
+                            console.error("Lỗi trong stream:", streamError);
+                            controller.error(streamError);
                         }
-                        controller.close();
-                    } catch (e) {
-                        controller.error(e);
                     }
-                }
-            });
+                });
 
-            return new Response(readableStream, {
-                headers: {
-                    ...corsHeaders,
-                    "Content-Type": "text/html; charset=utf-8", // Đổi thành HTML
-                    "Cache-Control": "no-cache",
+                return new Response(readableStream, {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "text/html; charset=utf-8",
+                        "Cache-Control": "no-cache",
+                    }
+                });
+
+            } catch (geminiError) {
+                console.error("Lỗi khi gọi Gemini:", geminiError);
+                
+                // Kiểm tra xem model có khả dụng không
+                if (geminiError.message && geminiError.message.includes("location is not supported")) {
+                    return new Response(JSON.stringify({ 
+                        error: "Model gemini-2.0-flash-exp không khả dụng ở khu vực của bạn. Vui lòng đổi sang gemini-1.5-flash." 
+                    }), { 
+                        status: 400, 
+                        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+                    });
                 }
-            });
+                
+                throw geminiError;
+            }
 
         } catch (error) {
+            console.error("Lỗi tổng quan:", error);
             return new Response(JSON.stringify({ 
-                error: `Lỗi AI (${error.message}). Hãy kiểm tra API Key.` 
-            }), { status: 500, headers: corsHeaders });
+                error: `Lỗi AI: ${error.message}` 
+            }), { 
+                status: 500, 
+                headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            });
         }
     }
+    
+    // Nếu không phải POST
+    return new Response(JSON.stringify({ error: "Method không hỗ trợ" }), { 
+        status: 405, 
+        headers: corsHeaders 
+    });
 }
-
