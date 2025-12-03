@@ -47,14 +47,14 @@ export async function onRequest(context) {
             ## YÊU CẦU ĐẦU VÀO
             Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
 
-            1. **Môn học:** ${subject} lớp ${grade}
-            2. **Học kì:** ${semester}, năm học 2024-2025
-            3. **Loại kiểm tra:** ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
-            4. **Chủ đề/Chương cần kiểm tra:** (Xem danh sách bên dưới)
-            5. **Nội dung/đơn vị kiến thức:** ${topicsDescription}
-            6. **Thời lượng kiểm tra:** ${time} phút
-            7. **Có sử dụng câu hỏi "Trả lời ngắn" không?** ${use_short_answer ? 'Có' : 'Không'}
-            8. **Tỉ lệ điểm phân bổ:** Theo mẫu chuẩn 7991
+            1. Môn học: ${subject} lớp ${grade}
+            2. Học kì: ${semester}, năm học 2024-2025
+            3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
+            4. Chủ đề/Chương cần kiểm tra: (Xem danh sách bên dưới)
+            5. Nội dung/đơn vị kiến thức: ${topicsDescription}
+            6. Thời lượng kiểm tra: ${time} phút
+            7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
+            8. Tỉ lệ điểm phân bổ: Theo mẫu chuẩn 7991
 
             ## KẾT QUẢ ĐẦU RA
             Tạo ra 1 tài liệu sau đúng định dạng:
@@ -118,24 +118,27 @@ export async function onRequest(context) {
 
             === PHẦN 3 – ĐỀ KIỂM TRA MẪU ===
             Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
-            1. **PHẦN TRẮC NGHIỆM KHÁCH QUAN** (60-70% điểm)
+            1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (60-70% điểm)
                - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D
                - Câu hỏi Đúng-Sai: Mỗi câu gồm 4 ý nhỏ (a, b, c, d), học sinh chọn Đ/S
                - Câu hỏi trả lời ngắn (nếu có): Yêu cầu điền từ/cụm từ
-            2. **PHẦN TỰ LUẬN** (30-40% điểm)
+            2. PHẦN TỰ LUẬN (30-40% điểm)
                - Câu hỏi phân theo mức độ: Biết, Hiểu, Vận dụng
                - Mỗi câu ghi rõ số điểm
 
-            3. **ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM** (tóm tắt)
+            3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt)
 
             ## QUY TẮC CHUNG (BẮT BUỘC)
-            1. **ĐỊNH DẠNG VÀ NGÔN NGỮ:**
-               - **MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).**
-               - **KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`).**
+            1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
+               - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
+               - KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
                - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
+               - In đậm: dùng thẻ <b>...</b> (Ví dụ: <b>Câu 1.</b>)
+               - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
+               - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
                - Ngôn ngữ: Tiếng Việt chuẩn.
-            2. **TÍNH TOÁN:**
+            2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
             - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
             - Nếu là đề kiểm tra HỌC KÌ:
@@ -206,4 +209,5 @@ export async function onRequest(context) {
         }
     }
 }
+
 
