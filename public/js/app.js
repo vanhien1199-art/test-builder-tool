@@ -1,69 +1,67 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("App Ready");
-    
-    // 1. Thêm dòng chủ đề đầu tiên khi tải trang
+    // 1. Khởi tạo dòng chủ đề đầu tiên
     addTopicRow();
 
-    // 2. Gán sự kiện cho các nút tĩnh
-    document.getElementById('btnAddTopic').addEventListener('click', addTopicRow);
-    document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
-    document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
-
-    // 3. Xử lý sự kiện thay đổi loại kiểm tra (Giữa kì / Học kì)
+    // 2. Gán sự kiện
+    const btnAdd = document.getElementById('btnAddTopic');
+    const btnGen = document.getElementById('btnGenerate');
+    const btnDown = document.getElementById('btnDownloadWord');
     const examTypeSelect = document.getElementById('exam_type');
+
+    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
+    if (btnGen) btnGen.addEventListener('click', handleGenerate);
+    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
+
+    // 3. Xử lý Logic ẩn hiện ô nhập số tiết (Học kì)
     if (examTypeSelect) {
-        examTypeSelect.addEventListener('change', toggleHKFields);
-        toggleHKFields(); // Chạy ngay lần đầu
+        examTypeSelect.addEventListener('change', function() {
+            const isHK = this.value === 'hk';
+            const hkConfig = document.getElementById('hk-config');
+            const topicPeriodInputs = document.querySelectorAll('.hk-period-inputs');
+
+            // Ẩn hiện phần tổng tiết chung
+            if (hkConfig) {
+                if (isHK) hkConfig.classList.remove('hidden');
+                else hkConfig.classList.add('hidden');
+            }
+
+            // Ẩn hiện phần số tiết con trong từng chủ đề
+            topicPeriodInputs.forEach(el => {
+                if (isHK) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+        });
+        // Kích hoạt ngay lần đầu
+        examTypeSelect.dispatchEvent(new Event('change'));
     }
 });
 
-// Hàm ẩn/hiện các ô nhập số tiết dựa trên loại kiểm tra
-function toggleHKFields() {
-    const isHK = document.getElementById('exam_type').value === 'hk';
-    
-    // Ẩn/hiện khối cấu hình chung
-    const hkConfig = document.getElementById('hk-config');
-    if (hkConfig) {
-        if (isHK) hkConfig.classList.remove('hidden');
-        else hkConfig.classList.add('hidden');
-    }
-
-    // Ẩn/hiện ô nhập số tiết trong từng dòng chủ đề
-    document.querySelectorAll('.hk-period-inputs').forEach(el => {
-        if (isHK) el.classList.remove('hidden');
-        else el.classList.add('hidden');
-    });
-}
-
-// Hàm thêm dòng chủ đề mới
+// --- HÀM THÊM CHỦ ĐỀ ---
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
 
-    if (!container || !template) return;
+    if (container && template) {
+        const clone = template.content.cloneNode(true);
+        container.appendChild(clone);
 
-    // Clone template
-    const clone = template.content.cloneNode(true);
-    
-    // Gán sự kiện cho nút Xóa ngay tại đây (Quan trọng)
-    const btnRemove = clone.querySelector('.btn-remove-topic');
-    if (btnRemove) {
-        btnRemove.addEventListener('click', function() {
-            // Tìm phần tử cha là .topic-item và xóa nó
-            const item = this.closest('.topic-item');
-            if (item) item.remove();
-        });
+        // Kiểm tra lại trạng thái hiển thị của dòng mới thêm
+        const examType = document.getElementById('exam_type');
+        if (examType) {
+            const isHK = examType.value === 'hk';
+            const newRow = container.lastElementChild; // Dòng vừa thêm (div.topic-item)
+            const hkInputs = newRow.querySelector('.hk-period-inputs');
+            if (hkInputs) {
+                if (isHK) hkInputs.classList.remove('hidden');
+                else hkInputs.classList.add('hidden');
+            }
+        }
     }
-
-    container.appendChild(clone);
-
-    // Cập nhật lại trạng thái hiển thị (nếu đang chọn HK thì dòng mới phải hiện ô số tiết)
-    toggleHKFields();
 }
 
-// XỬ LÝ GỌI API (STREAMING)
+// --- XỬ LÝ CHÍNH: GỌI API STREAMING ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -83,7 +81,6 @@ async function handleGenerate() {
         const licenseKey = document.getElementById('license_key').value.trim();
         if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
 
-        // Thu thập dữ liệu
         const requestData = {
             license_key: licenseKey,
             subject: document.getElementById('subject').value.trim(),
@@ -97,8 +94,8 @@ async function handleGenerate() {
             topics: []
         };
 
-        // Duyệt qua các dòng chủ đề
-        const topicRows = document.querySelectorAll('.topic-item');
+        // Thu thập chủ đề
+        const topicRows = document.querySelectorAll('.topic-item'); // Class mới
         topicRows.forEach(row => {
             const name = row.querySelector('.topic-name').value.trim();
             const content = row.querySelector('.topic-content').value.trim();
@@ -126,7 +123,7 @@ async function handleGenerate() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // Hiện khung preview
+        // Hiện khung Preview
         previewSection.classList.remove('hidden');
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
@@ -138,20 +135,20 @@ async function handleGenerate() {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+            
             const chunk = decoder.decode(value, { stream: true });
             fullHtml += chunk;
             
-            // Render Realtime
+            // Xóa rác Markdown nếu có
             let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
             previewContent.innerHTML = cleanChunk;
         }
 
-        // Lưu vào biến toàn cục để tải Word
         window.generatedHTML = previewContent.innerHTML;
         loading.classList.add('hidden');
 
     } catch (err) {
-        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+        error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${err.message}`;
         error.classList.remove('hidden');
         loading.classList.add('hidden');
     } finally {
@@ -159,7 +156,7 @@ async function handleGenerate() {
     }
 }
 
-// XỬ LÝ TẢI WORD
+// --- XUẤT FILE WORD ---
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
@@ -169,7 +166,7 @@ function handleDownloadWord() {
             table { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
             th, td { border: 1pt solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
             th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
-            h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15px; color: #000; }
+            h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
         </style>
     `;
 
@@ -189,7 +186,7 @@ function handleDownloadWord() {
             });
             saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
         } else {
-            alert("Đang tải thư viện... Vui lòng thử lại.");
+            alert("Lỗi thư viện Word. Vui lòng tải lại trang.");
         }
     } catch (e) {
         alert("Lỗi tải file: " + e.message);
