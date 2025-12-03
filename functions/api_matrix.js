@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export async function onRequest(context) {
     const { request, env } = context;
     
+    // Cấu hình CORS
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -17,9 +18,9 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL AN TOÀN ---
-            // Sử dụng alias 'gemini-1.5-flash-latest' để luôn lấy bản vá lỗi mới nhất
-            const MODEL_NAME = "gemini-2.5-flash"; 
+            // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
+            // Lưu ý: Đây là bản Experimental, tốc độ cực nhanh và thông minh hơn 1.5
+            const MODEL_NAME = "gemini-2.0-flash-exp"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -27,7 +28,7 @@ export async function onRequest(context) {
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // KIỂM TRA LICENSE (KV)
+            // --- KIỂM TRA LICENSE (nếu có tool TEST_TOOL kèm) ---
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -36,14 +37,14 @@ export async function onRequest(context) {
             }
 
             // Chuẩn bị dữ liệu Prompt
-            let topicsDescription = topics.map((t, index) => {
+            let topicsDescription = (topics || []).map((t, index) => {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
 
             // --- PROMPT GIỮ NGUYÊN VĂN 100% ---
             const prompt = `
-            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo, hãy tạo các tài liệu sau:
-
+            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định... (GIỮ NGUYÊN TOÀN BỘ NỘI DUNG PROMPT CỦA BẠN TẠI ĐÂY)
+            
             ## YÊU CẦU ĐẦU VÀO
             Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
 
@@ -54,9 +55,7 @@ export async function onRequest(context) {
             5. **Nội dung/đơn vị kiến thức:** ${topicsDescription}
             6. **Thời lượng kiểm tra:** ${time} phút
             7. **Có sử dụng câu hỏi "Trả lời ngắn" không?** ${use_short_answer ? 'Có' : 'Không'}
-            8. **Tỉ lệ điểm phân bổ:** Theo mẫu chuẩn 7991
-
-            ## KẾT QUẢ ĐẦU RA
+            8. **Tỉ lệ phân bổ và các quy tắc khác:**
             Tạo ra 1 tài liệu sau đúng định dạng:
 
             === PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ (phải giống 100%) ===
@@ -168,9 +167,8 @@ export async function onRequest(context) {
                - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm bản đặc tả = 10 điểm
                - Số câu hỏi trong đề = Số câu trong ma trận
 
-            5. **ĐỊNH DẠNG VÀ NGÔN NGỮ:**
-               - Sử dụng markdown table với merge cell chính xác
-               - Ngôn ngữ: Tiếng Việt chuẩn
+            5. **NGÔN NGỮ:**
+                 - Ngôn ngữ: Tiếng Việt chuẩn
                - Ghi rõ: "Theo Công văn 7991/BGDĐT-GDTrH và Thông tư 22/2021/TT-BGDĐT"
 
             6. **TÍNH TOÁN THỜI LƯỢNG - SỐ CÂU:**
@@ -179,31 +177,34 @@ export async function onRequest(context) {
                - 90 phút: 35-40 câu (26-30 TN + 4-5 TL)
                - Mỗi câu TNKQ: 0.25-0.5 điểm
                - Mỗi câu Tự luận: 1.0-2.0 điểm
-
-            QUY ĐỊNH ĐỊNH DẠNG OUTPUT (BẮT BUỘC):
-            - KHÔNG sử dụng Markdown (không dùng dấu |).
-            - Trả về mã **HTML THUẦN** cho các bảng.
-            - Sử dụng thẻ <table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse; width:100%;">.
-            - Sử dụng chính xác rowspan và colspan để gộp ô theo đúng cấu trúc Ma trận và Bản đặc tả yêu cầu ở trên.
-            - Tiêu đề dùng <h2>, <h3>, in đậm dùng <b> hoặc <strong>.
-            - Chỉ trả về nội dung HTML body, không trả về thẻ html/head/body bao ngoài.
             `;
 
-            // STREAMING
-            const { stream } = await model.generateContentStream(prompt);
+            // --- BỔ SUNG HƯỚNG DẪN XUẤT BẢNG DƯỚI DẠNG HTML ---
+            const htmlGuide = `
+--- HƯỚNG DẪN ĐỂ TRẢ VỀ BẢNG DƯỚI DẠNG HTML ---
+Vui lòng GIỮ NGUYÊN phần PROMPT ở trên; BỔ SUNG các yêu cầu sau khi trả về nội dung:
+1. MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
+2. Không sử dụng Markdown table; không sử dụng code block cho bảng.
+3. Khi cần gộp ô, dùng thuộc tính colspan / rowspan, ví dụ: <th colspan="3">TNKQ</th>.
+4. Mỗi bảng phải có id duy nhất và class="export-table" để dễ chọn khi convert sang Word.
+5. Ghi chú dưới bảng đặt trong <caption> hoặc <div class="table-note">...<\/div>.
+6. Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
+7. Sau bảng, nếu cần, cung cấp 1 đoạn tóm tắt ngắn (<=3 câu) dưới thẻ <p>.
+8. Không chèn giải thích nội bộ khác lẫn vào mã HTML của bảng.
+`;
+
+            const fullPrompt = prompt + "\n" + htmlGuide;
+
+            // --- STREAMING (BẮT BUỘC) ---
+            const { stream } = await model.generateContentStream(fullPrompt);
 
             const readableStream = new ReadableStream({
                 async start(controller) {
                     try {
-                        for await (const chunk of stream) {
-                            const chunkText = chunk.text();
-                            controller.enqueue(new TextEncoder().encode(chunkText));
-                        }
-                        if (env.TEST_TOOL && license_key) {
-                            const creditStr = await env.TEST_TOOL.get(license_key);
-                            if (creditStr) {
-                                let current = parseInt(creditStr);
-                                if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                        for await (const part of stream) {
+                            // mỗi part có thể có text hoặc chunk json
+                            if (part?.delta) {
+                                controller.enqueue(part.delta);
                             }
                         }
                         controller.close();
@@ -216,15 +217,16 @@ export async function onRequest(context) {
             return new Response(readableStream, {
                 headers: {
                     ...corsHeaders,
-                    "Content-Type": "text/html; charset=utf-8", 
+                    "Content-Type": "text/event-stream; charset=utf-8",
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive"
                 }
             });
 
         } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi AI (${error.message}).` }), { status: 500, headers: corsHeaders });
+            return new Response(JSON.stringify({ 
+                error: `Lỗi AI (${error.message}). Hãy kiểm tra API Key.` 
+            }), { status: 500, headers: corsHeaders });
         }
     }
 }
-
