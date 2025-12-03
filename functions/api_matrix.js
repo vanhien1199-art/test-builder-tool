@@ -96,7 +96,7 @@ export async function onRequest(context) {
                     Ô R điền tổng điểm phần vận dụng
                     Ô S - cột 19: tổng đúng 10,0 điểm
             Dòng "Tỉ lệ %": Gộp ô và điền tỉ lệ tương tự  Dòng "Tổng số điểm"
-                    
+                    ô S - cột 19: Tổng tỉ lệ đúng 100%
 
             === PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ (phải giống 100%) ===
             Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
@@ -125,7 +125,7 @@ export async function onRequest(context) {
               • "- Vận dụng …" (dòng 3)
               → Nếu là Vận dụng thì ghi thêm ở cuối dòng: (NL: THTN) hoặc (NL: GQVĐ) hoặc (NL: MĐKH) hoặc (NL: GTKH) tùy năng lực
             - Cột 5 đến cột 16 (E đến P): ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
-            - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (đúng như mẫu công văn)
+            - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận)
 
             === PHẦN 3 – ĐỀ KIỂM TRA MẪU ===
             Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
@@ -220,6 +220,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
