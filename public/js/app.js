@@ -1,115 +1,160 @@
 // File: public/js/app.js
-// Phiên bản: ULTRA SAFE (Chống crash khi thiếu HTML ID)
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("--- APP STARTED: SAFE MODE ---");
+    addTopicRow(); // Thêm dòng đầu tiên
     
-    // Khởi tạo dòng chủ đề đầu tiên
-    addTopicRow();
+    // Gán sự kiện
+    const btnAdd = document.getElementById('btnAddTopic');
+    const btnGen = document.getElementById('btnGenerate');
+    const btnDown = document.getElementById('btnDownloadWord');
 
-    // Gán sự kiện an toàn (Kiểm tra nút có tồn tại không trước khi gán)
-    const bindEvent = (id, event, handler) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener(event, handler);
-        else console.warn(`⚠️ Cảnh báo: Không tìm thấy nút có ID '${id}'`);
-    };
-
-    bindEvent('btnAddTopic', 'click', addTopicRow);
-    bindEvent('btnGenerate', 'click', handleGenerate);
-    bindEvent('btnExportDoc', 'click', exportDocx);
-
-    // ... phần còn lại của file UI ...
-    // (Tôi giữ nguyên toàn bộ file app.js gốc trong archive. Khi bạn dán file này vào public/js/app.js, 
-    //  UI sẽ hoạt động cùng với endpoint function/api_matrix.js phía trên.)
+    if(btnAdd) btnAdd.addEventListener('click', addTopicRow);
+    if(btnGen) btnGen.addEventListener('click', handleGenerate);
+    if(btnDown) btnDown.addEventListener('click', handleDownloadWord);
+    
+    const examTypeSelect = document.getElementById('exam_type');
+    if (examTypeSelect) {
+        examTypeSelect.addEventListener('change', function() {
+            const isHK = this.value === 'hk';
+            document.querySelectorAll('.hk-only').forEach(el => {
+                el.style.display = isHK ? 'block' : 'none';
+            });
+        });
+    }
 });
 
-// Hàm hiển thị, lấy giá trị an toàn...
 function addTopicRow() {
     const container = document.getElementById('topics-container');
-    if (!container) return;
-    const idx = container.children.length + 1;
-    const row = document.createElement('div');
-    row.className = 'topic-row';
-    row.innerHTML = `
-        <input class="u-full-width" placeholder="Tên chủ đề" data-name="topic_name_${idx}">
-        <textarea class="u-full-width" placeholder="Nội dung chi tiết" data-name="topic_content_${idx}"></textarea>
-        <input placeholder="Tiết nửa đầu" data-name="topic_p1_${idx}">
-        <input placeholder="Tiết nửa sau" data-name="topic_p2_${idx}">
-    `;
-    container.appendChild(row);
-}
-
-async function handleGenerate() {
-    try {
-        const licenseKey = document.getElementById('license_key')?.value || '';
-        const subject = document.getElementById('subject')?.value || '';
-        const grade = document.getElementById('grade')?.value || '';
-        const semester = document.getElementById('semester')?.value || '';
-        const exam_type = document.getElementById('exam_type')?.value || '';
-        const time_limit = document.getElementById('time_limit')?.value || '';
-        const topics = Array.from(document.querySelectorAll('.topic-row')).map(r => {
-            return {
-                name: r.querySelector('input[placeholder="Tên chủ đề"]')?.value || '',
-                content: r.querySelector('textarea')?.value || '',
-                p1: r.querySelector('input[placeholder="Tiết nửa đầu"]')?.value || '',
-                p2: r.querySelector('input[placeholder="Tiết nửa sau"]')?.value || ''
-            };
-        });
-
-        const payload = {
-            license_key: licenseKey,
-            subject, grade, semester, time: time_limit, exam_type, topics, use_short_answer: false, totalPeriodsHalf1: 0, totalPeriodsHalf2: 0
-        };
-
-        const resp = await fetch('/api/api_matrix', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!resp.ok) {
-            const err = await resp.json();
-            alert("Lỗi server: " + (err?.error || resp.statusText));
-            return;
-        }
-
-        // Xử lý stream SSE / event-stream từ endpoint:
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let done = false;
-        let fullText = '';
-        while (!done) {
-            const { value, done: d } = await reader.read();
-            done = d;
-            if (value) {
-                const chunk = decoder.decode(value, { stream: true });
-                // ghép dần kết quả
-                fullText += chunk;
-                // nếu muốn hiển thị realtime, parse và show
-                document.getElementById('preview').innerText = fullText;
-            }
-        }
-
-        // Khi stream kết thúc: hiển thị đầy đủ
-        document.getElementById('preview').innerHTML = fullText;
-
-    } catch (e) {
-        console.error(e);
-        alert("Lỗi: " + e.message);
+    const template = document.getElementById('topic-template');
+    if (container && template) {
+        const clone = template.content.cloneNode(true);
+        container.appendChild(clone);
     }
 }
 
-function exportDocx() {
+// XỬ LÝ CHÍNH
+async function handleGenerate() {
+    const btn = document.getElementById('btnGenerate');
+    const loading = document.getElementById('loadingMsg');
+    const error = document.getElementById('errorMsg');
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+
+    loading.style.display = 'block';
+    loading.innerText = "Đang kết nối Gemini 2.0 và xây dựng Ma trận HTML...";
+    error.style.display = 'none';
+    previewSection.style.display = 'none';
+    previewContent.innerHTML = ""; 
+    btn.disabled = true;
+
+    try {
+        const licenseKey = document.getElementById('license_key').value.trim();
+        if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
+
+        const requestData = {
+            license_key: licenseKey,
+            subject: document.getElementById('subject').value.trim(),
+            grade: document.getElementById('grade').value.trim(),
+            semester: document.getElementById('semester').value,
+            exam_type: document.getElementById('exam_type').value,
+            time: document.getElementById('time_limit').value,
+            use_short_answer: document.getElementById('use_short').checked,
+            totalPeriodsHalf1: parseInt(document.getElementById('total_half1').value) || 0,
+            totalPeriodsHalf2: parseInt(document.getElementById('total_half2').value) || 0,
+            topics: []
+        };
+
+        const topicRows = document.querySelectorAll('.topic-row');
+        topicRows.forEach(row => {
+            const name = row.querySelector('.topic-name').value.trim();
+            const content = row.querySelector('.topic-content').value.trim();
+            const p1 = parseInt(row.querySelector('.topic-period-1').value) || 0;
+            const p2 = parseInt(row.querySelector('.topic-period-2').value) || 0;
+
+            if (name && content) {
+                requestData.topics.push({ name, content, p1, p2 });
+            }
+        });
+
+        if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
+
+        // Gọi API Streaming
+        const response = await fetch('/api_matrix', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            let errMsg = errText;
+            try { errMsg = JSON.parse(errText).error; } catch(e){}
+            throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
+        }
+
+        // Đọc Stream HTML
+        previewSection.style.display = 'block';
+        previewSection.scrollIntoView({ behavior: 'smooth' });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullHtml = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            fullHtml += chunk;
+            
+            // Xử lý làm sạch HTML rác (nếu AI trả về ```html)
+            let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
+            previewContent.innerHTML = cleanChunk;
+        }
+
+        window.generatedHTML = previewContent.innerHTML;
+        loading.style.display = 'none';
+
+    } catch (err) {
+        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+        error.style.display = 'block';
+        loading.style.display = 'none';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// XỬ LÝ TẢI WORD (Đã tối ưu cho HTML Table)
+function handleDownloadWord() {
+    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+
     const htmlContent = `
-        <html><head><meta charset="utf-8"></head><body>
-        ${document.getElementById('preview').innerHTML}
-        </body></html>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
+                table { width: 100%; border-collapse: collapse; border: 1px solid black; margin-bottom: 20px; }
+                th, td { border: 1px solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
+                h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15px; color: black; }
+                .text-center { text-align: center; }
+                .text-bold { font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            ${window.generatedHTML}
+        </body>
+        </html>
     `;
 
     try {
         if(typeof htmlDocx !== 'undefined') {
-            const converted = htmlDocx.asBlob(htmlContent, { orientation: 'landscape' });
-            saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
+            const converted = htmlDocx.asBlob(htmlContent, { 
+                orientation: 'landscape', // Khổ ngang cho bảng rộng
+                margins: { top: 720, right: 720, bottom: 720, left: 720 }
+            });
+            saveAs(converted, `Ma_Tran_7991_${new Date().getTime()}.docx`);
         } else {
             alert("Đang tải thư viện... Vui lòng thử lại.");
         }
