@@ -6,9 +6,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css"> 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    
+    <!-- Thêm style inline để đảm bảo bảng hiển thị đúng -->
+    <style>
+        /* Đảm bảo markdown-body không ảnh hưởng đến bảng HTML */
+        .markdown-body table {
+            display: table !important;
+            border-collapse: collapse !important;
+        }
+        
+        /* Fix cho các thẻ HTML trong preview */
+        #previewContent table, 
+        #previewContent tr, 
+        #previewContent td, 
+        #previewContent th {
+            all: revert !important;
+        }
+        
+        /* Đảm bảo skeleton không override style bảng */
+        .u-full-width {
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body>
     <header class="main-header">
@@ -95,7 +116,7 @@
     </div>
 
     <template id="topic-template">
-        <div class="topic-row" style="background: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <div class="topic-row">
             <div class="row">
                 <div class="six columns">
                     <label>Tên Chủ đề</label>
@@ -116,7 +137,7 @@
                     <input type="number" class="u-full-width topic-period-2" value="0" min="0">
                 </div>
             </div>
-            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="margin-top: 10px; background: #fee2e2; border:none; color: #c0392b;">Xóa chủ đề này</button>
+            <button class="remove-topic-btn" onclick="this.parentElement.remove()">Xóa chủ đề này</button>
         </div>
     </template>
 
