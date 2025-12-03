@@ -15,41 +15,34 @@
 <body>
 
     <header class="app-header">
-        <div class="header-content">
-            <div class="brand">
-                <div class="logo-icon"><i class="fas fa-brain"></i></div>
-                <div class="brand-text">
-                    <h1>ExamMatrix AI</h1>
-                    <span class="badge">PRO 2.0</span>
-                </div>
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <span>ExamMatrix AI</span>
             </div>
+            <div class="version">v3.0 Stable</div>
         </div>
     </header>
 
     <main class="main-container">
         
-        <div class="intro-section">
-            <h2>Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
-            <p>Chuẩn Công văn 7991/BGDĐT-GDTrH • Hỗ trợ Gemini 2.0 Flash</p>
-        </div>
-
-        <div class="card">
+        <section class="card">
             <div class="card-header">
-                <i class="fas fa-sliders-h"></i> 1. Cấu Hình Đề Thi
+                <i class="fas fa-sliders-h"></i> 1. Cấu hình chung
             </div>
             <div class="card-body">
-                <div class="grid-2">
+                <div class="form-grid-2">
                     <div class="form-group">
                         <label>Môn học</label>
-                        <input type="text" id="subject" placeholder="Ví dụ: Khoa học tự nhiên">
+                        <input type="text" id="subject" placeholder="VD: Khoa học tự nhiên">
                     </div>
                     <div class="form-group">
                         <label>Lớp</label>
-                        <input type="text" id="grade" placeholder="Ví dụ: 8">
+                        <input type="text" id="grade" placeholder="VD: 8">
                     </div>
                 </div>
 
-                <div class="grid-3">
+                <div class="form-grid-3">
                     <div class="form-group">
                         <label>Học kì</label>
                         <select id="semester">
@@ -74,76 +67,71 @@
                     </div>
                 </div>
 
-                <div class="form-group checkbox-group">
-                    <label class="custom-checkbox">
-                        <input type="checkbox" id="use_short">
-                        <span class="checkmark"></span>
-                        <span class="label-text">Có sử dụng câu hỏi "Trả lời ngắn"</span>
-                    </label>
+                <div class="form-group checkbox-wrapper">
+                    <input type="checkbox" id="use_short">
+                    <label for="use_short">Sử dụng câu hỏi "Trả lời ngắn"</label>
                 </div>
 
-                <div id="hk-config" class="highlight-box hidden">
-                    <div class="box-title"><i class="fas fa-calculator"></i> Tính trọng số điểm (25% / 75%)</div>
-                    <div class="grid-2">
+                <div id="hk-config" class="hk-box hidden">
+                    <div class="box-label"><i class="fas fa-calculator"></i> Nhập tổng số tiết để tính trọng số (25% / 75%)</div>
+                    <div class="form-grid-2">
                         <div class="form-group">
-                            <label>Tổng tiết (Nửa đầu HK)</label>
-                            <input type="number" id="total_half1" placeholder="Nhập số tiết...">
+                            <label>Tổng tiết (Nửa đầu)</label>
+                            <input type="number" id="total_half1" placeholder="VD: 18">
                         </div>
                         <div class="form-group">
-                            <label>Tổng tiết (Nửa sau HK)</label>
-                            <input type="number" id="total_half2" placeholder="Nhập số tiết...">
+                            <label>Tổng tiết (Nửa sau)</label>
+                            <input type="number" id="total_half2" placeholder="VD: 16">
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="card">
+        <section class="card">
             <div class="card-header">
-                <i class="fas fa-list-ol"></i> 2. Nội dung & Chủ đề
+                <i class="fas fa-list-ul"></i> 2. Nội dung kiến thức
             </div>
             <div class="card-body">
                 <div id="topics-container">
                     </div>
                 
-                <button class="btn btn-outline" id="btnAddTopic">
-                    <i class="fas fa-plus-circle"></i> Thêm Chủ đề mới
+                <button type="button" class="btn btn-outline" id="btnAddTopic">
+                    <i class="fas fa-plus"></i> Thêm Chủ đề mới
                 </button>
             </div>
-        </div>
+        </section>
 
-        <div class="license-card">
-            <div class="license-icon"><i class="fas fa-key"></i></div>
-            <div class="license-input">
-                <label>Mã kích hoạt phần mềm</label>
-                <input type="text" id="license_key" placeholder="Nhập mã License Key của bạn...">
+        <section class="license-wrapper">
+            <div class="license-input-group">
+                <span class="icon"><i class="fas fa-key"></i></span>
+                <input type="text" id="license_key" placeholder="Nhập Mã Kích Hoạt (License Key) của bạn...">
             </div>
-        </div>
+        </section>
 
-        <div class="action-area">
+        <div class="action-wrapper">
             <button class="btn btn-primary btn-lg" id="btnGenerate">
                 <i class="fas fa-magic"></i> BẮT ĐẦU TẠO DỮ LIỆU
             </button>
-            
-            <div id="loadingMsg" class="loading-state hidden">
-                <div class="spinner"></div>
-                <span>Đang kết nối siêu máy chủ AI... Vui lòng đợi...</span>
+        </div>
+
+        <div id="statusArea" class="status-area hidden">
+            <div id="loadingMsg" class="loading hidden">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Đang kết nối AI... Vui lòng đợi...</span>
             </div>
-            
-            <div id="errorMsg" class="error-box hidden"></div>
+            <div id="errorMsg" class="error hidden"></div>
         </div>
 
         <div id="previewSection" class="card preview-card hidden">
-            <div class="card-header success-header">
+            <div class="card-header bg-success">
                 <i class="fas fa-check-circle"></i> Kết quả xử lý
             </div>
             <div class="card-body">
-                <div class="preview-scroll-area">
-                    <div id="previewContent" class="preview-content"></div>
-                </div>
+                <div id="previewContent" class="preview-content"></div>
                 <div class="preview-footer">
-                    <button class="btn btn-success btn-lg" id="btnDownloadWord">
-                        <i class="fas fa-file-word"></i> TẢI VỀ MÁY (.DOCX)
+                    <button class="btn btn-success" id="btnDownloadWord">
+                        <i class="fas fa-file-word"></i> Tải về (.docx)
                     </button>
                 </div>
             </div>
@@ -152,29 +140,31 @@
     </main>
 
     <footer class="app-footer">
-        © 2025 ExamMatrix AI System. All rights reserved.
+        © 2025 ExamMatrix AI. All rights reserved.
     </footer>
 
     <template id="topic-template">
         <div class="topic-item">
             <div class="topic-header">
-                <span class="topic-label">Chủ đề</span>
-                <button class="btn-icon-danger remove-topic-btn" title="Xóa chủ đề này"><i class="fas fa-times"></i></button>
+                <span>Chủ đề</span>
+                <button type="button" class="btn-icon-danger btn-remove-topic" title="Xóa">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
-            <div class="grid-2">
-                <div class="form-group">
+            <div class="form-grid-main">
+                <div class="form-group grow-1">
                     <input type="text" class="topic-name" placeholder="Tên Chủ đề / Chương...">
                 </div>
-                <div class="form-group">
-                    <textarea class="topic-content" rows="1" placeholder="Nội dung chi tiết (cách nhau bởi dấu chấm phẩy)..."></textarea>
+                <div class="form-group grow-2">
+                    <input type="text" class="topic-content" placeholder="Nội dung chi tiết (cách nhau bởi dấu chấm phẩy)...">
                 </div>
             </div>
-            <div class="grid-2 hk-period-inputs hidden">
-                <div class="form-group mini">
+            <div class="hk-period-inputs form-grid-2 hidden">
+                <div class="form-group">
                     <label>Tiết (Nửa đầu)</label>
                     <input type="number" class="topic-period-1" value="0" min="0">
                 </div>
-                <div class="form-group mini">
+                <div class="form-group">
                     <label>Tiết (Nửa sau)</label>
                     <input type="number" class="topic-period-2" value="0" min="0">
                 </div>
