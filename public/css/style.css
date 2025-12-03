@@ -1,28 +1,271 @@
 /* File: public/css/style.css */
-/* Thiết kế giao diện cơ bản */
+
 :root {
-    --primary-color: #2563eb;
-    --bg-color: #f8fafc;
+    --primary-color: #0ea5e9;       /* Xanh da trời hiện đại */
+    --primary-hover: #0284c7;
+    --success-color: #22c55e;       /* Xanh lá tươi */
+    --success-hover: #16a34a;
+    --bg-color: #f1f5f9;
     --card-bg: #ffffff;
-    --radius: 8px;
+    --text-main: #0f172a;
+    --border-color: #e2e8f0;
+    --radius: 10px;
 }
 
-body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: #1e293b; padding: 20px; }
-.container { background-color: var(--card-bg); max-width: 1000px; margin: 0 auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding-bottom: 50px;
+    font-size: 15px;
+    line-height: 1.5;
+}
 
-h2 { color: var(--primary-color); font-weight: 800; text-align: center; }
-.section-box { background: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-.section-title { color: #334155; font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+/* HEADER */
+.main-header {
+    background: #fff;
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.header-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+}
+.logo-area {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-.preview-content { font-family: 'Times New Roman', serif; /* Font chuẩn văn bản */ }
-.preview-content table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-.preview-content th, .preview-content td { border: 1px solid #000; padding: 8px; font-size: 14px; }
-.preview-content h2, .preview-content h3 { text-align: center; color: #000; }
+/* CONTAINER */
+.container.main-content {
+    background-color: var(--card-bg);
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
 
-/* Buttons & License (Giữ nguyên style cũ) */
-.license-box { background: #eff6ff; border: 2px solid #bfdbfe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;}
-.license-box input { font-size: 1.0rem; text-align: center; font-family: monospace; border: 2px solid #60a5fa; max-width: 400px;}
-.button-primary { width: 100%; height: 55px; font-size: 1.2rem; background: var(--primary-color); color: white; border: none; font-weight: 700; border-radius: 8px; }
-.button { padding: 10px 14px; border-radius: 6px; background: #e2e8f0; border: none; cursor: pointer; }
+.page-title {
+    text-align: center;
+    color: var(--text-main);
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+.sub-title {
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 30px;
+}
 
-.topic-row { padding: 10px; border: 1px dashed #cbd5e1; margin-bottom: 8px; border-radius: 6px; background: #fff; }
+/* FORMS & INPUTS */
+.section-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 25px;
+    margin-bottom: 25px;
+}
+.section-title {
+    font-weight: 700;
+    color: var(--primary-color);
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+label { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; }
+input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    height: 45px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 15px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+textarea { height: 80px; padding: 10px; resize: vertical; }
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* TOPIC ROW */
+.topic-row {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--primary-color);
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    position: relative;
+}
+.remove-topic-btn {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+.remove-topic-btn:hover { background: #fecaca; }
+
+/* HK ONLY AREA */
+.hk-only {
+    background-color: #fff7ed; /* Màu cam nhạt */
+    border: 1px dashed #fdba74;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+}
+.info-alert {
+    color: #c2410c;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* LICENSE BOX */
+.license-box {
+    background: linear-gradient(to right, #eff6ff, #fff);
+    border: 1px solid #bfdbfe;
+    padding: 30px;
+    border-radius: var(--radius);
+    text-align: center;
+    margin: 40px 0;
+}
+.license-box label { color: #1e40af; font-size: 1.2rem; }
+.license-box input {
+    max-width: 400px;
+    margin: 10px auto;
+    font-family: monospace;
+    font-size: 1.4rem !important;
+    text-align: center;
+    letter-spacing: 2px;
+    border: 2px solid #60a5fa;
+    height: 55px;
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+/* BUTTONS */
+button { cursor: pointer; transition: all 0.2s; }
+.button-primary {
+    width: 100%;
+    height: 60px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
+}
+.button-primary:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+.button-primary:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
+
+.button-success {
+    background-color: var(--success-color);
+    color: white;
+    width: 100%;
+    height: 55px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.button-success:hover { background-color: var(--success-hover); }
+
+/* STATUS & PREVIEW */
+#statusArea { text-align: center; margin-top: 20px; }
+.loading {
+    color: #f59e0b; font-weight: 600; background: #fffbeb; 
+    padding: 10px 20px; border-radius: 20px; display: inline-block;
+}
+.error {
+    color: #dc2626; background: #fef2f2; border: 1px solid #fecaca;
+    padding: 15px; border-radius: 8px; text-align: left; display: inline-block;
+}
+
+#previewSection { margin-top: 50px; border-top: 2px dashed #cbd5e1; padding-top: 30px; }
+.preview-header { text-align: center; margin-bottom: 20px; }
+.preview-header h4 { color: var(--primary-color); font-weight: 800; margin-bottom: 5px; }
+
+/* CSS CHO BẢNG HTML (QUAN TRỌNG) */
+.preview-content {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow-x: auto; /* Cuộn ngang nếu bảng quá to */
+}
+
+/* Định dạng bảng giống Word nhất có thể */
+.preview-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    font-family: "Times New Roman", serif;
+}
+.preview-content th, .preview-content td {
+    border: 1px solid #000;
+    padding: 8px;
+    vertical-align: top;
+    font-size: 14px;
+}
+.preview-content th {
+    background-color: #f3f4f6;
+    font-weight: bold;
+    text-align: center;
+}
+.preview-content h2, .preview-content h3 {
+    text-align: center;
+    font-family: "Times New Roman", serif;
+    color: #000;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .container { padding: 20px; }
+    .six.columns, .four.columns { width: 100%; margin-left: 0; }
+    .license-box input { width: 100%; }
+}
