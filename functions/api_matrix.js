@@ -18,8 +18,9 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
-            const MODEL_NAME = "gemini-2.0-flash-exp"; 
+            // --- SỬ DỤNG GEMINI 2.0 FLASH (KHÔNG PHẢI EXP) ---
+            // gemini-2.0-flash là phiên bản ổn định, hỗ trợ toàn cầu
+            const MODEL_NAME = "gemini-2.0-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ 
@@ -44,26 +45,13 @@ export async function onRequest(context) {
                 }
             }
 
-            // --- KIỂM TRA DỮ LIỆU ĐẦU VÀO ---
-            if (!subject || !grade || !topics || topics.length === 0) {
-                return new Response(JSON.stringify({ error: "Thiếu dữ liệu đầu vào" }), {
-                    status: 400,
-                    headers: { ...corsHeaders, "Content-Type": "application/json" }
-                });
-            }
-
             // Chuẩn bị dữ liệu Prompt
             let topicsDescription = topics.map((t, index) => {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
 
-            console.log("Đang gọi Gemini với model:", MODEL_NAME);
-            console.log("Số chủ đề:", topics.length);
-            
             // --- PROMPT TỐI ƯU CHO HTML OUTPUT ---
-            const prompt = `[QUAN TRỌNG: TRẢ VỀ HTML, KHÔNG MARKDOWN]
-
-Bạn là trợ lý tạo ma trận đề kiểm tra theo CV 7991.
+            const prompt = `Bạn là trợ lý tạo ma trận đề kiểm tra theo CV 7991 của Bộ GD&ĐT Việt Nam.
 
 THÔNG TIN ĐẦU VÀO:
 - Môn: ${subject} lớp ${grade}
@@ -73,13 +61,14 @@ THÔNG TIN ĐẦU VÀO:
 - Chủ đề: ${topics.length} chủ đề
 - Chi tiết chủ đề: ${topicsDescription}
 
-YÊU CẦU:
-Tạo HTML cho 3 phần sau:
+YÊU CẦU QUAN TRỌNG: Bạn PHẢI trả về nội dung dưới dạng HTML table, KHÔNG dùng markdown.
+
+Tạo HTML cho 3 phần:
 
 PHẦN 1: MA TRẬN ĐỀ KIỂM TRA (19 cột)
-- Dùng <table border="1">
+- Dùng <table border="1" style="border-collapse: collapse; width: 100%;">
 - Header: dòng 1-4 với rowspan/colspan
-- Nội dung: từ dòng 5, liệt kê các chủ đề
+- Cấu trúc 19 cột theo mẫu 7991
 - Tổng điểm: 10 điểm
 - Phân bổ: TNKQ 60-70%, TL 30-40%
 
@@ -88,80 +77,76 @@ PHẦN 2: BẢN ĐẶC TẢ (16 cột)
 - Yêu cầu cần đạt cho từng chủ đề
 
 PHẦN 3: ĐỀ KIỂM TRA MẪU
-- Câu hỏi trắc nghiệm (nhiều lựa chọn, đúng-sai)
+- Câu hỏi trắc nghiệm
 - Câu hỏi tự luận
 - Đáp án
 
-ĐỊNH DẠNG HTML BẮT BUỘC:
+CẤU TRÚC HTML MẪU:
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
 <body>
-<h1>MA TRẬN ĐỀ KIỂM TRA</h1>
-<!-- Bảng HTML tại đây -->
+<h1 style="text-align: center;">MA TRẬN ĐỀ KIỂM TRA</h1>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+<tr>
+<th rowspan="4">TT</th>
+<th rowspan="4">Chủ đề</th>
+<th rowspan="4">Nội dung</th>
+<th colspan="12">Mức độ đánh giá</th>
+<th colspan="3">Tổng</th>
+<th rowspan="4">Tỉ lệ %</th>
+</tr>
+<!-- Thêm các dòng khác -->
+</table>
 </body>
 </html>
 
-LƯU Ý: Chỉ trả về HTML, không giải thích thêm.`;
+QUY TẮC:
+1. Tổng điểm = 10 điểm
+2. Tính toán phân bổ dựa trên số tiết nếu là đề học kì
+3. Mỗi chủ đề có ít nhất 1 câu vận dụng
+4. Ghi rõ "Theo Công văn 7991/BGDĐT-GDTrH"`;
 
-            // --- THỬ GỌI GEMINI VÀ XỬ LÝ LỖI CHI TIẾT ---
-            try {
-                const { stream } = await model.generateContentStream(prompt);
-                
-                const readableStream = new ReadableStream({
-                    async start(controller) {
-                        try {
-                            for await (const chunk of stream) {
-                                const chunkText = chunk.text();
-                                controller.enqueue(new TextEncoder().encode(chunkText));
-                            }
-                            // Trừ tiền khi hoàn tất
-                            if (env.TEST_TOOL && license_key) {
-                                const creditStr = await env.TEST_TOOL.get(license_key);
-                                if (creditStr) {
-                                    let current = parseInt(creditStr);
-                                    if (current > 0) {
-                                        await env.TEST_TOOL.put(license_key, (current - 1).toString());
-                                        console.log("Đã trừ 1 credit, còn lại:", current - 1);
-                                    }
+            // --- GỌI GEMINI ---
+            const { stream } = await model.generateContentStream(prompt);
+            
+            const readableStream = new ReadableStream({
+                async start(controller) {
+                    try {
+                        for await (const chunk of stream) {
+                            const chunkText = chunk.text();
+                            controller.enqueue(new TextEncoder().encode(chunkText));
+                        }
+                        // Trừ tiền khi hoàn tất
+                        if (env.TEST_TOOL && license_key) {
+                            const creditStr = await env.TEST_TOOL.get(license_key);
+                            if (creditStr) {
+                                let current = parseInt(creditStr);
+                                if (current > 0) {
+                                    await env.TEST_TOOL.put(license_key, (current - 1).toString());
                                 }
                             }
-                            controller.close();
-                        } catch (streamError) {
-                            console.error("Lỗi trong stream:", streamError);
-                            controller.error(streamError);
                         }
+                        controller.close();
+                    } catch (streamError) {
+                        console.error("Lỗi trong stream:", streamError);
+                        controller.error(streamError);
                     }
-                });
-
-                return new Response(readableStream, {
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "text/html; charset=utf-8",
-                        "Cache-Control": "no-cache",
-                    }
-                });
-
-            } catch (geminiError) {
-                console.error("Lỗi khi gọi Gemini:", geminiError);
-                
-                // Kiểm tra xem model có khả dụng không
-                if (geminiError.message && geminiError.message.includes("location is not supported")) {
-                    return new Response(JSON.stringify({ 
-                        error: "Model gemini-2.0-flash-exp không khả dụng ở khu vực của bạn. Vui lòng đổi sang gemini-1.5-flash." 
-                    }), { 
-                        status: 400, 
-                        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-                    });
                 }
-                
-                throw geminiError;
-            }
+            });
+
+            return new Response(readableStream, {
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                }
+            });
 
         } catch (error) {
-            console.error("Lỗi tổng quan:", error);
+            console.error("Lỗi API:", error);
             return new Response(JSON.stringify({ 
-                error: `Lỗi AI: ${error.message}` 
+                error: `Lỗi: ${error.message}` 
             }), { 
                 status: 500, 
                 headers: { ...corsHeaders, "Content-Type": "application/json" } 
@@ -169,7 +154,6 @@ LƯU Ý: Chỉ trả về HTML, không giải thích thêm.`;
         }
     }
     
-    // Nếu không phải POST
     return new Response(JSON.stringify({ error: "Method không hỗ trợ" }), { 
         status: 405, 
         headers: corsHeaders 
