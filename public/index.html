@@ -5,33 +5,10 @@
     <title>ExamMatrix AI - CV 7991</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="public/css/style.css"> 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    
-    <style>
-        .preview-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
-        .preview-content th, .preview-content td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
-        }
-        .preview-content th {
-            background-color: #f1f1f1;
-            text-align: center;
-            font-weight: bold;
-        }
-        .preview-content h2, .preview-content h3 {
-            text-align: center;
-            color: #2563eb;
-            margin-top: 30px;
-        }
-    </style>
 </head>
 <body>
     <header class="main-header">
@@ -40,56 +17,15 @@
         </div>
     </header>
 
-    <div class="container main-content">
-        <h2 class="page-title">📝 Ma Trận & Đề Kiểm Tra (7991)</h2>
-        <hr>
-        
+    <main class="container">
+        <h2>Tạo ma trận đề & xuất DOCX</h2>
+
         <div class="section-box">
             <h5 class="section-title">1. Thông tin chung</h5>
-            <div class="row">
-                <div class="six columns"><label>Môn học</label><input class="u-full-width" type="text" id="subject" placeholder="VD: Khoa học tự nhiên"></div>
-                <div class="six columns"><label>Lớp</label><input class="u-full-width" type="text" id="grade" placeholder="VD: 8"></div>
-            </div>
-            <div class="row">
-                <div class="four columns">
-                    <label>Học kì</label>
-                    <select class="u-full-width" id="semester">
-                        <option value="1">Học kì 1</option>
-                        <option value="2">Học kì 2</option>
-                    </select>
-                </div>
-                <div class="four columns">
-                    <label>Loại kiểm tra</label>
-                    <select class="u-full-width" id="exam_type">
-                        <option value="gk">Giữa kì (Định kì)</option>
-                        <option value="hk">Cuối kì (Học kì)</option>
-                    </select>
-                </div>
-                <div class="four columns">
-                    <label>Thời lượng</label>
-                    <select class="u-full-width" id="time_limit">
-                        <option value="45">45 phút</option>
-                        <option value="60">60 phút</option>
-                        <option value="90">90 phút</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row">
-                <label>
-                    <input type="checkbox" id="use_short"> 
-                    <span class="label-body">Sử dụng câu hỏi "Trả lời ngắn"</span>
-                </label>
-            </div>
-            <div class="row hk-only" style="display: none; background: #fff3cd; padding: 15px; border-radius: 4px; margin-top: 10px;">
-                <div class="six columns">
-                    <label>Tiết (Nửa đầu HK - 25%)</label>
-                    <input class="u-full-width" type="number" id="total_half1" placeholder="VD: 18">
-                </div>
-                <div class="six columns">
-                    <label>Tiết (Nửa sau HK - 75%)</label>
-                    <input class="u-full-width" type="number" id="total_half2" placeholder="VD: 16">
-                </div>
-            </div>
+            <input id="subject" placeholder="Môn học" class="u-full-width">
+            <input id="grade" placeholder="Lớp" class="u-full-width">
+            <input id="semester" placeholder="Học kì" class="u-full-width">
+            <input id="time_limit" placeholder="Thời lượng (phút)" class="u-full-width">
         </div>
 
         <div class="section-box">
@@ -103,46 +39,15 @@
             <input type="text" id="license_key" placeholder="Nhập mã bản quyền...">
         </div>
 
-        <button class="button-primary" id="btnGenerate"><i class="fas fa-robot"></i> TẠO MA TRẬN & ĐỀ</button>
-        
-        <div id="statusArea">
-            <p class="loading" id="loadingMsg" style="display: none;">Đang xử lý...</p>
-            <p class="error" id="errorMsg" style="display: none;"></p>
-        </div>
+        <button class="button-primary" id="btnGenerate"><i class="fas fa-robot"></i> Sinh ma trận</button>
+        <button class="button" id="btnExportDoc" style="margin-top:8px;">Xuất DOCX</button>
 
-        <div id="previewSection" style="display: none;">
-            <h4 style="text-align: center; color: #2563eb;">📄 Xem Trước</h4>
-            <div class="preview-content" id="previewContent"></div>
-            <button class="button-success" id="btnDownloadWord"><i class="fas fa-file-word"></i> TẢI FILE WORD</button>
+        <div class="section-box" style="margin-top:20px;">
+            <h5 class="section-title">Kết quả (Preview)</h5>
+            <div id="preview" class="preview-content"></div>
         </div>
-    </div>
+    </main>
 
-    <template id="topic-template">
-        <div class="topic-row" style="background: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
-            <div class="row">
-                <div class="six columns">
-                    <label>Tên Chủ đề</label>
-                    <input type="text" class="u-full-width topic-name" placeholder="Tên chủ đề...">
-                </div>
-                <div class="six columns">
-                    <label>Nội dung kiến thức</label>
-                    <input type="text" class="u-full-width topic-content" placeholder="Nội dung chi tiết...">
-                </div>
-            </div>
-            <div class="row hk-only" style="display: none; margin-top: 10px;">
-                <div class="six columns">
-                    <label>Tiết (Nửa đầu)</label>
-                    <input type="number" class="u-full-width topic-period-1" value="0" min="0">
-                </div>
-                <div class="six columns">
-                    <label>Tiết (Nửa sau)</label>
-                    <input type="number" class="u-full-width topic-period-2" value="0" min="0">
-                </div>
-            </div>
-            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="margin-top: 10px; background: #fee2e2; border:none; color: #c0392b;">Xóa</button>
-        </div>
-    </template>
-
-    <script src="js/app.js"></script>
+    <script src="public/js/app.js"></script>
 </body>
 </html>
