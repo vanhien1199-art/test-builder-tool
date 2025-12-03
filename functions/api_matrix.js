@@ -1,4 +1,45 @@
-// File: functions/api_matrix.js
+// File: fun// File: functions/api_matrix.js
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+export async function onRequest(context) {
+    const { request, env } = context;
+    
+    // Cấu hình CORS
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+
+    if (request.method === "POST") {
+        try {
+            const apiKey = env.GOOGLE_API_KEY;
+            if (!apiKey) throw new Error("Thiếu API Key");
+
+            // --- CẤU HÌNH MODEL GEMINI 2.0 (MỚI NHẤT) ---
+            // Lưu ý: Đây là bản Experimental, tốc độ cực nhanh và thông minh hơn 1.5
+            const MODEL_NAME = "gemini-2.0-flash-exp"; 
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+            const body = await request.json();
+            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
+
+            // --- KIỂM TRA LICENSE ---
+            if (env.TEST_TOOL && license_key) {
+                const creditStr = await env.TEST_TOOL.get(license_key);
+                if (!creditStr || parseInt(creditStr) <= 0) {
+                    return new Response(JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }), { status: 403, headers: corsHeaders });
+                }
+            }
+
+            // Chuẩn bị dữ liệu Prompt
+            let topicsDescription = topics.map((t, index) => {
+                return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
+            }).join("\n");ctions/api_matrix.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function onRequest(context) {
@@ -171,3 +212,4 @@ Tạo đề kiểm tra hoàn chỉnh dạng HTML:
         }
     }
 }
+
