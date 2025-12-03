@@ -68,13 +68,14 @@ export async function onRequest(context) {
             - Dòng 1: gộp các ô của cột 4 đến cột 15 - D1:O1 (Mức độ đánh giá)
             - Gộp ô P1:R1 (Tổng)
             - Cột 19 (Tỉ lệ % điểm) gộp S1:S4
-            - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R3 (để trống không điền gì); ô S2:S3 (để trống)
-            - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn)
+            - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R2 (để trống không điền gì); ô S2 (để trống)
+            - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn);gộp ô P3:R3 (để trống không điền gì); ô S2 (để trống)
             - Dòng 4: 
               • Cột 4 - ô D4: "Biết"
               • Cột 5 - ô E4: "Hiểu"
               • Cột 6 - ô F4: "Vận dụng"
-              → Lặp lại đúng 3 mức độ này cho đến ô O4 theo thứ tự: Biết, Hiểu, Vận dụng
+              → Lặp lại đúng 3 mức độ này cho đến ô R4 theo thứ tự: Biết, Hiểu, Vận dụng
+              Cột 19 - ô S4: Để trống không ghi gì
 
             * PHẦN NỘI DUNG BẢNG
             Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
@@ -84,8 +85,18 @@ export async function onRequest(context) {
             - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
             - Cột 16-18 (Tổng): tính tổng từng mức độ nhận thức của từng chủ đề
             - Cột 19: Tỉ lệ % của từng chủ đề (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
-            Dòng "Tổng số điểm": tổng đúng 10,0 điểm
-            Dòng "Tỉ lệ %": đúng như mẫu công văn (30% – 20% – 20% – 30% – 40% – 30% – 30% …)
+            Dòng "Tổng số câu": từ cột 5 đến cột 18 điền tổng số câu theo cột từ dòng 5 xuống
+            Dòng "Tổng số điểm": 
+                    gộp ô D:F và điền tổng điểm câu hỏi nhiều lựa chọn
+                    Gộp ô G:I và điền tổng điểm câu hỏi Đúng-Sai
+                    Gộp ô J:L và điền tổng điểm câu hỏi trả lời ngắn
+                    Gộp ô M:O và điền tổng điểm câu hỏi tự luận
+                    Ô P của dòng này điền tổng điểm phần  biết
+                    ô Q điền tổng điểm phần hiểu
+                    Ô R điền tổng điểm phần vận dụng
+                    Ô S - cột 19: tổng đúng 10,0 điểm
+            Dòng "Tỉ lệ %": Gộp ô và điền tỉ lệ tương tự  Dòng "Tổng số điểm"
+                    
 
             === PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ (phải giống 100%) ===
             Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
@@ -209,5 +220,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
