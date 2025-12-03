@@ -41,8 +41,9 @@ export async function onRequest(context) {
 
             // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
             const prompt = `
-            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo, hãy tạo các tài liệu sau:
-
+            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
+            Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
+            Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
             ## YÊU CẦU ĐẦU VÀO
             Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
 
@@ -134,9 +135,36 @@ export async function onRequest(context) {
                - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
                - Ngôn ngữ: Tiếng Việt chuẩn.
-
             2. **TÍNH TOÁN:**
-               - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
+            - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
+            - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
+            - Nếu là đề kiểm tra HỌC KÌ:
+                 • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
+                 • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
+                 • Ví dụ: Chủ đề A (nửa đầu: 5 tiết, nửa sau: 15 tiết) → Trọng số = (5×0.25 + 15×0.75)/20 = 62.5%
+            - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
+            3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
+           - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
+           - Phân bổ mức độ: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
+           - Cấu trúc đề: TNKQ (60-70%), Tự luận (30-40%)
+            4. NĂNG LỰC ĐÁNH GIÁ:
+               - Mỗi chủ đề phải đánh giá ít nhất 1 năng lực chuyên biệt
+               - Mã năng lực:
+                 • NL: THTN = Tìm hiểu tự nhiên
+                 • NL: GQVĐ = Giải quyết vấn đề
+                 • NL: MĐKH = Mô tả và giải thích hiện tượng
+                 • NL: GTKH = Giao tiếp khoa học
+                 • NL: SDCN = Sử dụng công cụ và ngôn ngữ khoa học
+            5. LIÊN KẾT VÀ KIỂM TRA:
+               - Mỗi câu hỏi trong đề phải có mã tham chiếu đến ô trong ma trận (Ví dụ: Câu 1 [M1-B])
+               - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm bản đặc tả = 10 điểm
+               - Số câu hỏi trong đề = Số câu trong ma trận
+            6. TÍNH TOÁN THỜI LƯỢNG - SỐ CÂU:
+               - 45 phút: 25-30 câu (18-22 TN + 2-3 TL)
+               - 60 phút: 30-35 câu (22-26 TN + 3-4 TL)
+               - 90 phút: 35-40 câu (26-30 TN + 4-5 TL)
+               - Mỗi câu TNKQ: 0.25-0.5 điểm
+               - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
             // --- STREAMING (ĐỂ TRÁNH TIMEOUT 524) ---
@@ -178,3 +206,4 @@ export async function onRequest(context) {
         }
     }
 }
+
