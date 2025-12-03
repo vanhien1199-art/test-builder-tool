@@ -1,85 +1,69 @@
 // File: public/js/app.js
-// Phiên bản: FIX ADD TOPIC BUTTON LOGIC + STREAMING
+// Phiên bản: ULTRA SAFE (Chống crash khi thiếu HTML ID)
 
-// Biến toàn cục
-var window.generatedHTML = ""; 
-
-// --- KHỞI TẠO ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("--- SYSTEM READY: FINAL CHECK ---");
+    console.log("--- APP STARTED: SAFE MODE ---");
     
-    // Khởi tạo event listeners
-    const btnAdd = document.getElementById('btnAddTopic');
-    const btnGen = document.getElementById('btnGenerate');
-    const btnDown = document.getElementById('btnDownloadWord');
+    // Khởi tạo dòng chủ đề đầu tiên
+    addTopicRow();
 
-    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
-    if (btnGen) btnGen.addEventListener('click', handleGenerate);
-    if (btnDown) btnDownload.addEventListener('click', handleDownloadWord);
+    // Gán sự kiện an toàn (Kiểm tra nút có tồn tại không trước khi gán)
+    const bindEvent = (id, event, handler) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, handler);
+        else console.warn(`⚠️ Cảnh báo: Không tìm thấy nút có ID '${id}'`);
+    };
+
+    bindEvent('btnAddTopic', 'click', addTopicRow);
+    bindEvent('btnGenerate', 'click', handleGenerate);
+    bindEvent('btnDownloadWord', 'click', handleDownloadWord);
     
-    // Xử lý ẩn/hiện cột số tiết (chạy khi trang load và khi chọn lại)
+    // Xử lý ẩn/hiện cột số tiết (Học kì)
     const examTypeSelect = document.getElementById('exam_type');
     if (examTypeSelect) {
-        examTypeSelect.addEventListener('change', updateTopicRowVisibility);
-        // Bắt buộc gọi lần đầu để thiết lập trạng thái ban đầu
-        updateTopicRowVisibility(); 
+        examTypeSelect.addEventListener('change', function() {
+            const isHK = this.value === 'hk';
+            document.querySelectorAll('.hk-only').forEach(el => {
+                el.style.display = isHK ? 'block' : 'none';
+            });
+        });
     }
-
-    // Tự động thêm dòng chủ đề đầu tiên khi trang load xong
-    addTopicRow(); 
 });
 
-// --- HÀM THÊM CHỦ ĐỀ (ĐÃ THÊM LOG CHẶN LỖI) ---
+// --- HÀM TIỆN ÍCH AN TOÀN (FIX LỖI NULL VALUE) ---
+function getSafeValue(id) {
+    const el = document.getElementById(id);
+    if (!el) {
+        console.error(`❌ LỖI NGHIÊM TRỌNG: File HTML thiếu thẻ có ID="${id}". Vui lòng cập nhật index.html`);
+        return ""; // Trả về rỗng để không bị crash
+    }
+    return el.value.trim();
+}
+
+function getSafeCheckbox(id) {
+    const el = document.getElementById(id);
+    return el ? el.checked : false;
+}
+
+// Thêm dòng chủ đề
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
     
-    // Kiểm tra chéo (Nếu thiếu 1 trong 2 thì code không chạy tiếp)
-    if (!container) {
-        console.error("❌ LỖI NGHIÊM TRỌNG: Không tìm thấy DIV ID='topics-container'");
-        return;
-    }
-    if (!template) {
-        console.error("❌ LỖI NGHIÊM TRỌNG: Không tìm thấy TEMPLATE ID='topic-template' trong index.html!");
-        return;
-    }
-
-    try {
+    if (container && template) {
         const clone = template.content.cloneNode(true);
         container.appendChild(clone);
         
-        // Kích hoạt lại kiểm tra hiển thị cho dòng vừa thêm
-        updateTopicRowVisibility(); 
-        console.log("✓ Chủ đề mới đã được thêm.");
-        
-    } catch (e) {
-        console.error("❌ Lỗi khi thêm dòng chủ đề:", e);
-        // Có thể do lỗi trong template.content.cloneNode(true)
+        // Cập nhật hiển thị nếu đang chọn Học kì
+        const examType = document.getElementById('exam_type');
+        if (examType && examType.value === 'hk') {
+            const newRow = container.lastElementChild;
+            // Logic CSS sẽ tự xử lý hiển thị class .hk-only
+        }
     }
 }
 
-// --- HÀM CẬP NHẬT ẨN/HIỆN CỘT SỐ TIẾT ---
-function updateTopicRowVisibility() {
-    const examTypeSelect = document.getElementById('exam_type');
-    if (!examTypeSelect) return;
-    
-    const isHK = examTypeSelect.value === 'hk';
-    
-    // Duyệt qua tất cả các phần tử có class 'hk-only' (Là các ô nhập số tiết)
-    document.querySelectorAll('.hk-only').forEach(el => {
-        el.style.display = isHK ? 'block' : 'none';
-        
-        // Cần đảm bảo các input con cũng ẩn/hiện
-        const inputs = el.querySelectorAll('input');
-        inputs.forEach(input => {
-             // Đảm bảo không gửi dữ liệu này nếu đang ở chế độ Giữa kì (gk)
-            input.disabled = !isHK; 
-        });
-    });
-}
-
-
-// --- 1. HÀM XỬ LÝ CHÍNH (GIỮ NGUYÊN STREAMING LOGIC) ---
+// --- XỬ LÝ CHÍNH ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -88,50 +72,61 @@ async function handleGenerate() {
     const previewContent = document.getElementById('previewContent');
 
     // UI Reset
-    loading.style.display = 'block';
-    loading.innerText = "Đang kết nối Gemini và viết từng dòng...";
-    error.style.display = 'none';
-    previewSection.style.display = 'none';
-    previewContent.innerHTML = "";
-    btn.disabled = true;
+    if(loading) loading.style.display = 'block';
+    if(loading) loading.innerText = "Đang kết nối AI và viết từng dòng...";
+    if(error) error.style.display = 'none';
+    if(previewSection) previewSection.style.display = 'none';
+    if(previewContent) previewContent.innerHTML = ""; 
+    if(btn) btn.disabled = true;
 
     try {
-        // 1. Thu thập dữ liệu
+        // 1. Lấy License Key (Dùng hàm an toàn)
+        const licenseKey = getSafeValue('license_key');
+        if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
+
+        // 2. Thu thập dữ liệu (Dùng hàm an toàn để tránh lỗi 'reading value of null')
         const requestData = {
-            license_key: document.getElementById('license_key').value.trim(),
-            subject: document.getElementById('subject').value.trim(),
-            grade: document.getElementById('grade').value.trim(),
-            semester: document.getElementById('semester').value,
-            exam_type: document.getElementById('exam_type').value,
-            time: document.getElementById('time_limit').value,
-            use_short_answer: document.getElementById('use_short').checked,
-            totalPeriodsHalf1: parseInt(document.getElementById('total_half1').value) || 0,
-            totalPeriodsHalf2: parseInt(document.getElementById('total_half2').value) || 0,
+            license_key: licenseKey,
+            subject: getSafeValue('subject'),
+            grade: getSafeValue('grade'),
+            semester: getSafeValue('semester'),
+            exam_type: getSafeValue('exam_type'),
+            time: getSafeValue('time_limit'),
+            use_short_answer: getSafeCheckbox('use_short'), // Checkbox
+            totalPeriodsHalf1: parseInt(getSafeValue('total_half1')) || 0,
+            totalPeriodsHalf2: parseInt(getSafeValue('total_half2')) || 0,
             topics: []
         };
-        
-        // ... (Logic thu thập chủ đề và gọi API giữ nguyên) ...
 
+        // Kiểm tra dữ liệu bắt buộc
+        if (!requestData.subject || !requestData.grade) {
+            throw new Error("Vui lòng nhập đầy đủ Môn học và Lớp!");
+        }
+
+        // Thu thập chủ đề
         const topicRows = document.querySelectorAll('.topic-row');
         topicRows.forEach(row => {
-            const name = row.querySelector('.topic-name').value.trim();
-            const content = row.querySelector('.topic-content').value.trim();
-            
-            // Lấy giá trị P1, P2 (Chỉ lấy nếu không bị disabled)
+            const nameEl = row.querySelector('.topic-name');
+            const contentEl = row.querySelector('.topic-content');
             const p1El = row.querySelector('.topic-period-1');
             const p2El = row.querySelector('.topic-period-2');
 
-            const p1 = (p1El && !p1El.disabled) ? (parseInt(p1El.value) || 0) : 0;
-            const p2 = (p2El && !p2El.disabled) ? (parseInt(p2El.value) || 0) : 0;
+            // Chỉ lấy dữ liệu nếu các ô nhập tồn tại
+            if (nameEl && contentEl) {
+                const name = nameEl.value.trim();
+                const content = contentEl.value.trim();
+                const p1 = p1El ? (parseInt(p1El.value) || 0) : 0;
+                const p2 = p2El ? (parseInt(p2El.value) || 0) : 0;
 
-            if (name && content) {
-                requestData.topics.push({ name, content, p1, p2 });
+                if (name && content) {
+                    requestData.topics.push({ name, content, p1, p2 });
+                }
             }
         });
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // 2. GỌI API STREAMING
+        // 3. GỌI API (STREAMING)
         const response = await fetch('/api_matrix', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -145,9 +140,11 @@ async function handleGenerate() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // 3. ĐỌC STREAM
-        previewSection.style.display = 'block';
-        previewSection.scrollIntoView({ behavior: 'smooth' });
+        // 4. ĐỌC STREAM
+        if(previewSection) {
+            previewSection.style.display = 'block';
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -160,28 +157,29 @@ async function handleGenerate() {
             const chunk = decoder.decode(value, { stream: true });
             fullMarkdown += chunk;
             
-            // Render Realtime
             if(typeof marked !== 'undefined') {
-                previewContent.innerHTML = marked.parse(fullMarkdown);
+                if(previewContent) previewContent.innerHTML = marked.parse(fullMarkdown);
             } else {
-                previewContent.innerText = fullMarkdown;
+                if(previewContent) previewContent.innerText = fullMarkdown;
             }
         }
 
-        window.generatedHTML = previewContent.innerHTML;
-        loading.style.display = 'none';
+        window.generatedHTML = previewContent ? previewContent.innerHTML : "";
+        if(loading) loading.style.display = 'none';
 
     } catch (err) {
         console.error(err);
-        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
-        error.style.display = 'block';
-        loading.style.display = 'none';
+        if(error) {
+            error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+            error.style.display = 'block';
+        }
+        if(loading) loading.style.display = 'none';
     } finally {
-        btn.disabled = false;
+        if(btn) btn.disabled = false;
     }
 }
 
-// XỬ LÝ TẢI WORD (GIỮ NGUYÊN)
+// XỬ LÝ TẢI WORD
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
@@ -208,7 +206,7 @@ function handleDownloadWord() {
             const converted = htmlDocx.asBlob(htmlContent, { orientation: 'landscape' });
             saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
         } else {
-            alert("Đang tải thư viện tạo Word... Vui lòng đợi và bấm lại sau vài giây.");
+            alert("Đang tải thư viện... Vui lòng thử lại.");
         }
     } catch (e) {
         alert("Lỗi tải file: " + e.message);
