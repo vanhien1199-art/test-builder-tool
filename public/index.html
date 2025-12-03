@@ -9,25 +9,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     
-    <!-- Thêm style inline để đảm bảo bảng hiển thị đúng -->
     <style>
-        /* Đảm bảo markdown-body không ảnh hưởng đến bảng HTML */
-        .markdown-body table {
-            display: table !important;
-            border-collapse: collapse !important;
+        .preview-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 13px;
         }
-        
-        /* Fix cho các thẻ HTML trong preview */
-        #previewContent table, 
-        #previewContent tr, 
-        #previewContent td, 
-        #previewContent th {
-            all: revert !important;
+        .preview-content th, .preview-content td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
         }
-        
-        /* Đảm bảo skeleton không override style bảng */
-        .u-full-width {
-            box-sizing: border-box;
+        .preview-content th {
+            background-color: #f1f1f1;
+            text-align: center;
+            font-weight: bold;
+        }
+        .preview-content h2, .preview-content h3 {
+            text-align: center;
+            color: #2563eb;
+            margin-top: 30px;
         }
     </style>
 </head>
@@ -110,13 +112,13 @@
 
         <div id="previewSection" style="display: none;">
             <h4 style="text-align: center; color: #2563eb;">📄 Xem Trước</h4>
-            <div class="preview-content markdown-body" id="previewContent"></div>
+            <div class="preview-content" id="previewContent"></div>
             <button class="button-success" id="btnDownloadWord"><i class="fas fa-file-word"></i> TẢI FILE WORD</button>
         </div>
     </div>
 
     <template id="topic-template">
-        <div class="topic-row">
+        <div class="topic-row" style="background: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
             <div class="row">
                 <div class="six columns">
                     <label>Tên Chủ đề</label>
@@ -137,7 +139,7 @@
                     <input type="number" class="u-full-width topic-period-2" value="0" min="0">
                 </div>
             </div>
-            <button class="remove-topic-btn" onclick="this.parentElement.remove()">Xóa chủ đề này</button>
+            <button class="remove-topic-btn" onclick="this.parentElement.remove()" style="margin-top: 10px; background: #fee2e2; border:none; color: #c0392b;">Xóa</button>
         </div>
     </template>
 
