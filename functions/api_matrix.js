@@ -19,7 +19,7 @@ export async function onRequest(context) {
 
             // --- CẤU HÌNH MODEL AN TOÀN ---
             // Sử dụng alias 'gemini-1.5-flash-latest' để luôn lấy bản vá lỗi mới nhất
-            const MODEL_NAME = "gemini-1.5-flash-latest"; 
+            const MODEL_NAME = "gemini-2.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -227,3 +227,4 @@ export async function onRequest(context) {
         }
     }
 }
+
