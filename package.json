@@ -1,7 +1,7 @@
 {
   "name": "exam-matrix-ai",
-  "version": "2.5.0",
-  "description": "Support for Gemini 2.0 Flash",
+  "version": "3.0.0",
+  "description": "Dependencies for Gemini 1.5/2.0",
   "dependencies": {
     "@google/generative-ai": "^0.21.0"
   }
