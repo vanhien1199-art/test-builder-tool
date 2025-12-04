@@ -39,7 +39,43 @@ export async function onRequest(context) {
             // Chuẩn bị dữ liệu Prompt
             let topicsDescription = topics.map((t, index) => {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
-            }).join("\n");
+            }).join("\n");// File: functions/api_matrix.js
+export async function onRequest(context) {
+    const { request, env } = context;
+
+    // --- CORS ---
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (request.method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+    }
+
+    try {
+        const apiKey = env.GOOGLE_API_KEY;
+        if (!apiKey) throw new Error("Thiếu GOOGLE_API_KEY trong môi trường.");
+
+        const body = await request.json();
+        const { license_key, topics } = body;
+
+        if (!topics || topics.length === 0) {
+            return new Response(JSON.stringify({ error: "Thiếu chủ đề." }), {
+                status: 400,
+                headers: corsHeaders
+            });
+        }
+
+        // Tạo danh sách mô tả chủ đề
+        const topicsDescription = topics.map((t, i) => {
+            return `• Chủ đề ${i + 1}: ${t.name} – Nội dung: ${t.content} – Tiết 1: ${t.p1}, Tiết 2: ${t.p2}`;
+        }).join("\n");
             // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
@@ -182,45 +218,79 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-           // STREAMING RESPONSE
-            const { stream } = await model.generateContentStream(prompt);
+           ${topicsDescription}
+        `.trim();
 
-            const readableStream = new ReadableStream({
-                async start(controller) {
-                    try {
-                        for await (const chunk of stream) {
-                            const chunkText = chunk.text();
-                            controller.enqueue(new TextEncoder().encode(chunkText));
-                        }
-                        // Trừ tiền khi hoàn tất
-                        if (env.TEST_TOOL && license_key) {
-                            const creditStr = await env.TEST_TOOL.get(license_key);
-                            if (creditStr) {
-                                let current = parseInt(creditStr);
-                                if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
-                            }
-                        }
-                        controller.close();
-                    } catch (e) {
-                        controller.error(e);
+        // --- GỌI MODEL GEMINI-2.5-PRO (REST API) ---
+        // Không dùng SDK để tránh lỗi vùng.
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+
+        const aiResponse = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: prompt }]
                     }
+                ],
+                generationConfig: {
+                    temperature: 0.8,
+                    maxOutputTokens: 50000
                 }
-            });
+            })
+        });
 
-            return new Response(readableStream, {
-                headers: {
-                    ...corsHeaders,
-                    "Content-Type": "text/html; charset=utf-8", 
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive"
-                }
+        if (!aiResponse.ok) {
+            const err = await aiResponse.text();
+            return new Response(JSON.stringify({ error: "AI lỗi: " + err }), {
+                status: aiResponse.status,
+                headers: corsHeaders
             });
-
-        } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi AI: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
+
+        // Đây KHÔNG phải stream thật của Gemini nhưng Cloudflare không cho gửi chunk,
+        // nên ta tạo stream thủ công.
+        const result = await aiResponse.json();
+        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        const encoder = new TextEncoder();
+
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(encoder.encode(text));
+                controller.close();
+            }
+        });
+
+        // Giảm tín dụng Key (nếu có hệ thống license)
+        if (env.TEST_TOOL && license_key) {
+            const creditStr = await env.TEST_TOOL.get(license_key);
+            if (creditStr) {
+                const current = parseInt(creditStr);
+                if (current > 0) {
+                    await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                }
+            }
+        }
+
+        return new Response(stream, {
+            headers: {
+                ...corsHeaders,
+                "Content-Type": "text/html; charset=utf-8",
+                "Cache-Control": "no-cache"
+            }
+        });
+
+    } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: corsHeaders
+        });
     }
 }
-
 
 
