@@ -20,7 +20,7 @@ export async function onRequest(context) {
             // 1.5 đã bị xóa (404). 
             // 2.0-exp bị chặn vùng (400).
             // 2.5-flash là bản ổn định thay thế, chạy tốt với Streaming.
-            const MODEL_NAME = "gemini-2.5-pro"; 
+            const MODEL_NAME = "gemini-exp-1206"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -222,5 +222,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
