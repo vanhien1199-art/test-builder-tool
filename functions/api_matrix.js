@@ -60,6 +60,8 @@ export async function onRequest(context) {
         }).join("\n");
             // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
             const prompt = `
+            // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
+            const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
@@ -70,42 +72,7 @@ export async function onRequest(context) {
             2. Học kì: ${semester}, năm học 2024-2025
             3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
             4. Chủ đề/Chương cần kiểm tra: (Xem danh sách bên dưới)
-            5. Nội dung/đơn vị kiến thức: ${topicsDescription}export async function onRequest(context) {
-    const { request, env } = context;
-
-    // --- CORS ---
-    const corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-    };
-
-    if (request.method === "OPTIONS") {
-        return new Response(null, { status: 204, headers: corsHeaders });
-    }
-
-    if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
-    }
-
-    try {
-        const apiKey = env.GOOGLE_API_KEY;
-        if (!apiKey) throw new Error("Thiếu GOOGLE_API_KEY trong môi trường.");
-
-        const body = await request.json();
-        const { license_key, topics } = body;
-
-        if (!topics || topics.length === 0) {
-            return new Response(JSON.stringify({ error: "Thiếu chủ đề." }), {
-                status: 400,
-                headers: corsHeaders
-            });
-        }
-
-        // Tạo danh sách mô tả chủ đề
-        const topicsDescription = topics.map((t, i) => {
-            return `• Chủ đề ${i + 1}: ${t.name} – Nội dung: ${t.content} – Tiết 1: ${t.p1}, Tiết 2: ${t.p2}`;
-        }).join("\n");
+            5. Nội dung/đơn vị kiến thức: ${topicsDescription}
             6. Thời lượng kiểm tra: ${time} phút
             7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
             8. Tỉ lệ điểm phân bổ: Theo mẫu chuẩn 7991
@@ -301,5 +268,6 @@ export async function onRequest(context) {
         });
     }
 }
+
 
 
