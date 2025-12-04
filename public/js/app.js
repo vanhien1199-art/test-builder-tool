@@ -62,16 +62,7 @@ function addTopicRow() {
 }
 
 // --- XỬ LÝ CHÍNH: GỌI API STREAMING ---
-
-
-// --- XUẤT FILE WORD ---
-function handleDownloadWord() {
-    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-
-    const css = `
-        <style>
-            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
-            tableasync function handleGenerate() {
+async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
     const error = document.getElementById('errorMsg');
@@ -116,14 +107,12 @@ function handleDownloadWord() {
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // --- GỌI API MỚI SỬ DỤNG URL CLOUDFLARE WORKERS ---
-        // Thay thế URL của bạn vào đây (ví dụ: https://ten-workers.workers.dev/generate)
-        const WORKER_URL = "https://testtool-dl2.pages.dev/"; // <--- SỬA URL NÀY CỦA BẠN
-
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
+        // --- GỌI API CLOUDFLARE ---
+        // Lưu ý: Đừng thay đổi dòng này. Nó sẽ gọi đúng file api_matrix.js trong thư mục functions.
+        const response = await fetch('/api_matrix', { 
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestData) // Gửi toàn bộ requestData thay vì chỉ prompt
+            body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
@@ -133,26 +122,24 @@ function handleDownloadWord() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // ... (Phần đọc stream và hiển thị kết quả giữ nguyên như cũ)
+        // --- ĐỌC STREAM VĂN BẢN TỪ CLOUDFLARE ---
         previewSection.style.display = 'block';
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullMarkdown = "";
+        let fullHtml = "";
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
             const chunk = decoder.decode(value, { stream: true });
-            fullMarkdown += chunk;
+            fullHtml += chunk;
             
-            if(typeof marked !== 'undefined') {
-                previewContent.innerHTML = marked.parse(fullMarkdown);
-            } else {
-                previewContent.innerText = fullMarkdown;
-            }
+            // Render Realtime
+            let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
+            previewContent.innerHTML = cleanChunk;
         }
 
         window.generatedHTML = previewContent.innerHTML;
@@ -165,7 +152,15 @@ function handleDownloadWord() {
     } finally {
         btn.disabled = false;
     }
-} { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
+}
+// xuất file word
+function handleDownloadWord() {
+    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+
+    const css = `
+        <style>
+            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
+            table { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
             th, td { border: 1pt solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
             th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
             h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
