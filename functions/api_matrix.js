@@ -56,7 +56,6 @@ export async function onRequest(context) {
             5. Nội dung/đơn vị kiến thức: ${topicsDescription}
             6. Thời lượng kiểm tra: ${time} phút
             7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
-            8. Tỉ lệ điểm phân bổ: Theo mẫu chuẩn 7991
 
             ## KẾT QUẢ ĐẦU RA
             Tạo ra 1 tài liệu sau đúng định dạng:
@@ -162,7 +161,7 @@ export async function onRequest(context) {
             - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
             3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
            - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
-           - Phân bổ mức độ nhận thức: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
+           - Phân bổ mức độ nhận thức: Biết (30-40%), Hiểu (30-40%), Vận dụng (30%)
            - Phân bố dạng câu hỏi: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
            - Phân bố tỉ lệ điểm: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
            - Cấu trúc đề: TNKQ (60-70%), Tự luận (30-40%)
@@ -179,9 +178,9 @@ export async function onRequest(context) {
                - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm bản đặc tả = 10 điểm
                - Số câu hỏi trong đề = Số câu trong ma trận
             6. TÍNH TOÁN THỜI LƯỢNG - SỐ CÂU - ĐIỂM:
-               - 45 phút: 25-30 câu (18-22 TN + 2-3 TL)
-               - 60 phút: 30-35 câu (22-26 TN + 3-4 TL)
-               - 90 phút: 35-40 câu (26-30 TN + 4-5 TL)
+               - 45 phút: 20-30 câu (15-22 TN + 2-3 TL)
+               - 60 phút: 25-35 câu (28-26 TN + 3-4 TL)
+               - 90 phút: 30-40 câu (20-30 TN + 4-5 TL)
                - Mỗi câu TNKQ: 0.25 hoặc 0.5 điểm
                - Mỗi câu trả lời ngắn: 0.5 điểm
                - Mỗi câu Tự luận: 1.0-2.0 điểm
@@ -280,6 +279,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
