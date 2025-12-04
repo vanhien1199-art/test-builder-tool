@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export async function onRequest(context) {
     const { request, env } = context;
     
+    // Cấu hình CORS để cho phép Frontend gọi
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -17,10 +18,17 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
+            // --- CẤU HÌNH MODEL: GEMINI 2.5 FLASH ---
+            // Đây là bản ỔN ĐỊNH mới nhất (thay thế 1.5 đã cũ và 2.0-exp bị lỗi vùng).
+            const MODEL_NAME = "gemini-2.5-flash"; 
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // KIỂM TRA LICENSE
+            // KIỂM TRA LICENSE (Nếu có dùng KV)
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -32,7 +40,6 @@ export async function onRequest(context) {
             let topicsDescription = topics.map((t, index) => {
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
-
             // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
@@ -183,29 +190,9 @@ export async function onRequest(context) {
                 "gemini-1.5-pro-002"     // Bản Pro mới cập nhật (Nếu 2 bản trên fail)
             ];
 
-            const genAI = new GoogleGenerativeAI(apiKey);
-            let stream = null;
-            let lastError = null;
+            // --- STREAMING RESPONSE (BẮT BUỘC ĐỂ TRÁNH TIMEOUT) ---
+            const { stream } = await model.generateContentStream(prompt);
 
-            for (const modelName of MODELS_TO_TRY) {
-                try {
-                    console.log(`Đang thử model: ${modelName}`);
-                    const model = genAI.getGenerativeModel({ model: modelName });
-                    const response = await model.generateContentStream(prompt);
-                    stream = response.stream;
-                    break; // Thành công thì thoát vòng lặp
-                } catch (e) {
-                    console.error(`Model ${modelName} lỗi: ${e.message}`);
-                    lastError = e;
-                    // Nếu lỗi 429 (Hết tiền) hoặc 400 (Vùng), thử tiếp model khác
-                }
-            }
-
-            if (!stream) {
-                throw new Error(`Không có model nào khả dụng. Lỗi cuối: ${lastError?.message}`);
-            }
-
-            // STREAMING RESPONSE
             const readableStream = new ReadableStream({
                 async start(controller) {
                     try {
@@ -213,7 +200,7 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
-                        // Trừ tiền
+                        // Trừ tiền khi hoàn tất stream thành công
                         if (env.TEST_TOOL && license_key) {
                             const creditStr = await env.TEST_TOOL.get(license_key);
                             if (creditStr) {
@@ -238,7 +225,7 @@ export async function onRequest(context) {
             });
 
         } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi Hệ thống: ${error.message}` }), { status: 500, headers: corsHeaders });
+            return new Response(JSON.stringify({ error: `Lỗi AI: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
     }
 }
