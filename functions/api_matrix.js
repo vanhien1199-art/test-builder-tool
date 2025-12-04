@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function onRequest(context) {
     const { request, env } = context;
+    
+    // Cấu hình CORS để cho phép Frontend gọi
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -16,11 +18,9 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL CHUẨN 2025: GEMINI 2.5 FLASH ---
-            // 1.5 đã bị xóa (404). 
-            // 2.0-exp bị chặn vùng (400).
-            // 2.5-flash là bản ổn định thay thế, chạy tốt với Streaming.
-            const MODEL_NAME = "gemini-exp-1206"; 
+            // --- CẤU HÌNH MODEL: GEMINI 2.5 FLASH ---
+            // Đây là bản ỔN ĐỊNH mới nhất (thay thế 1.5 đã cũ và 2.0-exp bị lỗi vùng).
+            const MODEL_NAME = "gemini-2.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -28,7 +28,7 @@ export async function onRequest(context) {
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // KIỂM TRA LICENSE
+            // KIỂM TRA LICENSE (Nếu có dùng KV)
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -183,7 +183,7 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-            // --- STREAMING RESPONSE (QUAN TRỌNG ĐỂ TRÁNH TIMEOUT 524) ---
+            // --- STREAMING RESPONSE (BẮT BUỘC ĐỂ TRÁNH TIMEOUT) ---
             const { stream } = await model.generateContentStream(prompt);
 
             const readableStream = new ReadableStream({
@@ -193,7 +193,7 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
-                        // Trừ tiền (Sau khi stream thành công)
+                        // Trừ tiền khi hoàn tất stream thành công
                         if (env.TEST_TOOL && license_key) {
                             const creditStr = await env.TEST_TOOL.get(license_key);
                             if (creditStr) {
@@ -222,6 +222,4 @@ export async function onRequest(context) {
         }
     }
 }
-
-
 
