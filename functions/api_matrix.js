@@ -18,7 +18,7 @@ export async function onRequest(context) {
 
             // --- CẤU HÌNH MODEL: GEMINI 2.0 FLASH EXPERIMENTAL ---
             // Lưu ý: Nếu bị lỗi vùng (400 Bad Request), hãy đổi tạm thành "gemini-1.5-flash"
-            const MODEL_NAME = "gemini-1.5-flash"; 
+            const MODEL_NAME = "gemini-2.5-pro";
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -220,6 +220,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
