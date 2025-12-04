@@ -182,15 +182,7 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-            // --- CHIẾN THUẬT GỌI MODEL THÔNG MINH ---
-            // Thử lần lượt các model 2.0 mới nhất. Nếu cái đầu lỗi vùng, thử cái sau.
-            const MODELS_TO_TRY = [
-                "gemini-2.0-flash-exp",  // Bản mới nhất (Hay bị chặn 4G)
-                "gemini-exp-1206",       // Bản ổn định tháng 12 (Ít bị chặn hơn)
-                "gemini-1.5-pro-002"     // Bản Pro mới cập nhật (Nếu 2 bản trên fail)
-            ];
-
-            // --- STREAMING RESPONSE (BẮT BUỘC ĐỂ TRÁNH TIMEOUT) ---
+           // STREAMING RESPONSE
             const { stream } = await model.generateContentStream(prompt);
 
             const readableStream = new ReadableStream({
@@ -200,7 +192,7 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
-                        // Trừ tiền khi hoàn tất stream thành công
+                        // Trừ tiền khi hoàn tất
                         if (env.TEST_TOOL && license_key) {
                             const creditStr = await env.TEST_TOOL.get(license_key);
                             if (creditStr) {
