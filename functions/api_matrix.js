@@ -161,7 +161,7 @@ export async function onRequest(context) {
             - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
             3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
            - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
-           - Phân bổ mức độ nhận thức: Biết (30-40%), Hiểu (30-40%), Vận dụng (30%)
+           - Phân bổ mức độ nhận thức: Bắt buộc theo tỉ lệ:  Biết (40%), Hiểu (30), Vận dụng (30%); Trường hợp hợp không thể phân bổ được thì linh động là: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
            - Phân bố dạng câu hỏi: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
            - Phân bố tỉ lệ điểm: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
            - Cấu trúc đề: TNKQ (60-70%), Tự luận (30-40%)
@@ -279,6 +279,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
