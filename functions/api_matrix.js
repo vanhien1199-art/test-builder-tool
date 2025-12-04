@@ -3,25 +3,22 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function onRequest(context) {
     const { request, env } = context;
-    
-    // Cấu hình CORS để cho phép Frontend gọi
     const corsHeaders = {
-        "Access-Control-Allow-Origin": "*", // Hoặc điền domain cụ thể của bạn để bảo mật hơn
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // Xử lý preflight request (trình duyệt kiểm tra trước khi gửi POST)
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
     if (request.method === "POST") {
         try {
             const apiKey = env.GOOGLE_API_KEY;
-            if (!apiKey) throw new Error("Thiếu API Key trong cấu hình Cloudflare");
+            if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL: GEMINI 2.5 FLASH ---
-            // Đây là bản ỔN ĐỊNH mới nhất.
-            const MODEL_NAME = "gemini-2.5-flash"; 
+            // --- CẤU HÌNH MODEL CHUẨN: GEMINI 1.5 FLASH ---
+            // Đây là bản ổn định, chạy nhanh, không bị lỗi vùng 400.
+            const MODEL_NAME = "gemini-1.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -29,7 +26,7 @@ export async function onRequest(context) {
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // KIỂM TRA LICENSE (Nếu có dùng KV)
+            // KIỂM TRA LICENSE
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -223,5 +220,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
