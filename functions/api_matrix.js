@@ -59,7 +59,7 @@ export async function onRequest(context) {
             ## KẾT QUẢ ĐẦU RA
             Tạo ra 1 tài liệu sau đúng định dạng:
 
-            === PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ (phải giống 100%) ===
+           PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
             Tạo bảng có đúng 19 cột và cấu trúc như sau:
             * PHẦN HEADER
             - Dòng 1 đến dòng 4 cột 1 (TT) gộp ô A1:A4
@@ -84,21 +84,21 @@ export async function onRequest(context) {
             - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng chủ đề)
             - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
             - Cột 16-18 (Tổng): tính tổng từng mức độ nhận thức của từng chủ đề
-            - Cột 19: Tỉ lệ % của từng chủ đề (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
-            Dòng "Tổng số câu": từ cột 5 đến cột 18 điền tổng số câu theo cột từ dòng 5 xuống
+            - Cột 19: Tính Tỉ lệ % của từng đơn vị kiến thức (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
+            Dòng "Tổng số câu": từ cột 5 đến cột 18 tính tổng số câu theo cột từ dòng 5 xuống
             Dòng "Tổng số điểm": 
-                    gộp ô D:F và điền tổng điểm câu hỏi nhiều lựa chọn
-                    Gộp ô G:I và điền tổng điểm câu hỏi Đúng-Sai
-                    Gộp ô J:L và điền tổng điểm câu hỏi trả lời ngắn
-                    Gộp ô M:O và điền tổng điểm câu hỏi tự luận
-                    Ô P của dòng này điền tổng điểm phần  biết
-                    ô Q điền tổng điểm phần hiểu
-                    Ô R điền tổng điểm phần vận dụng
-                    Ô S - cột 19: tổng đúng 10,0 điểm
+                    gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
+                    Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
+                    Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
+                    Gộp ô M:O và tính tổng điểm câu hỏi tự luận
+                    Ô P của dòng này tính tổng điểm phần  biết
+                    ô Q tính tổng điểm phần hiểu
+                    Ô R tính tổng điểm phần vận dụng
+                    Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
             Dòng "Tỉ lệ %": Gộp ô và điền tỉ lệ tương tự  Dòng "Tổng số điểm"
-                    ô S - cột 19: Tổng tỉ lệ đúng 100%
+                    ô S - cột 19: Tính Tổng tỉ lệ
 
-            === PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ (phải giống 100%) ===
+          PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
             Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
             * PHẦN HEADER
             - Dòng 1 đến dòng 4 cột 1 (TT) gộp A1:A4
@@ -127,7 +127,7 @@ export async function onRequest(context) {
             - Cột 5 đến cột 16 (E đến P): ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
             - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận)
 
-            === PHẦN 3 – ĐỀ KIỂM TRA MẪU ===
+          PHẦN 3 – ĐỀ KIỂM TRA MẪU
             Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
             1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (60-70% điểm)
                - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D
@@ -220,6 +220,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
