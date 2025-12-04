@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function onRequest(context) {
     const { request, env } = context;
+    
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -15,13 +16,6 @@ export async function onRequest(context) {
         try {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
-
-            // --- CẤU HÌNH MODEL CHUẨN: GEMINI 1.5 FLASH ---
-            // Đây là bản ổn định, chạy nhanh, không bị lỗi vùng 400.
-            const MODEL_NAME = "gemini-1.5-flash"; 
-
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
@@ -181,9 +175,37 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-            // --- STREAMING RESPONSE (BẮT BUỘC ĐỂ TRÁNH TIMEOUT) ---
-            const { stream } = await model.generateContentStream(prompt);
+            // --- CHIẾN THUẬT GỌI MODEL THÔNG MINH ---
+            // Thử lần lượt các model 2.0 mới nhất. Nếu cái đầu lỗi vùng, thử cái sau.
+            const MODELS_TO_TRY = [
+                "gemini-2.0-flash-exp",  // Bản mới nhất (Hay bị chặn 4G)
+                "gemini-exp-1206",       // Bản ổn định tháng 12 (Ít bị chặn hơn)
+                "gemini-1.5-pro-002"     // Bản Pro mới cập nhật (Nếu 2 bản trên fail)
+            ];
 
+            const genAI = new GoogleGenerativeAI(apiKey);
+            let stream = null;
+            let lastError = null;
+
+            for (const modelName of MODELS_TO_TRY) {
+                try {
+                    console.log(`Đang thử model: ${modelName}`);
+                    const model = genAI.getGenerativeModel({ model: modelName });
+                    const response = await model.generateContentStream(prompt);
+                    stream = response.stream;
+                    break; // Thành công thì thoát vòng lặp
+                } catch (e) {
+                    console.error(`Model ${modelName} lỗi: ${e.message}`);
+                    lastError = e;
+                    // Nếu lỗi 429 (Hết tiền) hoặc 400 (Vùng), thử tiếp model khác
+                }
+            }
+
+            if (!stream) {
+                throw new Error(`Không có model nào khả dụng. Lỗi cuối: ${lastError?.message}`);
+            }
+
+            // STREAMING RESPONSE
             const readableStream = new ReadableStream({
                 async start(controller) {
                     try {
@@ -191,7 +213,7 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
-                        // Trừ tiền khi hoàn tất stream thành công
+                        // Trừ tiền
                         if (env.TEST_TOOL && license_key) {
                             const creditStr = await env.TEST_TOOL.get(license_key);
                             if (creditStr) {
@@ -216,7 +238,7 @@ export async function onRequest(context) {
             });
 
         } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi AI: ${error.message}` }), { status: 500, headers: corsHeaders });
+            return new Response(JSON.stringify({ error: `Lỗi Hệ thống: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
     }
 }
