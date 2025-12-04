@@ -62,20 +62,28 @@ function addTopicRow() {
 }
 
 // --- XỬ LÝ CHÍNH: GỌI API STREAMING ---
-async function handleGenerate() {
+
+
+// --- XUẤT FILE WORD ---
+function handleDownloadWord() {
+    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+
+    const css = `
+        <style>
+            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
+            tableasync function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
     const error = document.getElementById('errorMsg');
     const previewSection = document.getElementById('previewSection');
     const previewContent = document.getElementById('previewContent');
 
-    // UI Reset
-    loading.classList.remove('hidden');
-    error.classList.add('hidden');
-    previewSection.classList.add('hidden');
-    previewContent.innerHTML = "";
+    loading.style.display = 'block';
+    loading.innerText = "Đang kết nối Gemini và viết từng dòng...";
+    error.style.display = 'none';
+    previewSection.style.display = 'none';
+    previewContent.innerHTML = ""; 
     btn.disabled = true;
-    error.innerHTML = "";
 
     try {
         const licenseKey = document.getElementById('license_key').value.trim();
@@ -94,8 +102,7 @@ async function handleGenerate() {
             topics: []
         };
 
-        // Thu thập chủ đề
-        const topicRows = document.querySelectorAll('.topic-item'); // Class mới
+        const topicRows = document.querySelectorAll('.topic-row');
         topicRows.forEach(row => {
             const name = row.querySelector('.topic-name').value.trim();
             const content = row.querySelector('.topic-content').value.trim();
@@ -109,11 +116,14 @@ async function handleGenerate() {
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // Gọi API
-        const response = await fetch('/api_matrix', { 
-            method: 'POST',
+        // --- GỌI API MỚI SỬ DỤNG URL CLOUDFLARE WORKERS ---
+        // Thay thế URL của bạn vào đây (ví dụ: https://ten-workers.workers.dev/generate)
+        const WORKER_URL = "https://testtool-dl2.pages.dev/"; // <--- SỬA URL NÀY CỦA BẠN
+
+        const response = await fetch(WORKER_URL, {
+            method: "POST",
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(requestData) // Gửi toàn bộ requestData thay vì chỉ prompt
         });
 
         if (!response.ok) {
@@ -123,47 +133,39 @@ async function handleGenerate() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // Hiện khung Preview
-        previewSection.classList.remove('hidden');
+        // ... (Phần đọc stream và hiển thị kết quả giữ nguyên như cũ)
+        previewSection.style.display = 'block';
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
-        // Đọc Stream HTML
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullHtml = "";
+        let fullMarkdown = "";
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
             const chunk = decoder.decode(value, { stream: true });
-            fullHtml += chunk;
+            fullMarkdown += chunk;
             
-            // Xóa rác Markdown nếu có
-            let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
-            previewContent.innerHTML = cleanChunk;
+            if(typeof marked !== 'undefined') {
+                previewContent.innerHTML = marked.parse(fullMarkdown);
+            } else {
+                previewContent.innerText = fullMarkdown;
+            }
         }
 
         window.generatedHTML = previewContent.innerHTML;
-        loading.classList.add('hidden');
+        loading.style.display = 'none';
 
     } catch (err) {
-        error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${err.message}`;
-        error.classList.remove('hidden');
-        loading.classList.add('hidden');
+        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+        error.style.display = 'block';
+        loading.style.display = 'none';
     } finally {
         btn.disabled = false;
     }
-}
-
-// --- XUẤT FILE WORD ---
-function handleDownloadWord() {
-    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-
-    const css = `
-        <style>
-            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
-            table { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
+} { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
             th, td { border: 1pt solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
             th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
             h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
@@ -192,3 +194,4 @@ function handleDownloadWord() {
         alert("Lỗi tải file: " + e.message);
     }
 }
+
