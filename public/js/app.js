@@ -1,67 +1,76 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("--- SYSTEM READY: GEMINI 2.0 MODE ---");
+    
     // 1. Khởi tạo dòng chủ đề đầu tiên
     addTopicRow();
 
-    // 2. Gán sự kiện
-    const btnAdd = document.getElementById('btnAddTopic');
-    const btnGen = document.getElementById('btnGenerate');
-    const btnDown = document.getElementById('btnDownloadWord');
-    const examTypeSelect = document.getElementById('exam_type');
+    // 2. Gán sự kiện (Bọc trong try-catch để không chết code nếu thiếu ID)
+    try {
+        const btnAdd = document.getElementById('btnAddTopic');
+        const btnGen = document.getElementById('btnGenerate');
+        const btnDown = document.getElementById('btnDownloadWord');
 
-    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
-    if (btnGen) btnGen.addEventListener('click', handleGenerate);
-    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
-
-    // 3. Xử lý Logic ẩn hiện ô nhập số tiết (Học kì)
-    if (examTypeSelect) {
-        examTypeSelect.addEventListener('change', function() {
-            const isHK = this.value === 'hk';
-            const hkConfig = document.getElementById('hk-config');
-            const topicPeriodInputs = document.querySelectorAll('.hk-period-inputs');
-
-            // Ẩn hiện phần tổng tiết chung
-            if (hkConfig) {
-                if (isHK) hkConfig.classList.remove('hidden');
-                else hkConfig.classList.add('hidden');
-            }
-
-            // Ẩn hiện phần số tiết con trong từng chủ đề
-            topicPeriodInputs.forEach(el => {
-                if (isHK) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            });
-        });
-        // Kích hoạt ngay lần đầu
-        examTypeSelect.dispatchEvent(new Event('change'));
+        if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
+        if (btnGen) btnGen.addEventListener('click', handleGenerate);
+        if (btnDown) btnDownload.addEventListener('click', handleDownloadWord);
+        
+        // Xử lý sự kiện đổi loại kiểm tra
+        const examTypeSelect = document.getElementById('exam_type');
+        if (examTypeSelect) {
+            examTypeSelect.addEventListener('change', toggleHKFields);
+            toggleHKFields(); // Chạy ngay lần đầu
+        }
+    } catch (e) {
+        console.error("Lỗi khởi tạo sự kiện:", e);
     }
 });
 
-// --- HÀM THÊM CHỦ ĐỀ ---
+// Hàm ẩn/hiện các ô nhập số tiết
+function toggleHKFields() {
+    const examType = document.getElementById('exam_type');
+    if (!examType) return;
+    
+    const isHK = examType.value === 'hk';
+    const hkConfig = document.getElementById('hk-config');
+    
+    // Ẩn hiện cấu hình chung
+    if (hkConfig) {
+        hkConfig.style.display = isHK ? 'block' : 'none';
+    }
+
+    // Ẩn hiện cấu hình từng dòng
+    document.querySelectorAll('.hk-period-inputs').forEach(el => {
+        el.style.display = isHK ? 'grid' : 'none'; // Dùng grid để giữ layout đẹp
+    });
+}
+
+// Hàm thêm dòng chủ đề
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
 
-    if (container && template) {
-        const clone = template.content.cloneNode(true);
-        container.appendChild(clone);
-
-        // Kiểm tra lại trạng thái hiển thị của dòng mới thêm
-        const examType = document.getElementById('exam_type');
-        if (examType) {
-            const isHK = examType.value === 'hk';
-            const newRow = container.lastElementChild; // Dòng vừa thêm (div.topic-item)
-            const hkInputs = newRow.querySelector('.hk-period-inputs');
-            if (hkInputs) {
-                if (isHK) hkInputs.classList.remove('hidden');
-                else hkInputs.classList.add('hidden');
-            }
-        }
+    if (!container || !template) {
+        console.error("Thiếu container hoặc template chủ đề!");
+        return;
     }
+
+    const clone = template.content.cloneNode(true);
+    
+    // Gán sự kiện xóa cho nút trong dòng mới
+    const btnRemove = clone.querySelector('.remove-topic-btn');
+    if (btnRemove) {
+        btnRemove.addEventListener('click', function() {
+            this.closest('.topic-row').remove();
+        });
+    }
+
+    container.appendChild(clone);
+    toggleHKFields(); // Cập nhật trạng thái hiển thị cho dòng mới
 }
 
-// --- XỬ LÝ CHÍNH: GỌI API STREAMING ---
+// --- XỬ LÝ CHÍNH ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -69,17 +78,19 @@ async function handleGenerate() {
     const previewSection = document.getElementById('previewSection');
     const previewContent = document.getElementById('previewContent');
 
-    loading.style.display = 'block';
-    loading.innerText = "Đang kết nối Gemini và viết từng dòng...";
-    error.style.display = 'none';
-    previewSection.style.display = 'none';
-    previewContent.innerHTML = ""; 
-    btn.disabled = true;
+    // Reset giao diện
+    if(loading) loading.style.display = 'block';
+    if(error) error.style.display = 'none';
+    if(previewSection) previewSection.style.display = 'none';
+    if(previewContent) previewContent.innerHTML = "";
+    if(btn) btn.disabled = true;
 
     try {
+        // 1. Lấy License
         const licenseKey = document.getElementById('license_key').value.trim();
         if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
 
+        // 2. Thu thập dữ liệu
         const requestData = {
             license_key: licenseKey,
             subject: document.getElementById('subject').value.trim(),
@@ -93,6 +104,7 @@ async function handleGenerate() {
             topics: []
         };
 
+        // Lấy danh sách chủ đề
         const topicRows = document.querySelectorAll('.topic-row');
         topicRows.forEach(row => {
             const name = row.querySelector('.topic-name').value.trim();
@@ -107,8 +119,8 @@ async function handleGenerate() {
 
         if (requestData.topics.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề.");
 
-        // --- GỌI API CLOUDFLARE ---
-        // Lưu ý: Đừng thay đổi dòng này. Nó sẽ gọi đúng file api_matrix.js trong thư mục functions.
+        // 3. GỌI API (STREAMING)
+        console.log("Đang gọi API...");
         const response = await fetch('/api_matrix', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,9 +134,11 @@ async function handleGenerate() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // --- ĐỌC STREAM VĂN BẢN TỪ CLOUDFLARE ---
-        previewSection.style.display = 'block';
-        previewSection.scrollIntoView({ behavior: 'smooth' });
+        // 4. ĐỌC STREAM VÀ HIỂN THỊ
+        if(previewSection) {
+            previewSection.style.display = 'block';
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -137,23 +151,28 @@ async function handleGenerate() {
             const chunk = decoder.decode(value, { stream: true });
             fullHtml += chunk;
             
-            // Render Realtime
+            // Loại bỏ các thẻ code block nếu AI lỡ trả về
             let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
-            previewContent.innerHTML = cleanChunk;
+            if(previewContent) previewContent.innerHTML = cleanChunk;
         }
 
+        // Lưu kết quả để tải về
         window.generatedHTML = previewContent.innerHTML;
-        loading.style.display = 'none';
+        if(loading) loading.style.display = 'none';
 
     } catch (err) {
-        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
-        error.style.display = 'block';
-        loading.style.display = 'none';
+        console.error(err);
+        if(error) {
+            error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+            error.style.display = 'block';
+        }
+        if(loading) loading.style.display = 'none';
     } finally {
-        btn.disabled = false;
+        if(btn) btn.disabled = false;
     }
 }
-// xuất file word
+
+// --- XỬ LÝ TẢI WORD ---
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
@@ -183,10 +202,9 @@ function handleDownloadWord() {
             });
             saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
         } else {
-            alert("Lỗi thư viện Word. Vui lòng tải lại trang.");
+            alert("Lỗi: Thư viện Word chưa tải xong. Vui lòng F5 và thử lại.");
         }
     } catch (e) {
         alert("Lỗi tải file: " + e.message);
     }
 }
-
