@@ -162,33 +162,79 @@ function handleDownloadWord() {
 
     const css = `
         <style>
-            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
-            table { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
-            th, td { border: 1pt solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
-            th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
-            h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
+            @page {
+                size: A4 landscape; /* Khổ ngang */
+                margin: 2cm 2cm 2cm 2cm; /* Căn lề 2cm */
+            }
+            body { 
+                font-family: 'Times New Roman', serif !important; 
+                font-size: 13pt; 
+                line-height: 1.3;
+            }
+            /* Ép tất cả các thẻ con cũng phải dùng Times New Roman */
+            p, span, div, table, tr, td, th, h1, h2, h3, h4, b, strong, i, em {
+                font-family: 'Times New Roman', serif !important; 
+            }
+            
+            /* Bảng biểu */
+            table { 
+                width: 100%; 
+                border-collapse: collapse !important; 
+                border: 1pt solid black !important;
+                margin-bottom: 20px;
+            }
+            th, td { 
+                border: 1pt solid black !important; 
+                padding: 5px; 
+                vertical-align: top; 
+                font-size: 11pt; /* Chữ trong bảng nhỏ hơn chút */
+            }
+            th { 
+                background-color: #f0f0f0; 
+                font-weight: bold; 
+                text-align: center; 
+            }
+            
+            /* Tiêu đề */
+            h1, h2, h3, h4 { 
+                text-align: center; 
+                font-weight: bold; 
+                margin-top: 15pt; 
+                color: #000 !important;
+            }
         </style>
     `;
 
+    // CẤU TRÚC HTML CHUẨN CHO WORD (Thêm Namespace)
     const htmlContent = `
         <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8">${css}</head>
-        <body>${window.generatedHTML}</body>
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+              xmlns:w='urn:schemas-microsoft-com:office:word' 
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <title>Ma Trận Đề Kiểm Tra</title>
+            ${css}
+        </head>
+        <body>
+            ${window.generatedHTML}
+        </body>
         </html>
     `;
 
     try {
         if(typeof htmlDocx !== 'undefined') {
+            // Chuyển đổi và tải về
             const converted = htmlDocx.asBlob(htmlContent, { 
                 orientation: 'landscape',
                 margins: { top: 720, right: 720, bottom: 720, left: 720 }
             });
             saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
         } else {
-            alert("Lỗi thư viện Word. Vui lòng tải lại trang.");
+            alert("Đang tải thư viện... Vui lòng thử lại sau giây lát.");
         }
     } catch (e) {
         alert("Lỗi tải file: " + e.message);
+        console.error(e);
     }
 }
