@@ -1,7 +1,7 @@
 {
-  "name": "exam-matrix-ai",
+  "name": "exam-matrix-ai-pro",
   "version": "3.0.0",
-  "description": "Dependencies for Gemini 1.5/2.0",
+  "description": "Engine for Exam Matrix Generation (Updated Lib)",
   "dependencies": {
     "@google/generative-ai": "^0.21.0"
   }
