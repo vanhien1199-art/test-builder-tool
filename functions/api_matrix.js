@@ -1,65 +1,62 @@
+Chào bạn, việc chuyển sang gọi REST API trực tiếp là một quyết định rất sáng suốt trong bối cảnh hiện tại. Nó giúp bạn:
+
+Không phụ thuộc SDK: Không lo lỗi phiên bản thư viện package.json cũ hay mới.
+
+Linh hoạt Model: Bạn có thể đổi tên model thoải mái (ví dụ gemini-2.5-pro, gemini-2.0-flash) chỉ bằng cách sửa 1 dòng chuỗi văn bản.
+
+Kiểm soát luồng (Stream): Tự tay xử lý dữ liệu trả về, tránh các lỗi ẩn của thư viện.
+
+Dưới đây là file functions/api_matrix.js được viết lại hoàn toàn để gọi trực tiếp gemini-2.5-pro qua HTTP Request.
+
+CẬP NHẬT FILE: functions/api_matrix.js
+Bạn hãy Copy toàn bộ code sau và dán đè vào file cũ:
+
+JavaScript
+
 // File: functions/api_matrix.js
+
 export async function onRequest(context) {
     const { request, env } = context;
-
-    // --- CORS ---
+    
+    // Cấu hình CORS (Cho phép Frontend gọi)
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    if (request.method === "OPTIONS") {
-        return new Response(null, { status: 204, headers: corsHeaders });
-    }
+    // Xử lý Preflight Request
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
-    if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
-    }
+    if (request.method === "POST") {
+        try {
+            const apiKey = env.GOOGLE_API_KEY;
+            if (!apiKey) throw new Error("Thiếu API Key");
 
-    try {
-        const apiKey = env.GOOGLE_API_KEY;
-        if (!apiKey) throw new Error("Thiếu GOOGLE_API_KEY trong môi trường.");
+            // --- CẤU HÌNH MODEL (GỌI TRỰC TIẾP) ---
+            // Bạn có thể đổi thành "gemini-1.5-flash" hoặc "gemini-2.0-flash-exp" tùy ý tại đây
+            const MODEL_NAME = "gemini-2.5-pro"; 
+            
+            // URL chuẩn của Google API (Chế độ Streaming Server-Sent Events)
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
-        const body = await request.json();
+            const body = await request.json();
+            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-        const {
-            license_key,
-            subject,
-            grade,
-            semester,
-            time,
-            totalPeriodsHalf1,
-            totalPeriodsHalf2,
-            topics,
-            exam_type,
-            use_short_answer
-        } = body;
-
-        // --- KIỂM TRA LICENSE (KV) ---
-        if (env.TEST_TOOL && license_key) {
-            const creditStr = await env.TEST_TOOL.get(license_key);
-            if (!creditStr || parseInt(creditStr) <= 0) {
-                return new Response(
-                    JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }),
-                    { status: 403, headers: corsHeaders }
-                );
+            // --- 1. KIỂM TRA LICENSE (KV) ---
+            if (env.TEST_TOOL && license_key) {
+                const creditStr = await env.TEST_TOOL.get(license_key);
+                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
+                
+                let currentCredit = parseInt(creditStr);
+                if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
             }
-        }
 
-        if (!topics || topics.length === 0) {
-            return new Response(JSON.stringify({ error: "Thiếu chủ đề." }), {
-                status: 400,
-                headers: corsHeaders
-            });
-        }
-
-        // Tạo mô tả chủ đề
-        const topicsDescription = topics.map((t, i) => {
-            return `• Chủ đề ${i + 1}: ${t.name} – Nội dung: ${t.content} – Tiết 1: ${t.p1}, Tiết 2: ${t.p2}`;
-        }).join("\n");
-            // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
-            const prompt = `
+            // --- 2. CHUẨN BỊ DỮ LIỆU ---
+            let topicsDescription = topics.map((t, index) => {
+                return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
+            }).join("\n");
+           
             // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
@@ -202,72 +199,96 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-           / --- GỌI GEMINI 2.5 PRO (REST API, KHÔNG SDK) ---
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-
-        const aiResponse = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: "user",
-                        parts: [{ text: prompt }]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.8,
-                    maxOutputTokens: 50000
-                }
-            })
-        });
-
-        if (!aiResponse.ok) {
-            const err = await aiResponse.text();
-            return new Response(JSON.stringify({ error: "AI lỗi: " + err }), {
-                status: aiResponse.status,
-                headers: corsHeaders
+           // --- 3. GỌI GOOGLE API (FETCH) ---
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
             });
-        }
 
-        const result = await aiResponse.json();
-        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        const encoder = new TextEncoder();
-
-        const stream = new ReadableStream({
-            start(controller) {
-                controller.enqueue(encoder.encode(text));
-                controller.close();
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Google API Error (${response.status}): ${errText}`);
             }
-        });
 
-        // --- TRỪ LICENSE KHI TẠO XONG ---
-        if (env.TEST_TOOL && license_key) {
-            const creditStr = await env.TEST_TOOL.get(license_key);
-            if (creditStr) {
-                const current = parseInt(creditStr);
-                if (current > 0) {
-                    await env.TEST_TOOL.put(license_key, (current - 1).toString());
+            // --- 4. XỬ LÝ STREAM & TRẢ VỀ CLIENT ---
+            // Chúng ta tạo một TransformStream để đọc dữ liệu SSE từ Google,
+            // lọc lấy phần text và gửi về cho Client ngay lập tức.
+            
+            const { readable, writable } = new TransformStream();
+            const writer = writable.getWriter();
+            const encoder = new TextEncoder();
+            const decoder = new TextDecoder();
+
+            // Xử lý bất đồng bộ ở nền (Background processing)
+            (async () => {
+                const reader = response.body.getReader();
+                let buffer = "";
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        // Giải mã chunk và cộng vào buffer
+                        const chunk = decoder.decode(value, { stream: true });
+                        buffer += chunk;
+
+                        // Tách các dòng dữ liệu (SSE format: "data: {...}")
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop(); // Giữ lại phần cuối chưa trọn vẹn
+
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                const jsonStr = line.substring(6).trim();
+                                if (jsonStr === "[DONE]") continue; // Kết thúc stream
+
+                                try {
+                                    const parsed = JSON.parse(jsonStr);
+                                    // Trích xuất văn bản từ JSON của Google
+                                    const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                                    if (textPart) {
+                                        // Gửi văn bản sạch về cho Client
+                                        await writer.write(encoder.encode(textPart));
+                                    }
+                                } catch (e) {
+                                    // Bỏ qua các dòng không phải JSON (nếu có)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // --- TRỪ TIỀN SAU KHI HOÀN TẤT ---
+                    if (env.TEST_TOOL && license_key) {
+                        const creditStr = await env.TEST_TOOL.get(license_key);
+                        if (creditStr) {
+                            let current = parseInt(creditStr);
+                            if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                        }
+                    }
+
+                } catch (err) {
+                    // Gửi lỗi về Client nếu bị ngắt giữa chừng
+                    await writer.write(encoder.encode(`\n\n[LỖI STREAM]: ${err.message}`));
+                } finally {
+                    await writer.close();
                 }
-            }
+            })();
+
+            // Trả về Stream ngay lập tức
+            return new Response(readable, {
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive"
+                }
+            });
+
+        } catch (error) {
+            return new Response(JSON.stringify({ error: `Lỗi Server: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
-
-        return new Response(stream, {
-            headers: {
-                ...corsHeaders,
-                "Content-Type": "text/html; charset=utf-8",
-                "Cache-Control": "no-cache"
-            }
-        });
-
-    } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
-            status: 500,
-            headers: corsHeaders
-        });
     }
 }
-
-
-
