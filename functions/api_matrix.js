@@ -16,9 +16,11 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL: GEMINI 2.0 FLASH EXPERIMENTAL ---
-            // Lưu ý: Nếu bị lỗi vùng (400 Bad Request), hãy đổi tạm thành "gemini-1.5-flash"
-            const MODEL_NAME = "gemini-2.5-pro";
+            // --- CẤU HÌNH MODEL CHUẨN 2025: GEMINI 2.5 FLASH ---
+            // 1.5 đã bị xóa (404). 
+            // 2.0-exp bị chặn vùng (400).
+            // 2.5-flash là bản ổn định thay thế, chạy tốt với Streaming.
+            const MODEL_NAME = "gemini-2.5-flash"; 
 
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: MODEL_NAME });
@@ -26,7 +28,7 @@ export async function onRequest(context) {
             const body = await request.json();
             const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
 
-            // KIỂM TRA LICENSE (Nếu có dùng KV)
+            // KIỂM TRA LICENSE
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -181,7 +183,7 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-            // --- STREAMING (ĐỂ TRÁNH TIMEOUT 524) ---
+            // --- STREAMING RESPONSE (QUAN TRỌNG ĐỂ TRÁNH TIMEOUT 524) ---
             const { stream } = await model.generateContentStream(prompt);
 
             const readableStream = new ReadableStream({
@@ -191,7 +193,7 @@ export async function onRequest(context) {
                             const chunkText = chunk.text();
                             controller.enqueue(new TextEncoder().encode(chunkText));
                         }
-                        // Trừ tiền
+                        // Trừ tiền (Sau khi stream thành công)
                         if (env.TEST_TOOL && license_key) {
                             const creditStr = await env.TEST_TOOL.get(license_key);
                             if (creditStr) {
@@ -216,14 +218,8 @@ export async function onRequest(context) {
             });
 
         } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi AI (${error.message}).` }), { status: 500, headers: corsHeaders });
+            return new Response(JSON.stringify({ error: `Lỗi AI: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
     }
 }
-
-
-
-
-
-
 
