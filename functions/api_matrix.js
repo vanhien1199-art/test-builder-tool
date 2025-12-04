@@ -1,20 +1,4 @@
-Chào bạn, việc chuyển sang gọi REST API trực tiếp là một quyết định rất sáng suốt trong bối cảnh hiện tại. Nó giúp bạn:
-
-Không phụ thuộc SDK: Không lo lỗi phiên bản thư viện package.json cũ hay mới.
-
-Linh hoạt Model: Bạn có thể đổi tên model thoải mái (ví dụ gemini-2.5-pro, gemini-2.0-flash) chỉ bằng cách sửa 1 dòng chuỗi văn bản.
-
-Kiểm soát luồng (Stream): Tự tay xử lý dữ liệu trả về, tránh các lỗi ẩn của thư viện.
-
-Dưới đây là file functions/api_matrix.js được viết lại hoàn toàn để gọi trực tiếp gemini-2.5-pro qua HTTP Request.
-
-CẬP NHẬT FILE: functions/api_matrix.js
-Bạn hãy Copy toàn bộ code sau và dán đè vào file cũ:
-
-JavaScript
-
 // File: functions/api_matrix.js
-
 export async function onRequest(context) {
     const { request, env } = context;
     
@@ -292,3 +276,4 @@ export async function onRequest(context) {
         }
     }
 }
+
