@@ -1,3 +1,4 @@
+// File: functions/api_matrix.js
 export async function onRequest(context) {
     const { request, env } = context;
 
@@ -21,7 +22,30 @@ export async function onRequest(context) {
         if (!apiKey) throw new Error("Thiếu GOOGLE_API_KEY trong môi trường.");
 
         const body = await request.json();
-        const { license_key, topics } = body;
+
+        const {
+            license_key,
+            subject,
+            grade,
+            semester,
+            time,
+            totalPeriodsHalf1,
+            totalPeriodsHalf2,
+            topics,
+            exam_type,
+            use_short_answer
+        } = body;
+
+        // --- KIỂM TRA LICENSE (KV) ---
+        if (env.TEST_TOOL && license_key) {
+            const creditStr = await env.TEST_TOOL.get(license_key);
+            if (!creditStr || parseInt(creditStr) <= 0) {
+                return new Response(
+                    JSON.stringify({ error: "MÃ LỖI HOẶC HẾT HẠN" }),
+                    { status: 403, headers: corsHeaders }
+                );
+            }
+        }
 
         if (!topics || topics.length === 0) {
             return new Response(JSON.stringify({ error: "Thiếu chủ đề." }), {
@@ -30,7 +54,7 @@ export async function onRequest(context) {
             });
         }
 
-        // Tạo danh sách mô tả chủ đề
+        // Tạo mô tả chủ đề
         const topicsDescription = topics.map((t, i) => {
             return `• Chủ đề ${i + 1}: ${t.name} – Nội dung: ${t.content} – Tiết 1: ${t.p1}, Tiết 2: ${t.p2}`;
         }).join("\n");
@@ -211,18 +235,12 @@ export async function onRequest(context) {
                - Mỗi câu Tự luận: 1.0-2.0 điểm
             `;
 
-           ${topicsDescription}
-        `.trim();
-
-        // --- GỌI MODEL GEMINI-2.5-PRO (REST API) ---
-        // Không dùng SDK để tránh lỗi vùng.
+           / --- GỌI GEMINI 2.5 PRO (REST API, KHÔNG SDK) ---
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
         const aiResponse = await fetch(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [
                     {
@@ -245,8 +263,6 @@ export async function onRequest(context) {
             });
         }
 
-        // Đây KHÔNG phải stream thật của Gemini nhưng Cloudflare không cho gửi chunk,
-        // nên ta tạo stream thủ công.
         const result = await aiResponse.json();
         const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
@@ -259,7 +275,7 @@ export async function onRequest(context) {
             }
         });
 
-        // Giảm tín dụng Key (nếu có hệ thống license)
+        // --- TRỪ LICENSE KHI TẠO XONG ---
         if (env.TEST_TOOL && license_key) {
             const creditStr = await env.TEST_TOOL.get(license_key);
             if (creditStr) {
@@ -285,6 +301,5 @@ export async function onRequest(context) {
         });
     }
 }
-
 
 
