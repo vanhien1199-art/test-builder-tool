@@ -160,49 +160,72 @@ async function handleGenerate() {
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
+    // CSS cho file Word
     const css = `
         <style>
-            @page {
-                size: A4 landscape; /* Khổ ngang */
-                margin: 2cm 2cm 2cm 2cm; /* Căn lề 2cm */
-            }
-            body { 
-                font-family: 'Times New Roman', serif !important; 
-                font-size: 13pt; 
-                line-height: 1.3;
-            }
-            /* Ép tất cả các thẻ con cũng phải dùng Times New Roman */
-            p, span, div, table, tr, td, th, h1, h2, h3, h4, b, strong, i, em {
-                font-family: 'Times New Roman', serif !important; 
-            }
+            body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
             
-            /* Bảng biểu */
+            /* Định dạng bảng */
             table { 
                 width: 100%; 
-                border-collapse: collapse !important; 
-                border: 1pt solid black !important;
-                margin-bottom: 20px;
+                border-collapse: collapse; 
+                border: 1pt solid black; /* Viền bảng */
+                margin-bottom: 20px; 
             }
             th, td { 
-                border: 1pt solid black !important; 
+                border: 1pt solid black; /* Viền ô */
                 padding: 5px; 
                 vertical-align: top; 
-                font-size: 11pt; /* Chữ trong bảng nhỏ hơn chút */
+                font-size: 11pt; 
             }
-            th { 
-                background-color: #f0f0f0; 
-                font-weight: bold; 
-                text-align: center; 
-            }
+            th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
             
             /* Tiêu đề */
-            h1, h2, h3, h4 { 
-                text-align: center; 
-                font-weight: bold; 
-                margin-top: 15pt; 
-                color: #000 !important;
+            h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
+            .text-center { text-align: center; }
+            .text-bold { font-weight: bold; }
+
+            /* Định dạng công thức toán (MathJax) */
+            .mjx-chtml { font-size: 110% !important; } /* Tăng kích thước công thức một chút */
+            
+            /* Ẩn các phần tử không cần thiết khi in/xuất file */
+            @media print {
+                .no-print { display: none; }
             }
         </style>
+    `;
+
+    // Nội dung HTML đầy đủ
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            ${css}
+            <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+            <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        </head>
+        <body>
+            ${window.generatedHTML}
+        </body>
+        </html>
+    `;
+
+    try {
+        if(typeof htmlDocx !== 'undefined') {
+            // Chuyển đổi HTML sang Word
+            const converted = htmlDocx.asBlob(htmlContent, { 
+                orientation: 'landscape', // Khổ ngang
+                margins: { top: 720, right: 720, bottom: 720, left: 720 }
+            });
+            saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
+        } else {
+            alert("Đang tải thư viện... Vui lòng thử lại.");
+        }
+    } catch (e) {
+        alert("Lỗi tải file: " + e.message);
+    }
+}
     `;
 
     // CẤU TRÚC HTML CHUẨN CHO WORD (Thêm Namespace)
@@ -238,3 +261,4 @@ function handleDownloadWord() {
         console.error(e);
     }
 }
+
