@@ -150,6 +150,7 @@ export async function onRequest(context) {
                - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
+               - CÔNG THỨC TOÁN: Hãy viết ở dạng văn bản tuyến tính (Linear Format) đơn giản nhất. Ví dụ dùng ký hiệu Unicode (√, α, π, ∫) thay vì mã LaTeX phức tạp.
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
@@ -279,6 +280,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
