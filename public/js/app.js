@@ -1,67 +1,116 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Khởi tạo dòng chủ đề đầu tiên
     addTopicRow();
+    
+    const bind = (id, handler) => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('click', handler);
+    };
 
-    // 2. Gán sự kiện
-    const btnAdd = document.getElementById('btnAddTopic');
-    const btnGen = document.getElementById('btnGenerate');
-    const btnDown = document.getElementById('btnDownloadWord');
+    bind('btnAddTopic', addTopicRow);
+    bind('btnGenerate', handleGenerate);
+    bind('btnDownloadWord', handleDownloadWord);
+    
     const examTypeSelect = document.getElementById('exam_type');
-
-    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
-    if (btnGen) btnGen.addEventListener('click', handleGenerate);
-    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
-
-    // 3. Xử lý Logic ẩn hiện ô nhập số tiết (Học kì)
     if (examTypeSelect) {
-        examTypeSelect.addEventListener('change', function() {
-            const isHK = this.value === 'hk';
-            const hkConfig = document.getElementById('hk-config');
-            const topicPeriodInputs = document.querySelectorAll('.hk-period-inputs');
-
-            // Ẩn hiện phần tổng tiết chung
-            if (hkConfig) {
-                if (isHK) hkConfig.classList.remove('hidden');
-                else hkConfig.classList.add('hidden');
-            }
-
-            // Ẩn hiện phần số tiết con trong từng chủ đề
-            topicPeriodInputs.forEach(el => {
-                if (isHK) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            });
+        examTypeSelect.addEventListener('change', () => {
+            const isHK = examTypeSelect.value === 'hk';
+            document.querySelectorAll('.hk-only').forEach(el => el.style.display = isHK ? 'block' : 'none');
         });
-        // Kích hoạt ngay lần đầu
+        // Kích hoạt trạng thái ban đầu
         examTypeSelect.dispatchEvent(new Event('change'));
     }
 });
 
-// --- HÀM THÊM CHỦ ĐỀ ---
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
-
     if (container && template) {
         const clone = template.content.cloneNode(true);
-        container.appendChild(clone);
-
-        // Kiểm tra lại trạng thái hiển thị của dòng mới thêm
-        const examType = document.getElementById('exam_type');
-        if (examType) {
-            const isHK = examType.value === 'hk';
-            const newRow = container.lastElementChild; // Dòng vừa thêm (div.topic-item)
-            const hkInputs = newRow.querySelector('.hk-period-inputs');
-            if (hkInputs) {
-                if (isHK) hkInputs.classList.remove('hidden');
-                else hkInputs.classList.add('hidden');
-            }
+        // Gán sự kiện xóa
+        const btnRemove = clone.querySelector('.remove-topic-btn');
+        if(btnRemove) {
+            btnRemove.addEventListener('click', function() {
+                this.closest('.topic-row').remove();
+            });
         }
+        container.appendChild(clone);
+        
+        // Cập nhật hiển thị
+        const examType = document.getElementById('exam_type');
+        if(examType) examType.dispatchEvent(new Event('change'));
     }
 }
 
-// --- XỬ LÝ CHÍNH: GỌI API STREAMING ---
+// --- HÀM XỬ LÝ TOÁN HỌC (PHIÊN BẢN HIỂN THỊ CHUẨN WORD) ---
+function cleanMathFormulas(text) {
+    if (!text) return "";
+    let s = text;
+
+    // 1. Xóa các thẻ bao LaTeX ($...$, \[...\], \(...\))
+    s = s.replace(/\\\[(.*?)\\\]/g, '$1'); 
+    s = s.replace(/\\\((.*?)\\\)/g, '$1'); 
+    s = s.replace(/\$(.*?)\$/g, '$1');     
+
+    // 2. Xóa các lệnh định dạng thừa
+    const garbage = ['\\displaystyle', '\\limits', '\\left', '\\right', '\\mathrm', '\\mathbf', '\\it', '\\rm'];
+    garbage.forEach(cmd => { s = s.split(cmd).join(''); });
+
+    // 3. XỬ LÝ CẤU TRÚC PHỨC TẠP (Chuyển sang dạng Text dễ đọc trong Word)
+    
+    // Căn bậc n: \sqrt[n]{x} -> n√x
+    s = s.replace(/\\sqrt\[(.+?)\]\{(.+?)\}/g, '$1√$2');
+    // Căn bậc 2: \sqrt{x} -> √x
+    s = s.replace(/\\sqrt\{(.+?)\}/g, '√($1)');
+    s = s.replace(/\\sqrt\s+(.)/g, '√$1');
+
+    // Phân số: \frac{a}{b} -> (a)/(b) (Dùng dấu gạch chéo để Word không bị vỡ dòng)
+    s = s.replace(/\\frac\{(.+?)\}\{(.+?)\}/g, '($1/$2)');
+    s = s.replace(/\\frac\s+(\w)\s+(\w)/g, '$1/$2');
+
+    // Số mũ và chỉ số dưới
+    // ^2 -> ²
+    const supers = { '0':'⁰', '1':'¹', '2':'²', '3':'³', '4':'⁴', '5':'⁵', '6':'⁶', '7':'⁷', '8':'⁸', '9':'⁹', '+': '⁺', '-': '⁻', 'n': 'ⁿ' };
+    s = s.replace(/\^([0-9n+\-])/g, (m, p1) => supers[p1] || m);
+    s = s.replace(/\^\{([0-9n+\-]+)\}/g, (m, p1) => p1.split('').map(c => supers[c] || c).join(''));
+    // Mũ phức tạp giữ nguyên dấu ^: a^{x+1} -> a^(x+1)
+    s = s.replace(/\^\{(.+?)\}/g, '^($1)');
+
+    // Chỉ số dưới: a_1 -> a₁
+    const subs = { '0':'₀', '1':'₁', '2':'₂', '3':'₃', '4':'₄', '5':'₅', '6':'₆', '7':'₇', '8':'₈', '9':'₉', 'n': 'ₙ' };
+    s = s.replace(/_([0-9n])/g, (m, p1) => subs[p1] || m);
+    s = s.replace(/_\{([0-9n]+)\}/g, (m, p1) => p1.split('').map(c => subs[c] || c).join(''));
+    s = s.replace(/_\{(.+?)\}/g, '_$1'); // Chỉ số phức tạp giữ nguyên _
+
+    // Vector & Góc
+    s = s.replace(/\\vec\{(.+?)\}/g, '$1\u20D7'); // Mũ tên trên đầu (kết hợp ký tự)
+    s = s.replace(/\\hat\{(.+?)\}/g, '∠$1');
+
+    // 4. MAP KÝ TỰ ĐẶC BIỆT (UNICODE)
+    const replacements = {
+        '\\\\approx': '≈', '\\\\le': '≤', '\\\\leq': '≤', '\\\\ge': '≥', '\\\\geq': '≥',
+        '\\\\ne': '≠', '\\\\neq': '≠', '\\\\pm': '±', '\\\\times': '×', '\\\\div': '÷',
+        '\\\\cdot': '·', '\\\\circ': '°', '\\\\angle': '∠', '\\\\triangle': '∆',
+        '\\\\in': '∈', '\\\\notin': '∉', '\\\\infty': '∞', '\\\\rightarrow': '→', '\\\\Rightarrow': '⇒',
+        '\\\\alpha': 'α', '\\\\beta': 'β', '\\\\gamma': 'γ', '\\\\Delta': 'Δ', '\\\\pi': 'π', 
+        '\\\\theta': 'θ', '\\\\lambda': 'λ', '\\\\omega': 'ω', '\\\\Omega': 'Ω', '\\\\sigma': 'σ',
+        '\\\\sqrt': '√', '\\\\{': '{', '\\\\}': '}', '\\\\%': '%',
+    };
+
+    for (const [key, value] of Object.entries(replacements)) {
+        s = s.split(key).join(value);
+    }
+
+    // Dọn dẹp cuối cùng
+    s = s.replace(/\\text\{(.+?)\}/g, '$1');
+    s = s.replace(/\\/g, ''); 
+    s = s.replace(/\s+/g, ' ').trim();
+
+    return s;
+}
+
+// --- XỬ LÝ CHÍNH ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -69,13 +118,12 @@ async function handleGenerate() {
     const previewSection = document.getElementById('previewSection');
     const previewContent = document.getElementById('previewContent');
 
-    // UI Reset
-    loading.classList.remove('hidden');
-    error.classList.add('hidden');
-    previewSection.classList.add('hidden');
-    previewContent.innerHTML = "";
+    loading.style.display = 'block';
+    loading.innerText = "Đang kết nối AI và viết từng dòng...";
+    error.style.display = 'none';
+    previewSection.style.display = 'none';
+    previewContent.innerHTML = ""; 
     btn.disabled = true;
-    error.innerHTML = "";
 
     try {
         const licenseKey = document.getElementById('license_key').value.trim();
@@ -94,8 +142,7 @@ async function handleGenerate() {
             topics: []
         };
 
-        // Thu thập chủ đề
-        const topicRows = document.querySelectorAll('.topic-item'); // Class mới
+        const topicRows = document.querySelectorAll('.topic-row');
         topicRows.forEach(row => {
             const name = row.querySelector('.topic-name').value.trim();
             const content = row.querySelector('.topic-content').value.trim();
@@ -123,11 +170,10 @@ async function handleGenerate() {
             throw new Error(`Lỗi Server (${response.status}): ${errMsg}`);
         }
 
-        // Hiện khung Preview
-        previewSection.classList.remove('hidden');
+        // ĐỌC STREAM HTML
+        previewSection.style.display = 'block';
         previewSection.scrollIntoView({ behavior: 'smooth' });
 
-        // Đọc Stream HTML
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullHtml = "";
@@ -137,44 +183,75 @@ async function handleGenerate() {
             if (done) break;
             
             const chunk = decoder.decode(value, { stream: true });
-            fullHtml += chunk;
             
-            // Xóa rác Markdown nếu có
-            let cleanChunk = fullHtml.replace(/```html/g, '').replace(/```/g, '');
-            previewContent.innerHTML = cleanChunk;
+            // --- ÁP DỤNG HÀM LÀM ĐẸP TOÁN HỌC VÀO CHUNK TRƯỚC KHI HIỂN THỊ ---
+            let processedChunk = cleanMathFormulas(chunk);
+            fullHtml += processedChunk;
+            
+            // Làm sạch HTML rác
+            let cleanDisplay = fullHtml.replace(/```html/g, '').replace(/```/g, '');
+            previewContent.innerHTML = cleanDisplay;
         }
 
         window.generatedHTML = previewContent.innerHTML;
-        loading.classList.add('hidden');
+        loading.style.display = 'none';
 
     } catch (err) {
-        error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${err.message}`;
-        error.classList.remove('hidden');
-        loading.classList.add('hidden');
+        error.innerHTML = `<strong>⚠️ Lỗi:</strong> ${err.message}`;
+        error.style.display = 'block';
+        loading.style.display = 'none';
     } finally {
         btn.disabled = false;
     }
 }
 
-// --- XUẤT FILE WORD ---
+// --- XỬ LÝ TẢI FILE WORD (ĐỊNH DẠNG BẢNG CHUẨN) ---
 function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
     const css = `
         <style>
             body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; }
-            table { width: 100%; border-collapse: collapse; border: 1pt solid black; margin-bottom: 20px; }
-            th, td { border: 1pt solid black; padding: 5px; vertical-align: top; font-size: 11pt; }
+            
+            /* Bảng biểu */
+            table { 
+                width: 100%; 
+                border-collapse: collapse !important; 
+                border: 1pt solid black !important;
+                margin-bottom: 20px;
+            }
+            th, td { 
+                border: 1pt solid black !important; 
+                padding: 5px; 
+                vertical-align: top; 
+                font-size: 12pt; /* Cỡ chữ trong bảng nhỏ hơn chút */
+            }
             th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
-            h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-top: 15pt; color: #000; }
+            
+            /* Tiêu đề */
+            h1, h2, h3, h4 { 
+                text-align: center; 
+                font-weight: bold; 
+                margin-top: 15pt; 
+                color: #000 !important;
+            }
+            
+            /* In đậm, in nghiêng */
+            b, strong { font-weight: bold; }
+            i, em { font-style: italic; }
         </style>
     `;
 
     const htmlContent = `
         <!DOCTYPE html>
         <html>
-        <head><meta charset="utf-8">${css}</head>
-        <body>${window.generatedHTML}</body>
+        <head>
+            <meta charset="utf-8">
+            ${css}
+        </head>
+        <body>
+            ${window.generatedHTML}
+        </body>
         </html>
     `;
 
@@ -184,11 +261,11 @@ function handleDownloadWord() {
                 orientation: 'landscape',
                 margins: { top: 720, right: 720, bottom: 720, left: 720 }
             });
-            saveAs(converted, `Ma_Tran_De_7991_${new Date().getTime()}.docx`);
+            saveAs(converted, `Ma_Tran_De_Kiem_Tra_${new Date().getTime()}.docx`);
         } else {
-            alert("Lỗi thư viện Word. Vui lòng tải lại trang.");
+            alert("Đang tải thư viện... Vui lòng thử lại.");
         }
     } catch (e) {
-        alert("Lỗi tải file: " + e.message);
+        alert("Lỗi tạo file: " + e.message);
     }
 }
