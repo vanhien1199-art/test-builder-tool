@@ -125,25 +125,20 @@ async function handleGenerate() {
     }
 }
 
-
-// --- XUẤT FILE WORD (ỔN ĐỊNH - KHÔNG CẦN TẢI LẠI) ---
-// File: public/js/app.js
-
-// ... (Giữ nguyên phần code logic thêm chủ đề/gọi API ở trên) ...
-// ... Chỉ thay thế hàm handleDownloadWord và các hàm bổ trợ bên dưới ...
-
 // ============================================================
-// --- XUẤT FILE WORD (SỬ DỤNG THƯ VIỆN ONLINE) ---
+// --- XUẤT FILE WORD (ỔN ĐỊNH - KHÔNG CẦN TẢI LẠI) ---
 // ============================================================
 
 async function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
-    // --- KIỂM TRA THƯ VIỆN ONLINE ---
-    // Kiểm tra biến 'docx' có tồn tại không. Nếu không -> Link trong index.html bị lỗi/chặn
+    // --- KIỂM TRA THƯ VIỆN NỘI BỘ ---
     if (typeof docx === 'undefined') {
-        alert("LỖI MẠNG: Trình duyệt không thể tải thư viện tạo Word từ máy chủ Online (CDN).\n\nHãy thử:\n1. Kiểm tra kết nối mạng.\n2. Tải lại trang (F5).\n3. Nếu vẫn lỗi, mạng của bạn có thể đang chặn 'cdn.jsdelivr.net'.");
+        alert("LỖI: Không tìm thấy file 'js/docx.js'. Hãy kiểm tra xem bạn đã tải file về thư mục public/js chưa.");
         return;
+    }
+    if (typeof temml === 'undefined') {
+        console.warn("Cảnh báo: Không tìm thấy 'js/temml.js'. Công thức toán có thể lỗi.");
     }
 
     const btn = document.getElementById('btnDownloadWord');
@@ -152,7 +147,6 @@ async function handleDownloadWord() {
     btn.disabled = true;
 
     try {
-        // Destructure các thành phần
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, HeadingLevel, TextRun, AlignmentType, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical } = docx;
 
         const parser = new DOMParser();
@@ -167,7 +161,7 @@ async function handleDownloadWord() {
             spacing: { after: 300 }
         }));
 
-        // Hàm Helper: Chuyển MathML XML -> Docx Object
+        // --- HÀM CONVERT MATHML XML -> DOCX ---
         function convertMathmlToDocx(mathmlString) {
             const xmlDoc = new DOMParser().parseFromString(mathmlString, "text/xml");
             const rootMath = xmlDoc.getElementsByTagName("math")[0];
@@ -177,15 +171,13 @@ async function handleDownloadWord() {
                 if (!node) return [];
                 const results = [];
                 const childNodes = Array.from(node.childNodes);
-
                 for (const child of childNodes) {
-                    if (child.nodeType === 3) { // Text node
+                    if (child.nodeType === 3) { 
                         if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue));
                         continue;
                     }
                     const tagName = child.tagName.toLowerCase();
                     const grandChildren = traverse(child);
-
                     switch (tagName) {
                         case 'mn': case 'mi': case 'mo': case 'mtext':
                             results.push(new MathRun(child.textContent)); break;
@@ -197,8 +189,7 @@ async function handleDownloadWord() {
                             if (grandChildren.length >= 2) results.push(new MathSubScript({ children: [grandChildren[0]], subScript: [grandChildren[1]] })); break;
                         case 'msqrt':
                             results.push(new MathRadical({ children: grandChildren })); break;
-                        default:
-                            results.push(...grandChildren); break;
+                        default: results.push(...grandChildren); break;
                     }
                 }
                 return results;
@@ -206,12 +197,11 @@ async function handleDownloadWord() {
             return new MathObj({ children: traverse(rootMath) });
         }
 
-        // Logic duyệt HTML
+        // --- LOGIC DUYỆT HTML ---
         for (const el of elements) {
             if (['H2', 'H3', 'H4'].includes(el.tagName)) {
                 let level = HeadingLevel.HEADING_2;
                 if (el.tagName === 'H3') level = HeadingLevel.HEADING_3;
-                
                 docxChildren.push(new Paragraph({
                     text: el.innerText,
                     heading: level,
@@ -242,47 +232,43 @@ async function handleDownloadWord() {
             }
         }
 
-        // Hàm parse Text + LaTeX
+        // --- HÀM TÁCH TEXT VÀ LATEX ---
         function parseContent(html) {
-            // Tách chuỗi latex $$...$$
             const parts = html.split(/\$\$(.*?)\$\$/g);
             const runs = [];
             parts.forEach((part, idx) => {
                 if (idx % 2 === 1) { // Là LaTeX
                     try {
+                        // Nếu có temml thì convert, không thì hiện text
                         if (typeof temml !== 'undefined') {
                             const mml = temml.renderToString(part, { xml: true });
                             const mathObj = convertMathmlToDocx(mml);
                             if (mathObj) runs.push(mathObj);
                             else runs.push(new TextRun({ text: `$$${part}$$`, color: "red" }));
                         } else {
-                            // Nếu Temml không tải được thì in đậm text
-                            runs.push(new TextRun({ text: `$$${part}$$`, bold: true, color: "blue" }));
+                             runs.push(new TextRun({ text: `$$${part}$$`, bold: true }));
                         }
                     } catch (e) {
                         runs.push(new TextRun({ text: `$$${part}$$`, color: "red" }));
                     }
                 } else { // Là Text thường
-                    const txt = part.replace(/<[^>]*>?/gm, ''); // Xóa thẻ HTML dư
+                    const txt = part.replace(/<[^>]*>?/gm, '');
                     if(txt) runs.push(new TextRun(txt));
                 }
             });
             return [new Paragraph({ children: runs })];
         }
 
-        // Tạo file và lưu
+        // --- TẠO FILE ---
         const doc = new Document({ sections: [{ children: docxChildren }] });
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `De_Thi_AI_${Date.now()}.docx`);
 
     } catch (e) {
-        alert("Có lỗi khi tạo file: " + e.message);
+        alert("Lỗi xuất file: " + e.message);
         console.error(e);
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
-
-
-
