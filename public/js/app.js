@@ -21,35 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const hkConfig = document.getElementById('hk-config');
             const topicPeriodInputs = document.querySelectorAll('.hk-period-inputs');
 
-            if (hkConfig) {
-                if (isHK) hkConfig.classList.remove('hidden');
-                else hkConfig.classList.add('hidden');
-            }
-            topicPeriodInputs.forEach(el => {
-                if (isHK) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            });
+            if (hkConfig) isHK ? hkConfig.classList.remove('hidden') : hkConfig.classList.add('hidden');
+            topicPeriodInputs.forEach(el => isHK ? el.classList.remove('hidden') : el.classList.add('hidden'));
         });
         examTypeSelect.dispatchEvent(new Event('change'));
     }
 });
 
-// --- HÀM HỖ TRỢ: TỰ ĐỘNG TẢI THƯ VIỆN NẾU THIẾU ---
-function loadLibrary(url) {
-    return new Promise((resolve, reject) => {
-        // Kiểm tra xem đã có thẻ script này chưa
-        if (document.querySelector(`script[src="${url}"]`)) {
-            // Nếu có rồi, đợi 1 chút để đảm bảo nó load xong
-            setTimeout(resolve, 500); 
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = url;
-        script.onload = () => { console.log(`Đã tải xong: ${url}`); resolve(); };
-        script.onerror = () => reject(new Error(`Không tải được: ${url}`));
-        document.head.appendChild(script);
-    });
-}
+// --- CÁC HÀM XỬ LÝ GIAO DIỆN ---
 
 function addTopicRow() {
     const container = document.getElementById('topics-container');
@@ -65,12 +44,9 @@ function addTopicRow() {
             if (hkInputs) hkInputs.classList.remove('hidden');
         }
         
-        // Gán sự kiện xóa
         const newRow = container.lastElementChild;
         const btnRemove = newRow.querySelector('.remove-topic-btn');
-        if (btnRemove) {
-            btnRemove.addEventListener('click', () => newRow.remove());
-        }
+        if (btnRemove) btnRemove.addEventListener('click', () => newRow.remove());
     }
 }
 
@@ -88,11 +64,8 @@ async function handleGenerate() {
     btn.disabled = true;
 
     try {
-        const licenseKey = document.getElementById('license_key').value.trim();
-        // Skip check license for demo logic
-        
         const requestData = {
-            license_key: licenseKey,
+            license_key: document.getElementById('license_key').value.trim(),
             subject: document.getElementById('subject').value.trim(),
             grade: document.getElementById('grade').value.trim(),
             semester: document.getElementById('semester').value,
@@ -143,7 +116,6 @@ async function handleGenerate() {
 
         window.generatedHTML = previewContent.innerHTML;
         loading.classList.add('hidden');
-
     } catch (err) {
         error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${err.message}`;
         error.classList.remove('hidden');
@@ -154,35 +126,27 @@ async function handleGenerate() {
 }
 
 // ============================================================
-// --- XUẤT FILE WORD VỚI CƠ CHẾ SELF-HEALING (TỰ TẢI LIB) ---
+// --- XUẤT FILE WORD (ỔN ĐỊNH - KHÔNG CẦN TẢI LẠI) ---
 // ============================================================
 
 async function handleDownloadWord() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
+    // --- KIỂM TRA THƯ VIỆN NỘI BỘ ---
+    if (typeof docx === 'undefined') {
+        alert("LỖI: Không tìm thấy file 'js/docx.js'. Hãy kiểm tra xem bạn đã tải file về thư mục public/js chưa.");
+        return;
+    }
+    if (typeof temml === 'undefined') {
+        console.warn("Cảnh báo: Không tìm thấy 'js/temml.js'. Công thức toán có thể lỗi.");
+    }
+
     const btn = document.getElementById('btnDownloadWord');
     const originalText = btn.innerHTML;
-    btn.innerHTML = `<i class="fas fa-sync fa-spin"></i> Đang tải thư viện & xử lý...`;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Đang xử lý...`;
     btn.disabled = true;
 
     try {
-        // --- BƯỚC 1: KIỂM TRA VÀ TẢI THƯ VIỆN NẾU THIẾU ---
-        if (typeof docx === 'undefined') {
-            console.log("Đang tải thư viện DOCX...");
-            await loadLibrary('https://unpkg.com/docx@7.1.0/build/index.js');
-        }
-        
-        if (typeof temml === 'undefined') {
-            console.log("Đang tải thư viện Temml...");
-            await loadLibrary('https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js');
-        }
-
-        // Kiểm tra lại lần cuối
-        if (typeof docx === 'undefined' || typeof temml === 'undefined') {
-            throw new Error("Không thể kết nối máy chủ thư viện (CDN). Vui lòng kiểm tra mạng.");
-        }
-
-        // --- BƯỚC 2: BẮT ĐẦU XỬ LÝ DOCX ---
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, HeadingLevel, TextRun, AlignmentType, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical } = docx;
 
         const parser = new DOMParser();
@@ -197,7 +161,7 @@ async function handleDownloadWord() {
             spacing: { after: 300 }
         }));
 
-        // Hàm Helper chuyển đổi MathML -> Docx (Đặt bên trong để đảm bảo closure)
+        // --- HÀM CONVERT MATHML XML -> DOCX ---
         function convertMathmlToDocx(mathmlString) {
             const xmlDoc = new DOMParser().parseFromString(mathmlString, "text/xml");
             const rootMath = xmlDoc.getElementsByTagName("math")[0];
@@ -207,7 +171,6 @@ async function handleDownloadWord() {
                 if (!node) return [];
                 const results = [];
                 const childNodes = Array.from(node.childNodes);
-
                 for (const child of childNodes) {
                     if (child.nodeType === 3) { 
                         if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue));
@@ -215,7 +178,6 @@ async function handleDownloadWord() {
                     }
                     const tagName = child.tagName.toLowerCase();
                     const grandChildren = traverse(child);
-
                     switch (tagName) {
                         case 'mn': case 'mi': case 'mo': case 'mtext':
                             results.push(new MathRun(child.textContent)); break;
@@ -227,8 +189,7 @@ async function handleDownloadWord() {
                             if (grandChildren.length >= 2) results.push(new MathSubScript({ children: [grandChildren[0]], subScript: [grandChildren[1]] })); break;
                         case 'msqrt':
                             results.push(new MathRadical({ children: grandChildren })); break;
-                        default:
-                            results.push(...grandChildren); break;
+                        default: results.push(...grandChildren); break;
                     }
                 }
                 return results;
@@ -236,12 +197,11 @@ async function handleDownloadWord() {
             return new MathObj({ children: traverse(rootMath) });
         }
 
-        // Logic duyệt HTML
+        // --- LOGIC DUYỆT HTML ---
         for (const el of elements) {
             if (['H2', 'H3', 'H4'].includes(el.tagName)) {
                 let level = HeadingLevel.HEADING_2;
                 if (el.tagName === 'H3') level = HeadingLevel.HEADING_3;
-                
                 docxChildren.push(new Paragraph({
                     text: el.innerText,
                     heading: level,
@@ -272,35 +232,40 @@ async function handleDownloadWord() {
             }
         }
 
-        // Hàm parse text mixed latex
+        // --- HÀM TÁCH TEXT VÀ LATEX ---
         function parseContent(html) {
             const parts = html.split(/\$\$(.*?)\$\$/g);
             const runs = [];
             parts.forEach((part, idx) => {
-                if (idx % 2 === 1) { // LaTeX
+                if (idx % 2 === 1) { // Là LaTeX
                     try {
-                        const mml = temml.renderToString(part, { xml: true });
-                        const mathObj = convertMathmlToDocx(mml);
-                        if (mathObj) runs.push(mathObj);
-                        else runs.push(new TextRun({ text: `$$${part}$$`, color: "red" }));
+                        // Nếu có temml thì convert, không thì hiện text
+                        if (typeof temml !== 'undefined') {
+                            const mml = temml.renderToString(part, { xml: true });
+                            const mathObj = convertMathmlToDocx(mml);
+                            if (mathObj) runs.push(mathObj);
+                            else runs.push(new TextRun({ text: `$$${part}$$`, color: "red" }));
+                        } else {
+                             runs.push(new TextRun({ text: `$$${part}$$`, bold: true }));
+                        }
                     } catch (e) {
                         runs.push(new TextRun({ text: `$$${part}$$`, color: "red" }));
                     }
-                } else { // Text
-                    const txt = part.replace(/<[^>]*>?/gm, ''); // Strip HTML tags
+                } else { // Là Text thường
+                    const txt = part.replace(/<[^>]*>?/gm, '');
                     if(txt) runs.push(new TextRun(txt));
                 }
             });
             return [new Paragraph({ children: runs })];
         }
 
-        // Tạo và tải file
+        // --- TẠO FILE ---
         const doc = new Document({ sections: [{ children: docxChildren }] });
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `De_Thi_AI_${Date.now()}.docx`);
 
     } catch (e) {
-        alert("Lỗi: " + e.message);
+        alert("Lỗi xuất file: " + e.message);
         console.error(e);
     } finally {
         btn.innerHTML = originalText;
