@@ -157,6 +157,13 @@ export async function onRequest(context) {
                - PHẢI dùng **Presentation MathML** đầy đủ.
                - Ví dụ đúng: <math><msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo> <mn>1</mn> <mo>=</mo> <mn>0</mn></math>
                - Không được viết tắt kiểu <math>x^2</math> (SAI).
+               - **VIẾT LIỀN MẠCH, KHÔNG XUỐNG DÒNG** trong thẻ <math>. 
+                 Ví dụ ĐÚNG: <math><msqrt><mn>2</mn></msqrt></math>
+                 Ví dụ SAI: 
+                 <math>
+                    <msqrt>...
+               - Căn bậc 2 dùng <msqrt>, Căn bậc n dùng <mroot>.
+               - Phân số dùng <mfrac>.
                - Kiểm tra kỹ thẻ đóng/mở của MathML.
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
@@ -287,6 +294,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
