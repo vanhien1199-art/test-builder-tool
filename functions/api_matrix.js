@@ -85,8 +85,8 @@ export async function onRequest(context) {
             Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
             - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %"
             - Cột 2: Tên chủ đề - lấy từ chủ đề nhập từ đầu vào
-            - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng chủ đề)
-            - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
+            - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng đơn vị kiến thức)
+            - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…) hoặc để trống
             - Cột 16: Tính tổng các ô ở cột D,G,J,M
             - Cột 17: Tính tổng các ổ ở cột E,H,K,N
             - Cột 18: Tính tổng các ô ở cột F,I,L,O
@@ -288,5 +288,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
