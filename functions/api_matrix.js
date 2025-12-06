@@ -160,7 +160,7 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
     - Sử dụng HTML Table chuẩn (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>, \`colspan\` / \`rowspan\`.)**.
     - Border="1", Cellpadding="5".
     - Không dùng Markdown table, không dùng code block cho bảng.
-    - Công thức Toán/Lý/Hóa: Dùng LaTeX đặt trong dấu `$$` (Ví dụ: $$ E = mc^2 $$).
+    - Công thức Toán/Lý/Hóa: Dùng LaTeX đặt trong dấu $$ (Ví dụ: $$ E = mc^2 $$).
 
 2.  **LOGIC PHÂN BỔ KIẾN THỨC:**
     - Nếu đề bài có yếu tố "Học kỳ": Phân bổ điểm 25% (nửa đầu) - 75% (nửa sau) hoặc theo số tiết thực tế.
@@ -274,6 +274,7 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
         }
     }
 }
+
 
 
 
