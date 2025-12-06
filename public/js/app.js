@@ -82,6 +82,11 @@ async function handleGenerate() {
 
     try {
         const get = id => document.getElementById(id).value.trim();
+        // --- 1. KIỂM TRA MÃ KÍCH HOẠT (QUAN TRỌNG) ---
+        const licenseKey = get('license_key');
+        if (!licenseKey) {
+            throw new Error("Vui lòng nhập Mã Kích Hoạt để tiếp tục!");
+        }
         const data = {
             license_key: get('license_key'), 
             subject: get('subject'), 
