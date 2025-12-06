@@ -2,14 +2,13 @@
 export async function onRequest(context) {
     const { request, env } = context;
     
-    // Cấu hình CORS (Cho phép Frontend gọi)
+    // Cấu hình CORS
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // Xử lý Preflight Request
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
     if (request.method === "POST") {
@@ -17,36 +16,45 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL (GỌI TRỰC TIẾP) ---
-            // Bạn có thể đổi thành "gemini-1.5-flash" hoặc "gemini-2.0-flash-exp" tùy ý tại đây
-            const MODEL_NAME = "gemini-2.5-pro"; 
-            
-            // URL chuẩn của Google API (Chế độ Streaming Server-Sent Events)
+            const MODEL_NAME = "gemini-2.0-flash";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
-            const { license_key, topics, subject, grade, semester, exam_type, time, use_short_answer, totalPeriodsHalf1, totalPeriodsHalf2 } = body;
-
             
-            // --- 1. KIỂM TRA LICENSE (KV) ---
-            if (env.TEST_TOOL && license_key) {
-                const creditStr = await env.TEST_TOOL.get(license_key);
-                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
+            // Destructure đầy đủ các biến từ Client gửi lên
+            const { 
+                license_key, 
+                topics, 
+                subject, 
+                grade, 
+                semester, 
+                exam_type, 
+                time, 
+                use_short_answer, 
+                totalPeriodsHalf1, 
+                totalPeriodsHalf2 
+            } = body;
+            
+            // --- 1. LOGIC KIỂM TRA LICENSE (KV) ---
+            if (env.TEST_TOOL && license_key) { 
+                const creditStr = await env.TEST_TOOL.get(license_key); 
+                if (!creditStr) {
+                    return new Response(JSON.stringify({ error: "MÃ KÍCH HOẠT KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
+                }
                 
                 let currentCredit = parseInt(creditStr);
-                if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
+                if (currentCredit <= 0) {
+                    return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
+                }
             }
 
-            // --- 2. CHUẨN BỊ DỮ LIỆU ---
-            // 1. Tạo mô tả chi tiết từng chủ đề kèm số tiết
+            // --- 2. CHUẨN BỊ DỮ LIỆU (Cập nhật theo yêu cầu mới) ---
             let topicsDescription = topics.map((t, index) => {
                 let periodInfo = "";
                 if (exam_type === 'hk') {
                     periodInfo = `(Số tiết dạy: Nửa đầu HK=${t.p1}, Nửa sau HK=${t.p2})`;
                 }
-                return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
-            }).join("\n");
-           return `Chủ đề ${index + 1}: ${t.name} - Nội dung: ${t.content} ${periodInfo}`;
+                return `Chủ đề ${index + 1}: ${t.name} - Nội dung: ${t.content} ${periodInfo}`;
             }).join("\n");
         
             // --- PROMPT (GIỮ NGUYÊN) ---
@@ -297,6 +305,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
