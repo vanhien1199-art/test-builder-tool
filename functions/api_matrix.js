@@ -170,7 +170,7 @@ export async function onRequest(context) {
             - Nếu là đề kiểm tra HỌC KÌ:
                  • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
                  • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
-                 • Ví dụ: Chủ đề A (nửa đầu: 5 tiết, nửa sau: 15 tiết) → Trọng số = (5×0.25 + 15×0.75)/20 = 62.5%
+                 • Ví dụ: Đơn vị kiên thức 1 (nửa đầu: 5 tiết) tổng số tiết nửa đầu kì là 9 → Trọng số = (5×0.25)/9
             - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
             3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
            - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
@@ -292,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
