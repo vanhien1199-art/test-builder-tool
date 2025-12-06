@@ -25,8 +25,9 @@ export async function onRequest(context) {
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
-            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
+            const { license_key, topics, subject, grade, semester, exam_type, time, use_short_answer, totalPeriodsHalf1, totalPeriodsHalf2 } = body;
 
+            
             // --- 1. KIỂM TRA LICENSE (KV) ---
             if (env.TEST_TOOL && license_key) {
                 const creditStr = await env.TEST_TOOL.get(license_key);
@@ -37,11 +38,18 @@ export async function onRequest(context) {
             }
 
             // --- 2. CHUẨN BỊ DỮ LIỆU ---
+            // 1. Tạo mô tả chi tiết từng chủ đề kèm số tiết
             let topicsDescription = topics.map((t, index) => {
+                let periodInfo = "";
+                if (exam_type === 'hk') {
+                    periodInfo = `(Số tiết dạy: Nửa đầu HK=${t.p1}, Nửa sau HK=${t.p2})`;
+                }
                 return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
             }).join("\n");
-           
-            // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
+           return `Chủ đề ${index + 1}: ${t.name} - Nội dung: ${t.content} ${periodInfo}`;
+            }).join("\n");
+        
+            // --- PROMPT (GIỮ NGUYÊN) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
@@ -49,14 +57,20 @@ export async function onRequest(context) {
             ## YÊU CẦU ĐẦU VÀO
             Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
 
-            1. Môn học: ${subject} lớp ${grade}
-            2. Học kì: ${semester}, năm học 2024-2025
-            3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
-            4. Chủ đề/Chương cần kiểm tra: (Xem danh sách bên dưới)
-            5. Nội dung/đơn vị kiến thức: ${topicsDescription}
-            6. Thời lượng kiểm tra: ${time} phút
-            7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
-
+          ## YÊU CẦU ĐẦU VÀO
+            1. Môn học: ${subject} - Lớp ${grade}
+            2. Học kì: ${semester}
+            3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra Cuối kì (Học kì)' : 'Kiểm tra Giữa kì'}
+            4. Thời gian làm bài: ${time} phút
+            5. Hình thức câu hỏi Trả lời ngắn: ${use_short_answer ? 'CÓ' : 'KHÔNG'}
+            
+            ## DANH SÁCH CHỦ ĐỀ VÀ THỜI LƯỢNG DẠY:
+            ${topicsDescription}
+            
+            ${exam_type === 'hk' ? `*LƯU Ý QUAN TRỌNG VỀ TRỌNG SỐ ĐIỂM (KIỂM TRA CUỐI KÌ):
+            - Tổng số tiết nửa đầu học kì: ${totalPeriodsHalf1} tiết.
+            - Tổng số tiết nửa sau học kì: ${totalPeriodsHalf2} tiết.
+           
             ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
             Tạo ra 1 tài liệu sau đúng định dạng:
 
@@ -159,11 +173,9 @@ export async function onRequest(context) {
                     LaTeX phải chuẩn (ví dụ dùng \frac{a}{b} cho phân số).
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
-            - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
-            - Nếu là đề kiểm tra HỌC KÌ:
-                 • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
-                 • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
-                 • Ví dụ: Chủ đề A (nửa đầu: 5 tiết, nửa sau: 15 tiết) → Trọng số = (5×0.25 + 15×0.75)/20 = 62.5%
+            - Nếu là đề kiểm tra định kì giữa kì:
+                - Hãy tính toán tỷ lệ điểm dựa trên số tiết thực tế của từng chủ đề so với tổng số tiết. 
+                - Nguyên tắc chung: Nội dung nửa sau học kì thường chiếm khoảng 75% điểm số, nửa đầu chiếm 25% (hãy cân đối theo số tiết thực tế tôi cung cấp ở trên).` : ''}
             - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
             3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
            - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
@@ -285,6 +297,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
