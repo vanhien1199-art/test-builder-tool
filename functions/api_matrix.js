@@ -152,20 +152,11 @@ export async function onRequest(context) {
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
                - CÔNG THỨC:
-               - KHÔNG dùng LaTeX ($x^2$ hay $$...$$). Word sẽ không hiểu.
-               - BẮT BUỘC viết công thức bằng mã **MathML** chuẩn (<math>...</math>).
-               - PHẢI dùng **Presentation MathML** đầy đủ.
-               - Ví dụ đúng: <math><msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo> <mn>1</mn> <mo>=</mo> <mn>0</mn></math>
-               - Không được viết tắt kiểu <math>x^2</math> (SAI).
-               - **VIẾT LIỀN MẠCH, KHÔNG XUỐNG DÒNG** trong thẻ <math>. 
+              - Bắt buộc dùng thẻ <math> chuẩn.
+               - KHÔNG dùng LaTeX.
+               - KHÔNG tự ý thêm namespace (như mml: hay m:), chỉ dùng thẻ chuẩn như <math>, <mi>, <mn>, <mo>, <msqrt>, <mfrac>.
+               - Viết liền mạch, KHÔNG xuống dòng giữa các thẻ toán để tránh lỗi hiển thị.
                  Ví dụ ĐÚNG: <math><msqrt><mn>2</mn></msqrt></math>
-                 Ví dụ SAI: 
-                 <math>
-                    <msqrt>...
-               - Căn bậc 2 dùng <msqrt>, Căn bậc n dùng <mroot>.
-               - Phân số dùng <mfrac>.
-               - Kiểm tra kỹ thẻ đóng/mở của MathML.
-               - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
             - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
@@ -294,16 +285,3 @@ export async function onRequest(context) {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
