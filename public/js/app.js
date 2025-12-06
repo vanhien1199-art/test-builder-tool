@@ -1,29 +1,46 @@
-// File: public/js/app.js - Final Implementation
+// File: public/js/app.js - Logic xử lý chính cho ExamMatrix AI
 
-// --- KHAI BÁO BIẾN TOÀN CỤC (FIX LỖI BẠN VỪA BỔ SUNG) ---
+// --- KHAI BÁO BIẾN TOÀN CỤC ---
 window.generatedHTML = "";
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Logic khởi tạo UI và gán sự kiện
+    // 1. Khởi tạo dòng chủ đề đầu tiên
     addTopicRow();
+
+    // 2. Gán sự kiện cho các nút
+    const btnAdd = document.getElementById('btnAddTopic');
+    const btnGen = document.getElementById('btnGenerate');
+    const btnDown = document.getElementById('btnDownloadWord');
+    const examTypeSelect = document.getElementById('exam_type');
+
+    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
+    if (btnGen) btnDown.addEventListener('click', handleDownloadWord); // Note: Chỉ gán download handler cho nút download
+    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
     
-    // Gán sự kiện cho các nút
-    document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
-    document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
-    
-    // Xử lý logic ẩn/hiện cấu hình Học kì
-    const examType = document.getElementById('exam_type');
-    if (examType) {
-        examType.addEventListener('change', function() {
+    // Sửa lỗi gán sự kiện cho nút Generate: Cần gọi handleGenerate
+    if (btnGen) btnGen.addEventListener('click', handleGenerate);
+
+    // 3. Xử lý Logic ẩn hiện ô nhập số tiết (Học kì)
+    if (examTypeSelect) {
+        examTypeSelect.addEventListener('change', function() {
             const isHK = this.value === 'hk';
-            const cfg = document.getElementById('hk-config');
-            if (cfg) isHK ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
-            document.querySelectorAll('.hk-period-inputs').forEach(d => isHK ? d.classList.remove('hidden') : d.classList.add('hidden'));
+            const hkConfig = document.getElementById('hk-config');
+            const topicPeriodInputs = document.querySelectorAll('.hk-period-inputs');
+
+            if (hkConfig) {
+                if (isHK) hkConfig.classList.remove('hidden');
+                else hkConfig.classList.add('hidden');
+            }
+
+            topicPeriodInputs.forEach(el => {
+                if (isHK) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
         });
-        examType.dispatchEvent(new Event('change'));
+        examTypeSelect.dispatchEvent(new Event('change'));
     }
     
-    // Gán sự kiện xóa cho các dòng chủ đề đã có
+    // Gán sự kiện xóa cho các dòng chủ đề đã có (hoặc sẽ có)
     document.getElementById('topics-container').addEventListener('click', function(e) {
         if (e.target.closest('.remove-topic-btn')) {
             e.target.closest('.topic-item').remove();
@@ -33,15 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- HÀM THÊM CHỦ ĐỀ ---
 function addTopicRow() {
-    const box = document.getElementById('topics-container');
-    const tpl = document.getElementById('topic-template');
-    const clone = tpl.content.cloneNode(true);
-    box.appendChild(clone);
-    
-    // Kiểm tra và hiển thị cấu hình HK nếu cần
-    const examType = document.getElementById('exam_type');
-    if (examType && examType.value === 'hk') {
-        box.lastElementChild.querySelector('.hk-period-inputs').classList.remove('hidden');
+    const container = document.getElementById('topics-container');
+    const template = document.getElementById('topic-template');
+    if (container && template) {
+        const clone = template.content.cloneNode(true);
+        container.appendChild(clone);
+
+        const examType = document.getElementById('exam_type');
+        if (examType && examType.value === 'hk') {
+            const newRow = container.lastElementChild;
+            const hkInputs = newRow.querySelector('.hk-period-inputs');
+            if (hkInputs) hkInputs.classList.remove('hidden');
+        }
     }
 }
 
@@ -86,7 +106,7 @@ async function handleGenerate() {
             fullHTML += decoder.decode(value, {stream:true});
         }
         
-        // LỌC RÁC: Chỉ xóa markdown block. GIỮ LẠI TOÀN BỘ NỘI DUNG (FIX: Không lọc bảng)
+        // GIỮ LẠI TOÀN BỘ NỘI DUNG, chỉ xóa markdown block.
         let finalContent = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
 
         prev.innerHTML = finalContent;
@@ -106,6 +126,10 @@ async function handleDownloadWord() {
     if (typeof docx === 'undefined') {
         alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
     }
+    if (typeof temml === 'undefined') {
+        alert("Lỗi: Thư viện Temml (xử lý toán) chưa tải xong."); return;
+    }
+
 
     const btn = document.getElementById('btnDownloadWord');
     btn.innerText = "Đang tạo file..."; btn.disabled = true;
@@ -156,9 +180,11 @@ async function handleDownloadWord() {
                             const mathChildren = convertXmlNode(mathRoot);
                             runs.push(new MathObj({ children: mathChildren }));
                         } else {
+                            // Fallback (Đã fix lỗi Hex Color)
                             runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                         }
                     } catch (e) { 
+                        // Lỗi parse
                         runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
                     }
                 } else { // Text
@@ -191,7 +217,7 @@ async function handleDownloadWord() {
                     spacing: { before: 200, after: 100 }
                 }));
             } 
-            // 2. Xử lý Bảng (FIX LỖI BẢNG VÀ COLSPAN/ROWSPAN)
+            // 2. Xử lý Bảng
             else if (tagName === 'TABLE') {
                 const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
                     new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
