@@ -3,59 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Native Word Fix</title>
+    <title>ExamMatrix AI - Modern ES6</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.css">
+    <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
 </head>
 <body>
     <header class="app-header">
-        <div class="header-content">
-            <div class="brand">
-                <div class="logo-icon"><i class="fas fa-brain"></i></div>
-                <div class="brand-text"><h1>ExamMatrix AI</h1><span class="badge">NATIVE</span></div>
-            </div>
-        </div>
+        <div class="header-content"><div class="brand"><h1>ExamMatrix AI</h1><span class="badge">ESM 2025</span></div></div>
     </header>
 
     <main class="main-container">
         <div class="card">
             <div class="card-header">1. Cấu hình</div>
             <div class="card-body">
-                <div class="grid-2">
-                    <div class="form-group"><label>Môn</label><input type="text" id="subject" value="Toán"></div>
-                    <div class="form-group"><label>Lớp</label><input type="text" id="grade" value="9"></div>
-                </div>
-                <div class="grid-3">
-                    <div class="form-group"><label>HK</label><select id="semester"><option value="1">1</option><option value="2">2</option></select></div>
-                    <div class="form-group"><label>Loại</label><select id="exam_type"><option value="gk">Giữa kì</option><option value="hk">Cuối kì</option></select></div>
-                    <div class="form-group"><label>Phút</label><select id="time_limit"><option value="45">45</option></select></div>
-                </div>
+                <div class="grid-2"><div class="form-group"><label>Môn</label><input id="subject" value="Toán"></div><div class="form-group"><label>Lớp</label><input id="grade" value="9"></div></div>
+                <div class="grid-3"><div class="form-group"><label>HK</label><select id="semester"><option value="1">1</option></select></div><div class="form-group"><label>Loại</label><select id="exam_type"><option value="gk">Giữa kì</option><option value="hk">Cuối kì</option></select></div><div class="form-group"><label>Phút</label><select id="time_limit"><option value="45">45</option></select></div></div>
                 <div class="form-group"><label><input type="checkbox" id="use_short"> Câu hỏi ngắn</label></div>
                 <div id="hk-config" class="hidden"><div class="grid-2"><input id="total_half1" placeholder="Tiết 1"><input id="total_half2" placeholder="Tiết 2"></div></div>
             </div>
         </div>
-
         <div class="card">
             <div class="card-header">2. Chủ đề</div>
-            <div class="card-body">
-                <div id="topics-container"></div>
-                <button class="btn btn-outline" id="btnAddTopic">+ Thêm Chủ đề</button>
-            </div>
+            <div class="card-body"><div id="topics-container"></div><button class="btn btn-outline" id="btnAddTopic">+ Thêm Chủ đề</button></div>
         </div>
-
-        <div class="license-card"><input type="text" id="license_key" placeholder="License Key"></div>
-
         <div class="action-area">
+            <input type="text" id="license_key" placeholder="License Key" style="margin-bottom:10px; text-align:center;">
             <button class="btn btn-primary btn-lg" id="btnGenerate">TẠO ĐỀ THI</button>
             <div id="loadingMsg" class="hidden">Đang xử lý...</div>
             <div id="errorMsg" class="hidden"></div>
         </div>
-
         <div id="previewSection" class="card hidden">
             <div class="card-body">
                 <div id="previewContent" class="preview-content"></div>
-                <button class="btn btn-success btn-lg" id="btnDownloadWord">TẢI FILE WORD (FIX LỖI CĂN)</button>
+                <button class="btn btn-success btn-lg" id="btnDownloadWord">TẢI FILE DOCX</button>
             </div>
         </div>
     </main>
@@ -68,6 +53,6 @@
         </div>
     </template>
 
-    <script src="js/app.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
