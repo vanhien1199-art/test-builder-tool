@@ -3,182 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Final Stable</title>
+    <title>ExamMatrix AI - Ultimate Fix</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="css/style.css"> 
-    
     <script src="https://cdn.jsdelivr.net/npm/temml/dist/temml.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/temml/dist/temml.css" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
+        .card-header { font-weight: bold; margin-bottom: 15px; color: #475569; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: #16a34a; }
+        .btn-outline { background: white; color: #475569; border: 1px dashed #94a3b8; }
+        .hidden { display: none; }
+        .topic-item { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
+        .remove-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold; }
+        #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; font-family: "Times New Roman"; }
+    </style>
 </head>
 <body>
 
-    <header class="app-header">
-        <div class="header-content">
-            <div class="brand">
-                <div class="logo-icon"><i class="fas fa-brain"></i></div>
-                <div class="brand-text">
-                    <h1>ExamMatrix AI</h1>
-                    <span class="badge">PRO 2.0</span>
-                </div>
-            </div>
-        </div>
-    </header>
+<div class="container">
+    <h1>ExamMatrix AI (Fixed Links)</h1>
 
-    <main class="main-container">
+    <div class="card">
+        <div class="card-header">1. Cấu hình</div>
+        <div class="form-row"><input id="subject" value="Toán"><input id="grade" value="9"></div>
+        <div class="grid-3">
+            <select id="semester"><option value="1">HK 1</option></select>
+            <select id="exam_type"><option value="gk">Giữa kì</option></select>
+            <select id="time_limit"><option value="45">45'</option></select>
+        </div>
+        <div style="margin-top: 10px;">
+            <label><input type="checkbox" id="use_short"> Câu hỏi ngắn</label>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">2. Chủ đề</div>
+        <div id="topics-container"></div>
+        <button class="btn btn-outline" onclick="addTopicRow()">+ Thêm Chủ đề</button>
+    </div>
+
+    <div class="card">
+        <input type="text" id="license_key" placeholder="Nhập License Key..." style="text-align: center;">
+    </div>
+
+    <button id="btnGenerate" class="btn btn-primary">TẠO ĐỀ THI</button>
+    <div id="loadingMsg" class="hidden" style="text-align: center; margin-top: 10px;">Đang xử lý...</div>
+    <div id="errorMsg" style="color: red; text-align: center; margin-top: 10px;"></div>
+
+    <div id="previewSection" class="hidden">
+        <h3>Kết quả</h3>
+        <div id="previewContent"></div>
+        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (.DOCX)</button>
+    </div>
+</div>
+
+<template id="topic-template">
+    <div class="topic-item">
+        <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        <div class="form-row"><input class="topic-name" placeholder="Tên chủ đề..."><textarea class="topic-content" rows="1" placeholder="Nội dung..."></textarea></div>
+    </div>
+</template>
+
+<script>
+    // --- KHAI BÁO BIẾN TOÀN CỤC ---
+    window.generatedHTML = "";
+
+    document.addEventListener('DOMContentLoaded', () => {
+        addTopicRow();
+        document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
+        document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
         
-        <div class="intro-section">
-            <h2>Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
-            <p>Chuẩn Công văn 7991/BGDĐT-GDTrH • Tự động tạo Equation</p>
-        </div>
+        const examType = document.getElementById('exam_type');
+        examType.addEventListener('change', function() {
+            const isHK = this.value === 'hk';
+            const cfg = document.getElementById('hk-config');
+            if(cfg) isHK ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
+            document.querySelectorAll('.hk-period-inputs').forEach(d => isHK ? d.classList.remove('hidden') : d.classList.add('hidden'));
+        });
+    });
 
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-sliders-h"></i> 1. Cấu Hình Đề Thi
-            </div>
-            <div class="card-body">
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>Môn học</label>
-                        <input type="text" id="subject" placeholder="Ví dụ: Khoa học tự nhiên" value="Khoa học tự nhiên">
-                    </div>
-                    <div class="form-group">
-                        <label>Lớp</label>
-                        <input type="text" id="grade" placeholder="Ví dụ: 8" value="8">
-                    </div>
-                </div>
+    function addTopicRow() {
+        const box = document.getElementById('topics-container');
+        const tpl = document.getElementById('topic-template');
+        const clone = tpl.content.cloneNode(true);
+        box.appendChild(clone);
+    }
 
-                <div class="grid-3">
-                    <div class="form-group">
-                        <label>Học kì</label>
-                        <select id="semester">
-                            <option value="1">Học kì 1</option>
-                            <option value="2">Học kì 2</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Loại kiểm tra</label>
-                        <select id="exam_type">
-                            <option value="gk">Giữa kì (Định kì)</option>
-                            <option value="hk">Cuối kì (Học kì)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Thời lượng</label>
-                        <select id="time_limit">
-                            <option value="45">45 phút</option>
-                            <option value="60">60 phút</option>
-                            <option value="90">90 phút</option>
-                        </select>
-                    </div>
-                </div>
+    // --- HÀM TẠO DỮ LIỆU: BỎ LỌC BẢNG ---
+    async function handleGenerate() {
+        const btn = document.getElementById('btnGenerate');
+        const loading = document.getElementById('loadingMsg');
+        const error = document.getElementById('errorMsg');
+        const sec = document.getElementById('previewSection');
+        const prev = document.getElementById('previewContent');
 
-                <div class="form-group checkbox-group">
-                    <label class="custom-checkbox">
-                        <input type="checkbox" id="use_short">
-                        <span class="checkmark"></span>
-                        <span class="label-text">Có sử dụng câu hỏi "Trả lời ngắn"</span>
-                    </label>
-                </div>
+        loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
 
-                <div id="hk-config" class="highlight-box hidden">
-                    <div class="box-title"><i class="fas fa-calculator"></i> Tính trọng số điểm (25% / 75%)</div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Tổng tiết (Nửa đầu HK)</label>
-                            <input type="number" id="total_half1" placeholder="Nhập số tiết...">
-                        </div>
-                        <div class="form-group">
-                            <label>Tổng tiết (Nửa sau HK)</label>
-                            <input type="number" id="total_half2" placeholder="Nhập số tiết...">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        try {
+            const get = id => document.getElementById(id).value.trim();
+            const data = {
+                license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
+                semester: '1', exam_type: 'gk', time: '45', use_short_answer: false, totalPeriodsHalf1: 0, totalPeriodsHalf2: 0,
+                topics: []
+            };
+            document.querySelectorAll('.topic-item').forEach(r => {
+                const n = r.querySelector('.topic-name').value;
+                const c = r.querySelector('.topic-content').value;
+                if(n) data.topics.push({name:n, content:c, p1: 0, p2: 0});
+            });
 
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-list-ol"></i> 2. Nội dung & Chủ đề
-            </div>
-            <div class="card-body">
-                <div id="topics-container">
-                    </div>
+            if(data.topics.length===0) throw new Error("Chưa nhập chủ đề!");
+
+            const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            if(!res.ok) throw new Error("Lỗi Server AI");
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullHTML = "";
+            while(true) {
+                const {done, value} = await reader.read();
+                if(done) break;
+                fullHTML += decoder.decode(value, {stream:true});
+            }
+            
+            // LỌC RÁC: Chỉ xóa markdown block. GIỮ LẠI TOÀN BỘ NỘI DUNG
+            let finalContent = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
+
+            prev.innerHTML = finalContent;
+            window.generatedHTML = finalContent; // LƯU TOÀN BỘ NỘI DUNG HTML
+            
+            sec.classList.remove('hidden'); 
+            sec.scrollIntoView({behavior:'smooth'});
+
+        } catch(e) { error.innerText = "Lỗi: " + e.message; } 
+        finally { loading.classList.add('hidden'); btn.disabled = false; }
+    }
+
+    // --- LOGIC XUẤT FILE DOCX VÀ FIX LỖI BẢNG ---
+    async function handleDownloadWord() {
+        if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+        
+        if (typeof docx === 'undefined') {
+            alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
+        }
+
+        const btn = document.getElementById('btnDownloadWord');
+        btn.innerText = "Đang tạo file..."; btn.disabled = true;
+
+        try {
+            // Lấy từ biến Global
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
+            
+            // Hàm Map Heading Level
+            const getHeadingLevel = (tag) => {
+                const map = { 'H1': HeadingLevel.HEADING_1, 'H2': HeadingLevel.HEADING_2, 'H3': HeadingLevel.HEADING_3, 'H4': HeadingLevel.HEADING_4, 'H5': HeadingLevel.HEADING_5, 'H6': HeadingLevel.HEADING_6 };
+                return map[tag] || HeadingLevel.NORMAL;
+            };
+
+            // 1. Hàm đệ quy: XML Node -> Docx Math Object (Giữ nguyên logic cũ)
+            function convertXmlNode(node) {
+                if (!node) return [];
+                const results = [];
+                node.childNodes.forEach(child => {
+                    if (child.nodeType === 3) { if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue)); return; }
+                    const tag = child.tagName.toLowerCase();
+                    const children = convertXmlNode(child);
+                    
+                    switch (tag) {
+                        case 'mn': case 'mi': case 'mo': case 'mtext': results.push(new MathRun(child.textContent)); break;
+                        case 'mfrac': if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
+                        case 'msup': if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
+                        case 'msqrt': results.push(new MathRadical({ children: children })); break;
+                        case 'mrow': case 'mstyle': results.push(...children); break;
+                        default: results.push(...children); break;
+                    }
+                });
+                return results;
+            }
+
+            // 2. Parse nội dung (Text + LaTeX)
+            function parseContent(htmlText) {
+                const parts = htmlText.split(/\$\$(.*?)\$\$/g);
+                const runs = [];
+                parts.forEach((part, index) => {
+                    if (index % 2 === 1) { // LaTeX
+                        try {
+                            if (typeof temml !== 'undefined') {
+                                const xmlString = temml.renderToString(part, { xml: true });
+                                const parser = new DOMParser();
+                                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+                                const mathRoot = xmlDoc.getElementsByTagName("math")[0];
+                                const mathChildren = convertXmlNode(mathRoot);
+                                runs.push(new MathObj({ children: mathChildren }));
+                            } else {
+                                runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
+                            }
+                        } catch (e) { 
+                            runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
+                        }
+                    } else { // Text
+                        const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
+                        if (cleanText.trim()) runs.push(new TextRun(cleanText));
+                    }
+                });
+                return [new Paragraph({ children: runs })];
+            }
+
+            // 3. Xây dựng Document
+            const parser = new DOMParser();
+            const docHTML = parser.parseFromString(window.generatedHTML, 'text/html');
+            const docChildren = [
+                new Paragraph({ text: "ĐỀ KIỂM TRA", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } })
+            ];
+
+            const docBodyChildren = Array.from(docHTML.body.children);
+            
+            docBodyChildren.forEach(el => {
+                const tagName = el.tagName;
+                const innerHTML = el.innerHTML;
                 
-                <button class="btn btn-outline" id="btnAddTopic">
-                    <i class="fas fa-plus-circle"></i> Thêm Chủ đề mới
-                </button>
-            </div>
-        </div>
+                // 1. Xử lý Tiêu đề (H1, H2, H3...)
+                if (tagName.match(/^H[1-6]$/)) {
+                    docChildren.push(new Paragraph({
+                        children: parseContent(innerHTML)[0].root.children, // Lấy runs từ parseContent
+                        heading: getHeadingLevel(tagName),
+                        alignment: AlignmentType.LEFT, // Mặc định là Left, có thể thêm logic center nếu có style
+                        spacing: { before: 200, after: 100 }
+                    }));
+                } 
+                // 2. Xử lý Bảng
+                else if (tagName === 'TABLE') {
+                    const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
+                        new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
+                            const colSpanAttr = td.getAttribute('colspan');
+                            const rowSpanAttr = td.getAttribute('rowspan');
 
-        <div class="license-card">
-            <div class="license-icon"><i class="fas fa-key"></i></div>
-            <div class="license-input">
-                <label>Mã kích hoạt phần mềm</label>
-                <input type="text" id="license_key" placeholder="Nhập mã License Key của bạn...">
-            </div>
-        </div>
+                            return new TableCell({ 
+                                children: parseContent(td.innerHTML),
+                                columnSpan: colSpanAttr ? parseInt(colSpanAttr) : undefined,
+                                rowSpan: rowSpanAttr ? parseInt(rowSpanAttr) : undefined,
+                                width: { size: 100, type: WidthType.PERCENTAGE }, 
+                                borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
+                            }); 
+                        })})
+                    );
+                    docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                    docChildren.push(new Paragraph(""));
+                }
+                // 3. Xử lý Đoạn văn (P, DIV, LI - thường là nội dung câu hỏi/đáp án)
+                else if (el.innerText.trim()) {
+                    // Dùng parseContent để xử lý LaTeX/Text
+                    docChildren.push(...parseContent(innerHTML));
+                }
+            });
 
-        <div class="action-area">
-            <button class="btn btn-primary btn-lg" id="btnGenerate">
-                <i class="fas fa-magic"></i> BẮT ĐẦU TẠO DỮ LIỆU
-            </button>
-            
-            <div id="loadingMsg" class="loading-state hidden">
-                <div class="spinner"></div>
-                <span>Đang kết nối siêu máy chủ AI... Vui lòng đợi...</span>
-            </div>
-            
-            <div id="errorMsg" class="error-box hidden"></div>
-        </div>
+            const doc = new Document({ sections: [{ children: docChildren }] });
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `De_Thi_Full_${Date.now()}.docx`);
 
-        <div id="previewSection" class="card preview-card hidden">
-            <div class="card-header success-header">
-                <i class="fas fa-check-circle"></i> Kết quả xử lý
-            </div>
-            <div class="card-body">
-                <div class="preview-scroll-area">
-                    <div id="previewContent" class="preview-content"></div>
-                </div>
-                <div class="preview-footer">
-                    <button class="btn btn-success btn-lg" id="btnDownloadWord">
-                        <i class="fas fa-file-word"></i> TẢI VỀ WORD (NATIVE EQUATION)
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="app-footer" style="text-align: center; padding: 20px 0; background: #fff; border-top: 1px solid #e2e8f0;">
-        © 2025 ExamMatrix AI System. All rights reserved.
-        <br>
-        <div style="margin-top: 10px; font-size: 0.9em; color: #64748b;">
-            Liên hệ hỗ trợ:
-            <a href="https://facebook.com/yourpage" target="_blank" style="color: #3b5998; margin: 0 10px;"><i class="fab fa-facebook"></i> Facebook</a> |
-            <a href="https://zalo.me/yourzalo" target="_blank" style="color: #0084ff; margin: 0 10px;"><i class="fas fa-mobile-alt"></i> Zalo</a> |
-            <a href="mailto:support@exammatrix.ai" style="color: #64748b; margin: 0 10px;"><i class="fas fa-envelope"></i> Email</a>
-        </div>
-    </footer>
-
-    <template id="topic-template">
-        <div class="topic-item">
-            <div class="topic-header"><span class="topic-label">Chủ đề</span><button class="remove-topic-btn btn-icon-danger"><i class="fas fa-times"></i></button></div>
-            <div class="grid-2">
-                <div class="form-group"><input class="topic-name" placeholder="Tên chủ đề..."></div>
-                <div class="form-group"><textarea class="topic-content" rows="1" placeholder="Nội dung..."></textarea></div>
-            </div>
-            <div class="grid-2 hk-period-inputs hidden">
-                <div class="form-group mini"><input type="number" class="topic-period-1" placeholder="Tiết 1"></div>
-                <div class="form-group mini"><input type="number" class="topic-period-2" placeholder="Tiết 2"></div>
-            </div>
-        </div>
-    </template>
-
-    <script src="js/app.js"></script>
+        } catch(e) {
+            alert("Lỗi xuất file: " + e.message);
+            console.error(e);
+        } finally {
+            btn.innerText = "TẢI FILE WORD (.DOCX)"; btn.disabled = false;
+        }
+    }
+</script>
 </body>
 </html>
+
+
+
