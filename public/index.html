@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Fix Hex Color</title>
+    <title>ExamMatrix AI - Fix Native Word</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
@@ -37,7 +35,7 @@
 <body>
 
 <div class="container">
-    <h1>ExamMatrix AI (Final Fix)</h1>
+    <h1>ExamMatrix AI (Final)</h1>
 
     <div class="card">
         <div class="card-header">1. Cấu hình</div>
@@ -147,11 +145,9 @@
                 fullHTML += decoder.decode(value, {stream:true});
             }
             
-            // Xử lý hiển thị
             const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '');
             prev.innerHTML = cleanHTML;
             window.generatedHTML = cleanHTML;
-            
             sec.classList.remove('hidden'); 
             sec.scrollIntoView({behavior:'smooth'});
 
@@ -163,28 +159,24 @@
     }
 
     // ============================================================
-    // --- XỬ LÝ DOCX (ĐÃ FIX LỖI HEX COLOR & CONSTRUCTOR) ---
+    // --- XỬ LÝ CONVERT TOÁN HỌC CHÍNH XÁC ---
     // ============================================================
     async function handleDownloadWord() {
         if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-        
-        if (typeof docx === 'undefined') {
-            alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
-        }
+        if (typeof docx === 'undefined') { alert("Lỗi thư viện DOCX!"); return; }
 
         const btn = document.getElementById('btnDownloadWord');
         btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
         try {
-            // Lấy từ biến Global
-            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = docx;
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
 
-            // 1. Convert XML Node -> Docx Object
+            // 1. Hàm đệ quy: XML Node -> Docx Math Object
             function convertXmlNode(node) {
                 if (!node) return [];
                 const results = [];
                 node.childNodes.forEach(child => {
-                    if (child.nodeType === 3) { // Text
+                    if (child.nodeType === 3) { // Text Node
                         if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue));
                         return;
                     }
@@ -208,29 +200,37 @@
                 return results;
             }
 
-            // 2. Parse nội dung (FIX LỖI COLOR)
+            // 2. PARSE HTML VÀ TẠO EQUATION THẬT SỰ
             function parseContent(htmlText) {
+                // Tách theo dấu $$ (LaTeX)
                 const parts = htmlText.split(/\$\$(.*?)\$\$/g);
                 const runs = [];
+
                 parts.forEach((part, index) => {
-                    if (index % 2 === 1) { // LaTeX
+                    if (index % 2 === 1) { // Đây là LaTeX -> Cần convert thành Equation
                         try {
                             if (typeof temml !== 'undefined') {
+                                // A. Render LaTeX -> XML String bằng Temml
                                 const xmlString = temml.renderToString(part, { xml: true });
+                                
+                                // B. Parse XML String -> DOM
                                 const parser = new DOMParser();
                                 const xmlDoc = parser.parseFromString(xmlString, "text/xml");
                                 const mathRoot = xmlDoc.getElementsByTagName("math")[0];
+                                
+                                // C. Gọi hàm convert để tạo Object Docx Math
                                 const mathChildren = convertXmlNode(mathRoot);
+                                
+                                // D. Đẩy Object Math vào mảng (CHỨ KHÔNG PHẢI TEXT MÀU ĐỎ)
                                 runs.push(new MathObj({ children: mathChildren }));
                             } else {
-                                // FIX: Dùng mã HEX chuẩn (Không dùng "blue")
                                 runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                             }
                         } catch (e) { 
-                            // FIX: Dùng mã HEX chuẩn (Không dùng "red")
-                            runs.push(new TextRun({ text: `$$${part}$$`, color: "FF0000" })); 
+                            console.error("Lỗi parse công thức:", part, e);
+                            runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
                         }
-                    } else { // Text
+                    } else { // Text thường
                         const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
                         if (cleanText.trim()) runs.push(new TextRun(cleanText));
                     }
@@ -238,7 +238,7 @@
                 return [new Paragraph({ children: runs })];
             }
 
-            // 3. Tạo Document
+            // 3. Quét bảng HTML và tạo Table Word
             const parser = new DOMParser();
             const docHTML = parser.parseFromString(window.generatedHTML, 'text/html');
             const docChildren = [
@@ -246,17 +246,24 @@
             ];
 
             const tables = docHTML.querySelectorAll('table');
-            tables.forEach(table => {
-                const rows = Array.from(table.querySelectorAll('tr')).map(tr => 
-                    new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => 
-                        new TableCell({ children: parseContent(td.innerHTML), width: { size: 100, type: WidthType.PERCENTAGE }, borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} }) 
-                    )})
-                );
-                docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
-                docChildren.push(new Paragraph("")); 
-            });
-
-            if (tables.length === 0) {
+            
+            // Xử lý bảng nếu có
+            if (tables.length > 0) {
+                tables.forEach(table => {
+                    const rows = Array.from(table.querySelectorAll('tr')).map(tr => 
+                        new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => 
+                            new TableCell({ 
+                                children: parseContent(td.innerHTML), // Gọi hàm parse xịn ở trên
+                                width: { size: 100, type: WidthType.PERCENTAGE }, 
+                                borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
+                            }) 
+                        )})
+                    );
+                    docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                    docChildren.push(new Paragraph("")); 
+                });
+            } else {
+                // Nếu không có bảng, parse toàn bộ body
                 Array.from(docHTML.body.children).forEach(el => {
                     if(el.innerText.trim()) docChildren.push(...parseContent(el.innerHTML));
                 });
@@ -264,7 +271,7 @@
 
             const doc = new Document({ sections: [{ children: docChildren }] });
             const blob = await Packer.toBlob(doc);
-            saveAs(blob, `De_Thi_Chuan_${Date.now()}.docx`);
+            saveAs(blob, `De_Thi_Equation_${Date.now()}.docx`);
 
         } catch(e) {
             alert("Lỗi xuất file: " + e.message);
