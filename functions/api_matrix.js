@@ -144,18 +144,20 @@ export async function onRequest(context) {
            ** QUY TẮC CHUNG (BẮT BUỘC)
             1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
                - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
-               - KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
+               - Không viết lời mở đầu. KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
                - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
+               - Table phải có border="1".
                - In đậm: dùng thẻ <b>...</b> (Ví dụ: <b>Câu 1.</b>)
                - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
                - CÔNG THỨC:
-                  - KHÔNG dùng LaTeX ($x^2$ hay $$...$$). Word sẽ không hiểu.
+               - KHÔNG dùng LaTeX ($x^2$ hay $$...$$). Word sẽ không hiểu.
                - BẮT BUỘC viết công thức bằng mã **MathML** chuẩn (<math>...</math>).
                - PHẢI dùng **Presentation MathML** đầy đủ.
                - Ví dụ đúng: <math><msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo> <mn>1</mn> <mo>=</mo> <mn>0</mn></math>
                - Không được viết tắt kiểu <math>x^2</math> (SAI).
+               - Kiểm tra kỹ thẻ đóng/mở của MathML.
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
@@ -285,6 +287,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
