@@ -1,15 +1,13 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    addTopicRow(); // Init dòng đầu
+    addTopicRow(); 
 
-    // Gán sự kiện
     const on = (id, e, f) => { const el = document.getElementById(id); if(el) el.addEventListener(e, f); }
     on('btnAddTopic', 'click', addTopicRow);
     on('btnGenerate', 'click', handleGenerate);
     on('btnDownloadWord', 'click', handleDownloadWord);
     
-    // Logic ẩn hiện học kì
     const examType = document.getElementById('exam_type');
     if(examType) {
         examType.addEventListener('change', function() {
@@ -39,7 +37,6 @@ async function handleGenerate() {
     const sec = document.getElementById('previewSection');
     const prev = document.getElementById('previewContent');
 
-    // Reset UI
     loading.classList.remove('hidden'); 
     error.innerText = ""; 
     sec.classList.add('hidden'); 
@@ -64,11 +61,9 @@ async function handleGenerate() {
 
         if(data.topics.length===0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề!");
 
-        // Gọi API
         const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
         if(!res.ok) throw new Error("Lỗi Server AI: " + res.statusText);
 
-        // --- HỨNG DỮ LIỆU (BUFFERING) ---
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullContent = "";
@@ -79,17 +74,13 @@ async function handleGenerate() {
             fullContent += decoder.decode(value, {stream:true});
         }
         
-        // --- LỌC SẠCH HTML (QUAN TRỌNG) ---
-        // Hàm này sẽ tìm đúng thẻ <table>...</table> và vứt bỏ mọi thứ khác
+        // Lọc lấy bảng
         const cleanHTML = extractTableHTML(fullContent);
-
         if (!cleanHTML) {
-            // Trường hợp AI không trả về bảng, hiển thị raw text để debug
-            console.warn("AI không trả về Table. Raw content:", fullContent);
-            throw new Error("AI không trả về bảng đúng định dạng. Vui lòng thử lại.");
+            console.warn("AI output raw:", fullContent);
+            throw new Error("Dữ liệu trả về bị lỗi định dạng. Hãy thử lại!");
         }
 
-        // Hiển thị
         prev.innerHTML = cleanHTML;
         window.generatedHTML = cleanHTML;
         
@@ -105,44 +96,40 @@ async function handleGenerate() {
     }
 }
 
-// --- HÀM HỖ TRỢ LỌC HTML ---
 function extractTableHTML(rawString) {
-    // 1. Tìm vị trí bắt đầu của <table
-    // (Chấp nhận cả <table border="1"> hoặc <table style...>)
     const tableStartRegex = /<table[\s\S]*?>/i;
     const startMatch = rawString.match(tableStartRegex);
-    
-    if (!startMatch) return null; // Không tìm thấy thẻ mở table
-    
+    if (!startMatch) return null;
     const startIndex = startMatch.index;
-    
-    // 2. Tìm vị trí kết thúc của </table>
     const endIndex = rawString.lastIndexOf('</table>');
-    
-    if (endIndex === -1 || endIndex < startIndex) return null; // Không tìm thấy thẻ đóng
-    
-    // 3. Cắt chuỗi
-    return rawString.substring(startIndex, endIndex + 8); // +8 là độ dài của </table>
+    if (endIndex === -1 || endIndex < startIndex) return null;
+    return rawString.substring(startIndex, endIndex + 8);
 }
 
-// --- XUẤT FILE WORD NATIVE ---
+// --- HÀM XUẤT WORD ĐÃ SỬA LỖI FONT CĂN BẬC ---
 function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
     const header = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' 
           xmlns:w='urn:schemas-microsoft-com:office:word' 
-          xmlns:m='[http://schemas.microsoft.com/office/2004/12/omml](http://schemas.microsoft.com/office/2004/12/omml)' 
-          xmlns='[http://www.w3.org/TR/REC-html40](http://www.w3.org/TR/REC-html40)'>
+          xmlns:m='http://schemas.microsoft.com/office/2004/12/omml' 
+          xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
         <meta charset='utf-8'>
         <title>Đề Thi AI</title>
         <style>
+            /* Cấu hình Font chung */
             body { font-family: 'Times New Roman', serif; font-size: 12pt; }
+            
+            /* QUAN TRỌNG: Cấu hình Font cho công thức Toán */
+            /* Word bắt buộc dùng Cambria Math để vẽ dấu căn và phân số đúng chuẩn */
+            math { font-family: 'Cambria Math', 'Cambria', serif; }
+            m\\:math { font-family: 'Cambria Math', serif; }
+            
             table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
             td, th { border: 1px solid black; padding: 5px; vertical-align: top; }
             h2, h3 { text-align: center; margin: 10px 0; font-weight: bold; }
-            p { margin: 5px 0; }
         </style>
     </head>
     <body>`;
