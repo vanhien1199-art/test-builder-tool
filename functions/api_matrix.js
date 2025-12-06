@@ -1,313 +1,358 @@
-// File: functions/api_matrix.js
-export async function onRequest(context) {
-    const { request, env } = context;
+// File: public/js/app.js
+
+// --- KHAI BÁO BIẾN TOÀN CỤC ---
+window.generatedHTML = "";
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Khởi tạo: Thêm 1 chủ đề mặc định lúc đầu
+    addTopic();
+
+    // 2. Gán sự kiện cho các nút chính
+    const btnGen = document.getElementById('btnGenerate');
+    const btnDown = document.getElementById('btnDownloadWord');
+    const btnAddTopic = document.getElementById('btnAddTopic');
     
-    // Cấu hình CORS
-    const corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-    };
+    if (btnAddTopic) btnAddTopic.addEventListener('click', addTopic);
+    if (btnGen) btnGen.addEventListener('click', handleGenerate);
+    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
 
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+    // 3. Logic ẩn hiện ô nhập tiết (Học kì)
+    const examType = document.getElementById('exam_type');
+    if (examType) {
+        examType.addEventListener('change', updatePeriodInputs);
+        // Kích hoạt ngay lần đầu
+        setTimeout(updatePeriodInputs, 100); 
+    }
 
-    if (request.method === "POST") {
-        try {
-            const apiKey = env.GOOGLE_API_KEY;
-            if (!apiKey) throw new Error("Thiếu API Key");
-
-            const MODEL_NAME = "gemini-2.0-flash";
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-            const body = await request.json();
-            
-            // Destructure đầy đủ các biến từ Client gửi lên
-            const { 
-                license_key, 
-                topics, 
-                subject, 
-                grade, 
-                semester, 
-                exam_type, 
-                time, 
-                use_short_answer, 
-                totalPeriodsHalf1, 
-                totalPeriodsHalf2 
-            } = body;
-            
-            // --- 1. LOGIC KIỂM TRA LICENSE (KV) ---
-            if (env.TEST_TOOL && license_key) { 
-                const creditStr = await env.TEST_TOOL.get(license_key); 
-                if (!creditStr) {
-                    return new Response(JSON.stringify({ error: "MÃ KÍCH HOẠT KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
-                }
-                
-                let currentCredit = parseInt(creditStr);
-                if (currentCredit <= 0) {
-                    return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
-                }
-            }
-
-            // --- 2. CHUẨN BỊ DỮ LIỆU (Cập nhật theo yêu cầu mới) ---
-            let topicsDescription = "";
-            
-            topics.forEach((topic, index) => {
-                topicsDescription += `\nCHƯƠNG/CHỦ ĐỀ ${index + 1}: ${topic.name}\n`;
-                
-                // Duyệt qua các bài học con
-                topic.units.forEach((unit, uIndex) => {
-                    let periodInfo = "";
-                    if (exam_type === 'hk') {
-                        periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
-                    }
-                    topicsDescription += `   - Nội dung ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
-                });
-            });
+    // 4. Sự kiện ủy quyền (Event Delegation) cho các nút động (Xóa, Thêm con)
+    document.getElementById('topics-container').addEventListener('click', function(e) {
+        const target = e.target;
         
-            // --- PROMPT (GIỮ NGUYÊN) ---
-            const prompt = `
-            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
-            Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
-            Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
-           ${topicsDescription}
-
-            YÊU CẦU ĐẦU VÀO:
-            1. Môn: ${subject} - Lớp ${grade}
-            2. Loại: ${exam_type === 'hk' ? 'Cuối kì' : 'Giữa kì'} (${semester})
-            3. Thời gian: ${time} phút.
-            
-            ${exam_type === 'hk' ? `LƯU Ý TRỌNG SỐ ĐIỂM (CUỐI KÌ):
-            - Tổng tiết Nửa đầu: ${totalPeriodsHalf1}.
-            - Tổng tiết Nửa sau: ${totalPeriodsHalf2}.
-            ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
-            Tạo ra 1 tài liệu sau đúng định dạng:
-
-           PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
-            Tạo bảng có đúng 19 cột và cấu trúc như sau:
-            * PHẦN HEADER
-            - Dòng 1 đến dòng 4 cột 1 (TT) gộp ô A1:A4
-            - Cột 2 (Chủ đề/Chương) gộp B1:B4
-            - Cột 3 (Nội dung/đơn vị kiến thức) gộp ô C1:C4
-            - Dòng 1: gộp các ô của cột 4 đến cột 15 - D1:O1 (Mức độ đánh giá)
-            - Gộp ô P1:R1 (Tổng)
-            - Cột 19 (Tỉ lệ % điểm) gộp S1:S4
-            - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R2 (để trống không điền gì); ô S2 (để trống)
-            - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn);gộp ô P3:R3 (để trống không điền gì); ô S2 (để trống)
-            - Dòng 4: 
-              • Cột 4 - ô D4: "Biết"
-              • Cột 5 - ô E4: "Hiểu"
-              • Cột 6 - ô F4: "Vận dụng"
-              → Lặp lại đúng 3 mức độ này cho đến ô R4 theo thứ tự: Biết, Hiểu, Vận dụng
-              Cột 19 - ô S4: Để trống không ghi gì
-
-            * PHẦN NỘI DUNG BẢNG
-            Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
-            - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %"
-            - Cột 2: Tên chủ đề - lấy từ chủ đề nhập từ đầu vào
-            - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng chủ đề)
-            - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
-            - Cột 16: Tính tổng các ô ở cột D,G,J,M
-            - Cột 17: Tính tổng các ổ ở cột E,H,K,N
-            - Cột 18: Tính tổng các ô ở cột F,I,L,O
-            - Cột 19: Tính Tỉ lệ % của từng đơn vị kiến thức (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
-            Dòng "Tổng số câu": từ cột 5 đến cột 18 tính tổng số câu theo cột từ dòng 5 xuống
-             - Cột 19: cộng tổng số câu của cột P, Q, R
-            Dòng "Tổng số điểm": 
-                    gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
-                    Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
-                    Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
-                    Gộp ô M:O và tính tổng điểm câu hỏi tự luận
-                    Ô P của dòng này tính tổng điểm phần  biết
-                    ô Q tính tổng điểm phần hiểu
-                    Ô R tính tổng điểm phần vận dụng
-                    Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
-            Dòng "Tỉ lệ %": Gộp ô và điền tỉ lệ tương tự  Dòng "Tổng số điểm"
-                    ô S - cột 19: Tính Tổng tỉ lệ
-
-          PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
-            Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
-            * PHẦN HEADER
-            - Dòng 1 đến dòng 4 cột 1 (TT) gộp A1:A4
-            - Cột 2 (Chủ đề/Chương) gộp B1:B4
-            - Cột 3 (Nội dung/đơn vị kiến thức) gộp C1:C4
-            - Cột 4 (Yêu cầu cần đạt) gộp D1:D4
-            - Dòng 1: gộp ô E1:P1 (Số câu hỏi ở các mức độ đánh giá)
-            - Dòng 2: gộp ô E2:M2 (TNKQ); gộp ô N2:P2 (Tự luận)
-            - Dòng 3: gộp ô E3:G3 (Nhiều lựa chọn); gộp ô H3:J3 ("Đúng - Sai"); gộp ô K3:M3 (Trả lời ngắn); gộp ô N3:P3 (để trống không ghi gì)
-            - Dòng 4:
-              • E4: "Biết", F4: "Hiểu", G4: "Vận dụng" → Nhiều lựa chọn
-              • H4: "Biết", I4: "Hiểu", J4: "Vận dụng" → Đúng - Sai
-              • K4: "Biết", L4: "Hiểu", M4: "Vận dụng" → Trả lời ngắn
-              • N4: "Biết", O4: "Hiểu", P4: "Vận dụng" → Tự luận
-            * PHẦN NỘI DUNG BẢNG
-            Từ dòng 5 trở đi (nội dung):
-            - Cột 1 (TT): 1, 2, 3, 4, … (số thứ tự)
-            - Cột 2: Tên chủ đề (giống ma trận)
-            - Cột 3: Nội dung chi tiết (giống ma trận)
-            - Cột 4 (Yêu cầu cần đạt): 
-              • Mỗi mức độ ghi trên 1 dòng riêng
-              • Bắt đầu bằng "- Biết …" (dòng 1)
-              • "- Hiểu …" (dòng 2)
-              • "- Vận dụng …" (dòng 3)
-              → Nếu là Vận dụng thì ghi thêm ở cuối dòng: (NL: THTN) hoặc (NL: GQVĐ) hoặc (NL: MĐKH) hoặc (NL: GTKH) tùy năng lực
-            - Cột 5 đến cột 16 (E đến P): ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
-            - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận)
-
-          PHẦN 3 – ĐỀ KIỂM TRA MẪU
-            Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
-            1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (60-70% điểm)
-               - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D
-               - Câu hỏi Đúng-Sai: Mỗi câu gồm 4 ý nhỏ (a, b, c, d), học sinh chọn Đ/S
-               - Câu hỏi trả lời ngắn (nếu có): Yêu cầu điền từ/cụm từ
-            2. PHẦN TỰ LUẬN (30-40% điểm)
-               - Câu hỏi phân theo mức độ: Biết, Hiểu, Vận dụng
-               - Mỗi câu ghi rõ số điểm
-
-            3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt)
-
-           ** QUY TẮC CHUNG (BẮT BUỘC)
-            1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
-               - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
-               - Không viết lời mở đầu. KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
-               - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
-               - Table phải có border="1".
-               - In đậm: dùng thẻ <b>...</b> (Ví dụ: <b>Câu 1.</b>)
-               - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
-               - Đoạn văn: dùng thẻ <p>...</p>
-               - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
-              - CÔNG THỨC TOÁN HỌC, VẬT LÍ, HÓA HỌC:
-                    Bao quanh công thức bằng dấu $$ (ví dụ: $$ x^2 + \sqrt{5} $$).
-                    KHÔNG dùng MathML.
-                    LaTeX phải chuẩn (ví dụ dùng \frac{a}{b} cho phân số).
-            2. TÍNH TOÁN:
-            - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
-            - Nếu là đề kiểm tra định kì giữa kì:
-                - Hãy tính toán tỷ lệ điểm dựa trên số tiết thực tế của từng chủ đề so với tổng số tiết. 
-                - Nguyên tắc chung: Nội dung nửa sau học kì thường chiếm khoảng 75% điểm số, nửa đầu chiếm 25% (hãy cân đối theo số tiết thực tế tôi cung cấp ở trên).` : ''}
-            - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
-            3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
-           - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
-           - Phân bổ mức độ nhận thức: Bắt buộc theo tỉ lệ:  Biết (40%), Hiểu (30), Vận dụng (30%); Trường hợp hợp không thể phân bổ được thì linh động là: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
-           - Phân bố dạng câu hỏi: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
-           - Phân bố tỉ lệ điểm: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
-           - Cấu trúc đề: TNKQ (60-70%), Tự luận (30-40%)
-            4. NĂNG LỰC ĐÁNH GIÁ:
-               - Mỗi chủ đề phải đánh giá ít nhất 1 năng lực chuyên biệt
-               - Mã năng lực:
-                 • NL: THTN = Tìm hiểu tự nhiên
-                 • NL: GQVĐ = Giải quyết vấn đề
-                 • NL: MĐKH = Mô tả và giải thích hiện tượng
-                 • NL: GTKH = Giao tiếp khoa học
-                 • NL: SDCN = Sử dụng công cụ và ngôn ngữ khoa học
-            5. LIÊN KẾT VÀ KIỂM TRA:
-               - Mỗi câu hỏi trong đề phải có mã tham chiếu đến ô trong ma trận (Ví dụ: Câu 1 [M1-B])
-               - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm bản đặc tả = 10 điểm
-               - Số câu hỏi trong đề = Số câu trong ma trận
-            6. TÍNH TOÁN THỜI LƯỢNG - SỐ CÂU - ĐIỂM:
-               - 45 phút: 20-30 câu (15-22 TN + 2-3 TL)
-               - 60 phút: 25-35 câu (28-26 TN + 3-4 TL)
-               - 90 phút: 30-40 câu (20-30 TN + 4-5 TL)
-               - Mỗi câu TNKQ: 0.25 hoặc 0.5 điểm
-               - Mỗi câu trả lời ngắn: 0.5 điểm
-               - Mỗi câu Tự luận: 1.0-2.0 điểm
-            `;
-
-           // --- 3. GỌI GOOGLE API (FETCH) ---
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Google API Error (${response.status}): ${errText}`);
+        // Nút Xóa Chủ đề lớn (Cha)
+        const btnRemoveTopic = target.closest('.remove-topic-btn');
+        if (btnRemoveTopic) {
+            if(confirm("Bạn có chắc muốn xóa toàn bộ Chương/Chủ đề này?")) {
+                btnRemoveTopic.closest('.topic-wrapper').remove();
+                // Cập nhật lại tổng tiết (nếu cần hiển thị realtime)
             }
+            return;
+        }
+        
+        // Nút Thêm Đơn vị kiến thức (Con)
+        const btnAddUnit = target.closest('.btn-add-unit');
+        if (btnAddUnit) {
+            const topicWrapper = btnAddUnit.closest('.topic-wrapper');
+            addUnit(topicWrapper.querySelector('.units-container'));
+            return;
+        }
 
-            // --- 4. XỬ LÝ STREAM & TRẢ VỀ CLIENT ---
-            // Chúng ta tạo một TransformStream để đọc dữ liệu SSE từ Google,
-            // lọc lấy phần text và gửi về cho Client ngay lập tức.
-            
-            const { readable, writable } = new TransformStream();
-            const writer = writable.getWriter();
-            const encoder = new TextEncoder();
-            const decoder = new TextDecoder();
+        // Nút Xóa Đơn vị kiến thức (Con)
+        const btnRemoveUnit = target.closest('.remove-unit-btn');
+        if (btnRemoveUnit) {
+            btnRemoveUnit.closest('.unit-item').remove();
+            return;
+        }
+    });
+});
 
-            // Xử lý bất đồng bộ ở nền (Background processing)
-            (async () => {
-                const reader = response.body.getReader();
-                let buffer = "";
+// --- HÀM ẨN HIỆN Ô NHẬP TIẾT ---
+function updatePeriodInputs() {
+    const isHK = document.getElementById('exam_type').value === 'hk';
+    
+    // Tìm tất cả các ô nhập tiết 1 và tiết 2 trên toàn màn hình
+    document.querySelectorAll('.hk-input-1, .hk-input-2').forEach(div => {
+        if (isHK) div.classList.remove('hidden');
+        else div.classList.add('hidden');
+    });
+}
 
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
+// --- HÀM THÊM CHỦ ĐỀ (CHA) ---
+function addTopic() {
+    const container = document.getElementById('topics-container');
+    const template = document.getElementById('topic-template');
+    if (!container || !template) return;
 
-                        // Giải mã chunk và cộng vào buffer
-                        const chunk = decoder.decode(value, { stream: true });
-                        buffer += chunk;
+    const clone = template.content.cloneNode(true);
+    
+    // Thêm sẵn 1 dòng con mặc định cho chủ đề mới
+    const unitsContainer = clone.querySelector('.units-container');
+    container.appendChild(clone);
+    
+    // Thêm ngay 1 bài học con vào chủ đề vừa tạo
+    addUnit(unitsContainer);
+}
 
-                        // Tách các dòng dữ liệu (SSE format: "data: {...}")
-                        const lines = buffer.split("\n");
-                        buffer = lines.pop(); // Giữ lại phần cuối chưa trọn vẹn
+// --- HÀM THÊM ĐƠN VỊ KIẾN THỨC (CON) ---
+function addUnit(container) {
+    const template = document.getElementById('unit-template');
+    if (!container || !template) return;
 
-                        for (const line of lines) {
-                            if (line.startsWith("data: ")) {
-                                const jsonStr = line.substring(6).trim();
-                                if (jsonStr === "[DONE]") continue; // Kết thúc stream
+    const clone = template.content.cloneNode(true);
+    container.appendChild(clone);
+    
+    // Cập nhật lại trạng thái ẩn hiện số tiết cho dòng mới thêm
+    updatePeriodInputs();
+}
 
-                                try {
-                                    const parsed = JSON.parse(jsonStr);
-                                    // Trích xuất văn bản từ JSON của Google
-                                    const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                                    if (textPart) {
-                                        // Gửi văn bản sạch về cho Client
-                                        await writer.write(encoder.encode(textPart));
-                                    }
-                                } catch (e) {
-                                    // Bỏ qua các dòng không phải JSON (nếu có)
-                                }
-                            }
-                        }
-                    }
-                    
-                    // --- TRỪ TIỀN SAU KHI HOÀN TẤT ---
-                    if (env.TEST_TOOL && license_key) {
-                        const creditStr = await env.TEST_TOOL.get(license_key);
-                        if (creditStr) {
-                            let current = parseInt(creditStr);
-                            if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
-                        }
-                    }
+// --- HÀM XỬ LÝ GỬI DỮ LIỆU (LOGIC MỚI: QUÉT CẤU TRÚC LỒNG NHAU) ---
+async function handleGenerate() {
+    const btn = document.getElementById('btnGenerate');
+    const loading = document.getElementById('loadingMsg');
+    const error = document.getElementById('errorMsg');
+    const sec = document.getElementById('previewSection');
+    const prev = document.getElementById('previewContent');
 
-                } catch (err) {
-                    // Gửi lỗi về Client nếu bị ngắt giữa chừng
-                    await writer.write(encoder.encode(`\n\n[LỖI STREAM]: ${err.message}`));
-                } finally {
-                    await writer.close();
-                }
-            })();
+    // UI Reset
+    loading.classList.remove('hidden'); 
+    error.classList.add('hidden'); 
+    error.innerHTML = "";
+    sec.classList.add('hidden'); 
+    prev.innerHTML = ""; 
+    btn.disabled = true;
 
-            // Trả về Stream ngay lập tức
-            return new Response(readable, {
-                headers: {
-                    ...corsHeaders,
-                    "Content-Type": "text/html; charset=utf-8",
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive"
+    try {
+        const get = id => document.getElementById(id).value.trim();
+        
+        // 1. Kiểm tra License Key
+        const licenseKey = get('license_key');
+        if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
+
+        // 2. Thu thập dữ liệu LỒNG NHAU & Tính tổng tiết
+        const topicsData = [];
+        let totalP1 = 0; // Tổng tiết nửa đầu
+        let totalP2 = 0; // Tổng tiết nửa sau
+
+        // Duyệt từng Chủ đề lớn (Wrapper)
+        document.querySelectorAll('.topic-wrapper').forEach(topicEl => {
+            const topicName = topicEl.querySelector('.topic-name').value.trim();
+            if (!topicName) return; // Bỏ qua nếu tên chương rỗng
+
+            const units = [];
+            // Duyệt từng Đơn vị con trong chủ đề đó
+            topicEl.querySelectorAll('.unit-item').forEach(unitEl => {
+                const content = unitEl.querySelector('.unit-content').value.trim();
+                
+                // Lấy số tiết (nếu có)
+                const p1Input = unitEl.querySelector('.unit-p1');
+                const p2Input = unitEl.querySelector('.unit-p2');
+                const p1 = p1Input ? (parseInt(p1Input.value) || 0) : 0;
+                const p2 = p2Input ? (parseInt(p2Input.value) || 0) : 0;
+
+                if (content) {
+                    units.push({ content, p1, p2 });
+                    // Cộng dồn vào tổng
+                    totalP1 += p1;
+                    totalP2 += p2;
                 }
             });
 
-        } catch (error) {
-            return new Response(JSON.stringify({ error: `Lỗi Server: ${error.message}` }), { status: 500, headers: corsHeaders });
+            if (units.length > 0) {
+                topicsData.push({
+                    name: topicName,
+                    units: units // Mảng con chứa các bài học
+                });
+            }
+        });
+
+        if (topicsData.length === 0) throw new Error("Vui lòng nhập ít nhất 1 Chương và 1 Bài học!");
+
+        // 3. Đóng gói dữ liệu gửi đi
+        const requestData = {
+            license_key: licenseKey, 
+            subject: get('subject'), 
+            grade: get('grade'),
+            semester: get('semester'), 
+            exam_type: get('exam_type'), 
+            time: get('time_limit'),
+            use_short_answer: document.getElementById('use_short').checked,
+            totalPeriodsHalf1: totalP1, // Tổng tự tính
+            totalPeriodsHalf2: totalP2,
+            topics: topicsData // Cấu trúc mới: Mảng lồng nhau
+        };
+
+        // 4. Gọi API
+        const res = await fetch('/api_matrix', {
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify(requestData)
+        });
+        
+        if(!res.ok) {
+            let t = await res.text();
+            try { t = JSON.parse(t).error } catch(e){}
+            throw new Error(`Lỗi Server: ${t}`);
         }
+
+        // 5. Stream & Render
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullHTML = "";
+        while(true) {
+            const {done, value} = await reader.read();
+            if(done) break;
+            fullHTML += decoder.decode(value, {stream:true});
+        }
+        
+        // Làm sạch HTML (chỉ xóa markdown, giữ nội dung)
+        const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
+        
+        prev.innerHTML = cleanHTML;
+        window.generatedHTML = cleanHTML;
+        
+        sec.classList.remove('hidden'); 
+        sec.scrollIntoView({behavior:'smooth'});
+
+    } catch(e) { 
+        error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${e.message}`; 
+        error.classList.remove('hidden'); 
+    } finally { 
+        loading.classList.add('hidden'); 
+        btn.disabled = false; 
     }
 }
 
+// ============================================================
+// --- LOGIC XUẤT WORD "NATIVE EQUATION" (GIỮ NGUYÊN TỪ PHIÊN BẢN TRƯỚC) ---
+// ============================================================
+async function handleDownloadWord() {
+    if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+    
+    // Kiểm tra thư viện
+    if (typeof docx === 'undefined') {
+        alert("Lỗi: Thư viện DOCX chưa tải xong. Vui lòng F5."); return;
+    }
 
+    const btn = document.getElementById('btnDownloadWord');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Đang tạo file...`; 
+    btn.disabled = true;
 
+    try {
+        // Lấy từ biến Global window.docx
+        const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
+        
+        const getHeadingLevel = (tag) => {
+            const map = { 'H1': HeadingLevel.HEADING_1, 'H2': HeadingLevel.HEADING_2, 'H3': HeadingLevel.HEADING_3, 'H4': HeadingLevel.HEADING_4, 'H5': HeadingLevel.HEADING_5, 'H6': HeadingLevel.HEADING_6 };
+            return map[tag] || HeadingLevel.NORMAL;
+        };
 
+        // 1. Hàm đệ quy: XML Node (Temml) -> Docx Math Object
+        function convertXmlNode(node) {
+            if (!node) return [];
+            const results = [];
+            node.childNodes.forEach(child => {
+                if (child.nodeType === 3) { // Text Node
+                    if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue)); return; 
+                }
+                const tag = child.tagName.toLowerCase();
+                const children = convertXmlNode(child);
+                
+                switch (tag) {
+                    case 'mn': case 'mi': case 'mo': case 'mtext': 
+                        results.push(new MathRun(child.textContent)); break;
+                    case 'mfrac': 
+                        if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
+                    case 'msup': 
+                        if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
+                    case 'msub': 
+                        if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
+                    case 'msqrt': 
+                        results.push(new MathRadical({ children: children })); break;
+                    case 'mroot':
+                        if (children.length >= 2) results.push(new MathRadical({ children: [children[0]], degree: [children[1]] })); break;
+                    case 'mrow': case 'mstyle': 
+                        results.push(...children); break; // Gộp nhóm
+                    default: 
+                        results.push(...children); break;
+                }
+            });
+            return results;
+        }
 
+        // 2. Parse HTML & LaTeX
+        function parseContent(htmlText) {
+            const parts = htmlText.split(/\$\$(.*?)\$\$/g);
+            const runs = [];
+            parts.forEach((part, index) => {
+                if (index % 2 === 1) { // LaTeX -> Equation
+                    try {
+                        if (typeof temml !== 'undefined') {
+                            const xmlString = temml.renderToString(part, { xml: true });
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+                            const mathRoot = xmlDoc.getElementsByTagName("math")[0];
+                            const mathChildren = convertXmlNode(mathRoot);
+                            runs.push(new MathObj({ children: mathChildren }));
+                        } else {
+                            runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
+                        }
+                    } catch (e) { 
+                        runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
+                    }
+                } else { // Text thường
+                    const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
+                    if (cleanText.trim()) runs.push(new TextRun(cleanText));
+                }
+            });
+            return [new Paragraph({ children: runs })];
+        }
 
+        // 3. Xây dựng Document
+        const parser = new DOMParser();
+        const docHTML = parser.parseFromString(window.generatedHTML, 'text/html');
+        const docChildren = [
+            new Paragraph({ text: "ĐỀ KIỂM TRA", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } })
+        ];
+
+        const docBodyChildren = Array.from(docHTML.body.children);
+        
+        docBodyChildren.forEach(el => {
+            const tagName = el.tagName;
+            const innerHTML = el.innerHTML;
+            
+            // Xử lý Tiêu đề
+            if (tagName.match(/^H[1-6]$/)) {
+                docChildren.push(new Paragraph({
+                    children: parseContent(innerHTML)[0].root.children, 
+                    heading: getHeadingLevel(tagName),
+                    alignment: AlignmentType.LEFT,
+                    spacing: { before: 200, after: 100 }
+                }));
+            } 
+            // Xử lý Bảng
+            else if (tagName === 'TABLE') {
+                const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
+                    new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
+                        const colSpanAttr = td.getAttribute('colspan');
+                        const rowSpanAttr = td.getAttribute('rowspan');
+
+                        return new TableCell({ 
+                            children: parseContent(td.innerHTML),
+                            columnSpan: colSpanAttr ? parseInt(colSpanAttr) : undefined,
+                            rowSpan: rowSpanAttr ? parseInt(rowSpanAttr) : undefined,
+                            width: { size: 100, type: WidthType.PERCENTAGE }, 
+                            borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
+                        }); 
+                    })})
+                );
+                docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                docChildren.push(new Paragraph(""));
+            }
+            // Xử lý Đoạn văn
+            else if (el.innerText.trim()) {
+                docChildren.push(...parseContent(innerHTML));
+            }
+        });
+
+        const doc = new Document({ sections: [{ children: docChildren }] });
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, `De_Thi_Nested_${Date.now()}.docx`);
+
+    } catch(e) {
+        alert("Lỗi xuất file: " + e.message);
+        console.error(e);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
