@@ -151,12 +151,9 @@ export async function onRequest(context) {
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
                - CÔNG THỨC:
-                  Công thức toán/lý dùng LaTeX trong $$...$$ hoặc $...$
-                       Bao quanh công thức LaTeX bằng dấu $$ (hai dấu đô la) ở hai đầu. 
-                       Ví dụ: $$ x = \frac{-b \pm \sqrt{\Delta}}{2a} $$ hoặc $$ H_2SO_4 $$.
-                  Công thức hóa học viết bình thường (sẽ được xử lý thành subscript sau)
-                  Trình bày kết quả dưới dạng HTML Table (<table>) có border.
-                  KHÔNG sử dụng hình ảnh, chỉ dùng text và LaTeX.
+                  - KHÔNG dùng LaTeX ($x^2$ hay $$...$$). Word sẽ không hiểu.
+               - BẮT BUỘC viết công thức bằng mã **MathML** chuẩn (<math>...</math>).
+               - Ví dụ: Thay vì x^2, hãy viết <math><msup><mi>x</mi><mn>2</mn></msup></math>.
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
@@ -286,6 +283,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
