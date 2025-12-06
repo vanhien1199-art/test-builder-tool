@@ -9,14 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css"> 
     
+    <!-- Chỉ giữ lại thư viện thực sự cần thiết -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"></script>
     
-    <!-- Thêm thư viện chuyên dụng cho công thức -->
-    <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/latex-to-mathml@3.21.1/dist/latex-to-mathml.min.js"></script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 
@@ -36,7 +32,7 @@
         
         <div class="intro-section">
             <h2>Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
-            <p>Chuẩn Công văn 7991/BGDĐT-GDTrH • Hỗ trợ Gemini 2.0 Flash • Công thức MathML</p>
+            <p>Chuẩn Công văn 7991/BGDĐT-GDTrH • Hỗ trợ Gemini 2.0 Flash</p>
         </div>
 
         <div class="card">
@@ -46,12 +42,12 @@
             <div class="card-body">
                 <div class="grid-2">
                     <div class="form-group">
-                        <label>Môn học</label>
-                        <input type="text" id="subject" placeholder="Ví dụ: Toán, Lý, Hóa">
+                        <label>Môn học <span class="required">*</span></label>
+                        <input type="text" id="subject" placeholder="Ví dụ: Toán, Lý, Hóa" value="Toán">
                     </div>
                     <div class="form-group">
-                        <label>Lớp</label>
-                        <input type="text" id="grade" placeholder="Ví dụ: 8, 9, 10">
+                        <label>Lớp <span class="required">*</span></label>
+                        <input type="text" id="grade" placeholder="Ví dụ: 8, 9, 10" value="10">
                     </div>
                 </div>
 
@@ -93,11 +89,11 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Tổng tiết (Nửa đầu HK)</label>
-                            <input type="number" id="total_half1" placeholder="Nhập số tiết...">
+                            <input type="number" id="total_half1" placeholder="Nhập số tiết..." value="18">
                         </div>
                         <div class="form-group">
                             <label>Tổng tiết (Nửa sau HK)</label>
-                            <input type="number" id="total_half2" placeholder="Nhập số tiết...">
+                            <input type="number" id="total_half2" placeholder="Nhập số tiết..." value="18">
                         </div>
                     </div>
                 </div>
@@ -122,8 +118,8 @@
         <div class="license-card">
             <div class="license-icon"><i class="fas fa-key"></i></div>
             <div class="license-input">
-                <label>Mã kích hoạt phần mềm</label>
-                <input type="text" id="license_key" placeholder="Nhập mã License Key của bạn...">
+                <label>Mã kích hoạt phần mềm <span class="required">*</span></label>
+                <input type="text" id="license_key" placeholder="Nhập mã License Key của bạn..." value="TEST123">
             </div>
         </div>
 
@@ -150,7 +146,7 @@
                 </div>
                 <div class="preview-footer">
                     <button class="btn btn-success btn-lg" id="btnDownloadWord">
-                        <i class="fas fa-file-word"></i> TẢI VỀ MÁY (.DOCX) - Hỗ trợ MathML
+                        <i class="fas fa-file-word"></i> TẢI VỀ MÁY (.DOCX)
                     </button>
                 </div>
             </div>
@@ -159,36 +155,61 @@
     </main>
 
     <footer class="app-footer">
-        © 2025 ExamMatrix AI System. Hỗ trợ MathML, LaTeX, và công thức chỉnh sửa được trong Word.
+        © 2025 ExamMatrix AI System. All rights reserved.
     </footer>
 
     <template id="topic-template">
         <div class="topic-item">
             <div class="topic-header">
                 <span class="topic-label">Chủ đề</span>
-                <button class="btn-icon-danger remove-topic-btn" title="Xóa chủ đề này"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn-icon-danger remove-topic-btn" title="Xóa chủ đề này">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="grid-2">
                 <div class="form-group">
-                    <input type="text" class="topic-name" placeholder="Tên Chủ đề / Chương...">
+                    <input type="text" class="topic-name" placeholder="Tên Chủ đề / Chương..." value="Đại số">
                 </div>
                 <div class="form-group">
-                    <textarea class="topic-content" rows="1" placeholder="Nội dung chi tiết (cách nhau bởi dấu chấm phẩy)..."></textarea>
+                    <textarea class="topic-content" rows="2" placeholder="Nội dung chi tiết...">Phương trình bậc nhất; Phương trình bậc hai</textarea>
                 </div>
             </div>
             <div class="grid-2 hk-period-inputs hidden">
                 <div class="form-group mini">
                     <label>Tiết (Nửa đầu)</label>
-                    <input type="number" class="topic-period-1" value="0" min="0">
+                    <input type="number" class="topic-period-1" value="5" min="0">
                 </div>
                 <div class="form-group mini">
                     <label>Tiết (Nửa sau)</label>
-                    <input type="number" class="topic-period-2" value="0" min="0">
+                    <input type="number" class="topic-period-2" value="3" min="0">
                 </div>
             </div>
         </div>
     </template>
 
+    <!-- Tải thư viện chuyên dụng cho MathML sau khi DOM đã sẵn sàng -->
+    <script>
+        // Tải thư viện động
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = () => console.error('Failed to load script:', src);
+            document.head.appendChild(script);
+        }
+        
+        // Tải các thư viện cần thiết
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScript('https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js', function() {
+                console.log('Mammoth loaded');
+            });
+            
+            loadScript('https://cdn.jsdelivr.net/npm/latex-to-mathml@3.21.1/dist/latex-to-mathml.min.js', function() {
+                console.log('LaTeX to MathML loaded');
+            });
+        });
+    </script>
+    
     <script src="js/app.js"></script>
 </body>
 </html>
