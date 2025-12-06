@@ -79,8 +79,7 @@ function addUnit(container) {
     // Cập nhật lại trạng thái ẩn hiện số tiết cho dòng mới
     updatePeriodInputs();
 }
-
-// --- HÀM XỬ LÝ GỬI DỮ LIỆU ---
+// --- HÀM XỬ LÝ GỬI DỮ LIỆU (CẬP NHẬT) ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -101,13 +100,11 @@ async function handleGenerate() {
         let totalP1 = 0;
         let totalP2 = 0;
 
-        // Duyệt từng Chủ đề lớn
         document.querySelectorAll('.topic-wrapper').forEach(topicEl => {
             const topicName = topicEl.querySelector('.topic-name').value.trim();
-            if (!topicName) return; // Bỏ qua nếu tên chủ đề rỗng
+            if (!topicName) return; 
 
             const units = [];
-            // Duyệt từng Đơn vị con trong chủ đề đó
             topicEl.querySelectorAll('.unit-item').forEach(unitEl => {
                 const content = unitEl.querySelector('.unit-content').value.trim();
                 const p1 = parseInt(unitEl.querySelector('.unit-p1').value) || 0;
@@ -121,26 +118,25 @@ async function handleGenerate() {
             });
 
             if (units.length > 0) {
-                topicsData.push({
-                    name: topicName,
-                    units: units // Mảng con
-                });
+                topicsData.push({ name: topicName, units: units });
             }
         });
 
         if (topicsData.length === 0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề và nội dung!");
 
+        // --- CẤU TRÚC DATA MỚI (CÓ THÊM BOOK_SERIES) ---
         const requestData = {
             license_key: get('license_key'), 
             subject: get('subject'), 
             grade: get('grade'),
+            book_series: document.getElementById('book_series').value, // <--- THÊM DÒNG NÀY
             semester: get('semester'), 
             exam_type: get('exam_type'), 
             time: get('time_limit'),
             use_short_answer: document.getElementById('use_short').checked,
-            totalPeriodsHalf1: totalP1, // Tổng tự tính
+            totalPeriodsHalf1: totalP1,
             totalPeriodsHalf2: totalP2,
-            topics: topicsData // Cấu trúc mới: Mảng lồng nhau
+            topics: topicsData 
         };
 
         // 3. Gọi API
@@ -179,6 +175,7 @@ async function handleGenerate() {
         loading.classList.add('hidden'); btn.disabled = false; 
     }
 }
+
 
 // --- GIỮ NGUYÊN HÀM XUẤT WORD ---
 async function handleDownloadWord() {
