@@ -81,20 +81,28 @@ export async function onRequest(context) {
             PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
             Tạo bảng có đúng 19 cột và cấu trúc như sau:
             * PHẦN HEADER
-            - Dòng 1 đến dòng 4 cột 1 (TT) gộp ô A1:A4
-            - Cột 2 (Chủ đề/Chương) gộp B1:B4
-            - Cột 3 (Nội dung/đơn vị kiến thức) gộp ô C1:C4
-            - Dòng 1: gộp các ô của cột 4 đến cột 15 - D1:O1 (Mức độ đánh giá)
-            - Gộp ô P1:R1 (Tổng)
-            - Cột 19 (Tỉ lệ % điểm) gộp S1:S4
-            - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R2 (để trống không điền gì); ô S2 (để trống)
-            - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn);gộp ô P3:R3 (để trống không điền gì); ô S2 (để trống)
-            - Dòng 4: 
-              • Cột 4 - ô D4: "Biết"
-              • Cột 5 - ô E4: "Hiểu"
-              • Cột 6 - ô F4: "Vận dụng"
-              → Lặp lại đúng 3 mức độ này cho đến ô R4 theo thứ tự: Biết, Hiểu, Vận dụng
-              Cột 19 - ô S4: Để trống không ghi gì
+            - **Dòng 1:**
+              - Cột 1 (TT): Gộp A1:A4.
+              - Cột 2 (Chủ đề/Chương): Gộp B1:B4.
+              - Cột 3 (Nội dung/đơn vị kiến thức): Gộp C1:C4.
+              - Cột 4-15 (Mức độ đánh giá): Gộp D1:O1.
+              - Cột 16-18 (Tổng số điểm theo mức độ): Gộp P1:R1.
+              - Cột 19 (Tỉ lệ % điểm): Gộp S1:S4.
+            - **Dòng 2:**
+              - Gộp D2:L2 ghi "TNKQ".
+              - Gộp M2:O2 ghi "Tự luận".
+              - P2, Q2, R2: Để trống (Merge lại nếu cần hoặc để trống).
+            - **Dòng 3:**
+              - Gộp D3:F3 ghi "Nhiều lựa chọn".
+              - Gộp G3:I3 ghi "Đúng - Sai".
+              - Gộp J3:L3 ghi "Trả lời ngắn".
+              - Gộp M3:O3 ghi "Tự luận".
+              - P3, Q3, R3: Để trống.
+            - **Dòng 4 (Chi tiết mức độ):**
+              - D4, G4, J4, M4: Ghi "Biết".
+              - E4, H4, K4, N4: Ghi "Hiểu".
+              - F4, I4, L4, O4: Ghi "Vận dụng".
+              - P4: "Tổng Biết", Q4: "Tổng Hiểu", R4: "Tổng Vận dụng".
 
             * PHẦN NỘI DUNG BẢNG
             Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
@@ -292,5 +300,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
