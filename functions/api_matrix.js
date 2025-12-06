@@ -157,7 +157,7 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
 ### QUY TẮC CHUNG (BẮT BUỘC)
 
 1.  **ĐỊNH DẠNG:**
-    - Sử dụng HTML Table chuẩn (`<table>`, `<tr>`, `<td>`, `<th>`, `rowspan`, `colspan`).
+    - Sử dụng HTML Table chuẩn (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>, \`colspan\` / \`rowspan\`.)**.
     - Border="1", Cellpadding="5".
     - Không dùng Markdown table, không dùng code block cho bảng.
     - Công thức Toán/Lý/Hóa: Dùng LaTeX đặt trong dấu `$$` (Ví dụ: $$ E = mc^2 $$).
@@ -274,6 +274,7 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
         }
     }
 }
+
 
 
 
