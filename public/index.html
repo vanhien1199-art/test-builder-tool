@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Native Word</title>
+    <title>ExamMatrix AI - Fix Hex Color</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.css">
     <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
@@ -20,31 +19,25 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
-        
         .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
         .card-header { font-weight: bold; margin-bottom: 15px; color: #475569; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
-        
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-        
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
         .btn-primary { background: var(--primary); }
         .btn-success { background: #16a34a; }
         .btn-outline { background: white; color: #475569; border: 1px dashed #94a3b8; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        
         .hidden { display: none; }
         .topic-item { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
         .remove-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold; }
-        
         #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>ExamMatrix AI (All-in-One)</h1>
+    <h1>ExamMatrix AI (Final Fix)</h1>
 
     <div class="card">
         <div class="card-header">1. Cấu hình</div>
@@ -79,7 +72,7 @@
     <div id="previewSection" class="hidden">
         <h3>Kết quả</h3>
         <div id="previewContent"></div>
-        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (NATIVE)</button>
+        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (.DOCX)</button>
     </div>
 </div>
 
@@ -92,12 +85,8 @@
 </template>
 
 <script>
-    // --- LOGIC CHÍNH (Đã sửa lỗi Paragraph constructor) ---
-    
     document.addEventListener('DOMContentLoaded', () => {
         addTopicRow();
-        
-        // Gán sự kiện
         document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
         document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
         
@@ -130,7 +119,6 @@
         loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
 
         try {
-            // Thu thập dữ liệu
             const get = id => document.getElementById(id).value.trim();
             const data = {
                 license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
@@ -147,11 +135,9 @@
 
             if(data.topics.length===0) throw new Error("Chưa nhập chủ đề!");
 
-            // Gọi API
             const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
             if(!res.ok) throw new Error("Lỗi Server AI");
 
-            // Đọc Stream
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let fullHTML = "";
@@ -177,25 +163,23 @@
     }
 
     // ============================================================
-    // --- BỘ CHUYỂN ĐỔI CAO CẤP: HTML -> LATEX -> DOCX ---
+    // --- XỬ LÝ DOCX (ĐÃ FIX LỖI HEX COLOR & CONSTRUCTOR) ---
     // ============================================================
     async function handleDownloadWord() {
         if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
         
-        // KIỂM TRA THƯ VIỆN ĐÃ NẠP CHƯA
         if (typeof docx === 'undefined') {
-            alert("Lỗi: Thư viện DOCX chưa tải xong. Vui lòng đợi 5s hoặc tải lại trang.");
-            return;
+            alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
         }
 
         const btn = document.getElementById('btnDownloadWord');
         btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
         try {
-            // Lấy các thành phần từ biến toàn cục window.docx
-            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
+            // Lấy từ biến Global
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = docx;
 
-            // 1. Hàm đệ quy: Chuyển XML MathML -> Docx Math Object
+            // 1. Convert XML Node -> Docx Object
             function convertXmlNode(node) {
                 if (!node) return [];
                 const results = [];
@@ -224,7 +208,7 @@
                 return results;
             }
 
-            // 2. Parse nội dung
+            // 2. Parse nội dung (FIX LỖI COLOR)
             function parseContent(htmlText) {
                 const parts = htmlText.split(/\$\$(.*?)\$\$/g);
                 const runs = [];
@@ -239,9 +223,13 @@
                                 const mathChildren = convertXmlNode(mathRoot);
                                 runs.push(new MathObj({ children: mathChildren }));
                             } else {
-                                runs.push(new TextRun({ text: part, bold: true, color: "blue" }));
+                                // FIX: Dùng mã HEX chuẩn (Không dùng "blue")
+                                runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                             }
-                        } catch (e) { runs.push(new TextRun({ text: `$$${part}$$`, color: "red" })); }
+                        } catch (e) { 
+                            // FIX: Dùng mã HEX chuẩn (Không dùng "red")
+                            runs.push(new TextRun({ text: `$$${part}$$`, color: "FF0000" })); 
+                        }
                     } else { // Text
                         const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
                         if (cleanText.trim()) runs.push(new TextRun(cleanText));
@@ -268,7 +256,6 @@
                 docChildren.push(new Paragraph("")); 
             });
 
-            // Nếu không có bảng, parse toàn bộ body (cho phần text)
             if (tables.length === 0) {
                 Array.from(docHTML.body.children).forEach(el => {
                     if(el.innerText.trim()) docChildren.push(...parseContent(el.innerHTML));
@@ -277,13 +264,13 @@
 
             const doc = new Document({ sections: [{ children: docChildren }] });
             const blob = await Packer.toBlob(doc);
-            saveAs(blob, `De_Thi_Equation_${Date.now()}.docx`);
+            saveAs(blob, `De_Thi_Chuan_${Date.now()}.docx`);
 
         } catch(e) {
             alert("Lỗi xuất file: " + e.message);
             console.error(e);
         } finally {
-            btn.innerText = "TẢI FILE WORD (NATIVE)"; btn.disabled = false;
+            btn.innerText = "TẢI FILE DOCX (.DOCX)"; btn.disabled = false;
         }
     }
 </script>
