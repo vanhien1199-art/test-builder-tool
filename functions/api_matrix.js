@@ -49,36 +49,36 @@ export async function onRequest(context) {
             }
 
             // --- 2. CHUẨN BỊ DỮ LIỆU (Cập nhật theo yêu cầu mới) ---
-            let topicsDescription = topics.map((t, index) => {
-                let periodInfo = "";
-                if (exam_type === 'hk') {
-                    periodInfo = `(Số tiết dạy: Nửa đầu HK=${t.p1}, Nửa sau HK=${t.p2})`;
-                }
-                return `Chủ đề ${index + 1}: ${t.name} - Nội dung: ${t.content} ${periodInfo}`;
-            }).join("\n");
+            let topicsDescription = "";
+            
+            topics.forEach((topic, index) => {
+                topicsDescription += `\nCHƯƠNG/CHỦ ĐỀ ${index + 1}: ${topic.name}\n`;
+                
+                // Duyệt qua các bài học con
+                topic.units.forEach((unit, uIndex) => {
+                    let periodInfo = "";
+                    if (exam_type === 'hk') {
+                        periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+                    }
+                    topicsDescription += `   - Nội dung ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
+                });
+            });
         
             // --- PROMPT (GIỮ NGUYÊN) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
-            ## YÊU CẦU ĐẦU VÀO
-            Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
+           ${topicsDescription}
 
-          ## YÊU CẦU ĐẦU VÀO
-            1. Môn học: ${subject} - Lớp ${grade}
-            2. Học kì: ${semester}
-            3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra Cuối kì (Học kì)' : 'Kiểm tra Giữa kì'}
-            4. Thời gian làm bài: ${time} phút
-            5. Hình thức câu hỏi Trả lời ngắn: ${use_short_answer ? 'CÓ' : 'KHÔNG'}
+            YÊU CẦU ĐẦU VÀO:
+            1. Môn: ${subject} - Lớp ${grade}
+            2. Loại: ${exam_type === 'hk' ? 'Cuối kì' : 'Giữa kì'} (${semester})
+            3. Thời gian: ${time} phút.
             
-            ## DANH SÁCH CHỦ ĐỀ VÀ THỜI LƯỢNG DẠY:
-            ${topicsDescription}
-            
-            ${exam_type === 'hk' ? `*LƯU Ý QUAN TRỌNG VỀ TRỌNG SỐ ĐIỂM (KIỂM TRA CUỐI KÌ):
-            - Tổng số tiết nửa đầu học kì: ${totalPeriodsHalf1} tiết.
-            - Tổng số tiết nửa sau học kì: ${totalPeriodsHalf2} tiết.
-           
+            ${exam_type === 'hk' ? `LƯU Ý TRỌNG SỐ ĐIỂM (CUỐI KÌ):
+            - Tổng tiết Nửa đầu: ${totalPeriodsHalf1}.
+            - Tổng tiết Nửa sau: ${totalPeriodsHalf2}.
             ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
             Tạo ra 1 tài liệu sau đúng định dạng:
 
@@ -305,6 +305,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
