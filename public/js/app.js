@@ -1,163 +1,95 @@
-// File: public/js/app.js
+// File: functions/api_matrix.js
+export async function onRequest(context) {
+    const { request, env } = context;
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    };
 
-document.addEventListener('DOMContentLoaded', () => {
-    addTopicRow(); 
-    const on = (id, e, f) => { const el = document.getElementById(id); if(el) el.addEventListener(e, f); }
-    on('btnAddTopic', 'click', addTopicRow);
-    on('btnGenerate', 'click', handleGenerate);
-    on('btnDownloadWord', 'click', handleDownloadWord);
-    
-    const examType = document.getElementById('exam_type');
-    if(examType) {
-        examType.addEventListener('change', function() {
-            const isHK = this.value === 'hk';
-            const cfg = document.getElementById('hk-config');
-            if(cfg) isHK ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
-            document.querySelectorAll('.hk-period-inputs').forEach(d => isHK ? d.classList.remove('hidden') : d.classList.add('hidden'));
-        });
-        examType.dispatchEvent(new Event('change'));
-    }
-});
-
-function addTopicRow() {
-    const box = document.getElementById('topics-container');
-    const tpl = document.getElementById('topic-template');
-    if(!box || !tpl) return;
-    const clone = tpl.content.cloneNode(true);
-    box.appendChild(clone);
-    box.lastElementChild.querySelector('.remove-topic-btn').onclick = function() { this.closest('.topic-item').remove(); };
-    if(document.getElementById('exam_type').value === 'hk') box.lastElementChild.querySelector('.hk-period-inputs').classList.remove('hidden');
-}
-
-async function handleGenerate() {
-    const btn = document.getElementById('btnGenerate');
-    const loading = document.getElementById('loadingMsg');
-    const error = document.getElementById('errorMsg');
-    const sec = document.getElementById('previewSection');
-    const prev = document.getElementById('previewContent');
-
-    loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+    if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
     try {
-        const get = id => document.getElementById(id).value.trim();
-        const data = {
-            license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
-            semester: get('semester'), exam_type: get('exam_type'), time: get('time_limit'),
-            use_short_answer: document.getElementById('use_short').checked,
-            totalPeriodsHalf1: parseInt(get('total_half1'))||0, totalPeriodsHalf2: parseInt(get('total_half2'))||0,
-            topics: []
-        };
+        const apiKey = env.GOOGLE_API_KEY;
+        // Dùng bản Flash cho nhanh và ổn định
+        const MODEL_NAME = "gemini-2.0-flash"; 
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
-        document.querySelectorAll('.topic-item').forEach(r => {
-            const n = r.querySelector('.topic-name').value;
-            const c = r.querySelector('.topic-content').value;
-            if(n) data.topics.push({name:n, content:c, p1: parseInt(r.querySelector('.topic-period-1').value)||0, p2: parseInt(r.querySelector('.topic-period-2').value)||0});
+        const body = await request.json();
+        const { topics } = body;
+
+        let topicsDescription = topics.map((t, index) => 
+            `Chủ đề ${index + 1}: ${t.name} (${t.content})`
+        ).join("\n");
+       
+        const prompt = `
+        Bạn là chuyên gia soạn đề thi. 
+        Nội dung yêu cầu: ${topicsDescription}
+
+        YÊU CẦU ĐỊNH DẠNG HTML (QUAN TRỌNG ĐỂ XUẤT WORD):
+        1. Chỉ trả về mã HTML bảng: <table>...</table>.
+        2. Bảng border="1".
+        3. CÔNG THỨC TOÁN (MATHML):
+           - Bắt buộc dùng MathML chuẩn (<math>, <msqrt>, <msup>, <mfrac>).
+           - KHÔNG dùng LaTeX.
+           - KHÔNG tự thêm "mml:" (Hệ thống sẽ tự thêm sau).
+           - **QUAN TRỌNG:** Viết liền mạch, KHÔNG xuống dòng trong thẻ toán.
+             Đúng: <math><msqrt><mn>5</mn></msqrt></math>
+             Sai: 
+             <math>
+               <msqrt>
+                 <mn>5</mn>
+               </msqrt>
+             </math>
+        4. Căn bậc 2 dùng <msqrt>, Căn bậc 3 dùng <mroot>.
+        5. Phân số dùng <mfrac>.
+        `;
+
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
-        if(data.topics.length===0) throw new Error("Vui lòng nhập ít nhất 1 chủ đề!");
-
-        const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-        if(!res.ok) throw new Error("Lỗi Server AI: " + res.statusText);
-
-        const reader = res.body.getReader();
+        // Xử lý stream như cũ
+        const { readable, writable } = new TransformStream();
+        const writer = writable.getWriter();
         const decoder = new TextDecoder();
-        let fullContent = "";
+        const encoder = new TextEncoder();
 
-        while(true) {
-            const {done, value} = await reader.read();
-            if(done) break;
-            fullContent += decoder.decode(value, {stream:true});
-        }
-        
-        // 1. Lấy bảng sạch
-        let cleanHTML = extractTableHTML(fullContent);
-        if (!cleanHTML) throw new Error("Lỗi dữ liệu từ AI. Hãy thử lại!");
+        (async () => {
+            const reader = response.body.getReader();
+            let buffer = "";
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const jsonStr = line.substring(6).trim();
+                            if (jsonStr === "[DONE]") continue;
+                            try {
+                                const parsed = JSON.parse(jsonStr);
+                                const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (text) await writer.write(encoder.encode(text));
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (err) {
+                await writer.write(encoder.encode("Error: " + err.message));
+            } finally {
+                await writer.close();
+            }
+        })();
 
-        // 2. Xóa khoảng trắng thừa (Word ghét khoảng trắng trong MathML)
-        cleanHTML = cleanHTML.replace(/>\s+</g, '><').trim();
+        return new Response(readable, { headers: { ...corsHeaders, "Content-Type": "text/html" } });
 
-        prev.innerHTML = cleanHTML;
-        window.generatedHTML = cleanHTML;
-        
-        sec.classList.remove('hidden');
-        sec.scrollIntoView({behavior: 'smooth'});
-
-    } catch(e) {
-        error.innerText = "Lỗi: " + e.message;
-        error.classList.remove('hidden');
-    } finally {
-        loading.classList.add('hidden'); btn.disabled = false;
+    } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
     }
-}
-
-function extractTableHTML(rawString) {
-    const tableStartRegex = /<table[\s\S]*?>/i;
-    const startMatch = rawString.match(tableStartRegex);
-    if (!startMatch) return null;
-    const startIndex = startMatch.index;
-    const endIndex = rawString.lastIndexOf('</table>');
-    if (endIndex === -1 || endIndex < startIndex) return null;
-    return rawString.substring(startIndex, endIndex + 8);
-}
-
-// --- HÀM THÊM PREFIX mml: (CHÌA KHÓA ĐỂ SỬA LỖI) ---
-function addMMLPrefix(html) {
-    // Danh sách các thẻ MathML phổ biến
-    const tags = ['math', 'mi', 'mn', 'mo', 'ms', 'mtext', 'mfrac', 'msqrt', 'mroot', 'mrow', 'msup', 'msub', 'msubsup', 'mtable', 'mtr', 'mtd', 'munder', 'mover', 'munderover', 'mmultiscripts', 'menclose', 'merror', 'mpadded', 'mphantom', 'mstyle'];
-    
-    let processed = html;
-    // Regex tìm thẻ mở <tag> và thẻ đóng </tag> để thêm mml:
-    tags.forEach(tag => {
-        // Thay thẻ mở <tag ...> thành <mml:tag ...>
-        const openRegex = new RegExp(`<(${tag})(\\s|>)`, 'g');
-        processed = processed.replace(openRegex, '<mml:$1$2');
-        
-        // Thay thẻ đóng </tag> thành </mml:tag>
-        const closeRegex = new RegExp(`<\\/(${tag})>`, 'g');
-        processed = processed.replace(closeRegex, '</mml:$1>');
-    });
-    
-    return processed;
-}
-
-function handleDownloadWord() {
-    if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-
-    // 1. Chuyển đổi MathML HTML5 sang MathML có Namespace (Word hiểu)
-    const wordFriendlyHTML = addMMLPrefix(window.generatedHTML);
-
-    // 2. Header chuẩn XML
-    const header = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' 
-          xmlns:w='urn:schemas-microsoft-com:office:word' 
-          xmlns:m='http://schemas.microsoft.com/office/2004/12/omml' 
-          xmlns:mml='http://www.w3.org/1998/Math/MathML'
-          xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-        <meta charset='utf-8'>
-        <title>Đề Thi AI</title>
-        <style>
-            body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-            td, th { border: 1px solid black; padding: 5px; vertical-align: top; }
-            
-            /* CSS cho MathML có prefix */
-            mml\\:math { font-family: 'Cambria Math', serif; }
-            mml\\:math * { font-family: 'Cambria Math', serif; }
-        </style>
-    </head>
-    <body>`;
-
-    const footer = "</body></html>";
-    const sourceHTML = header + wordFriendlyHTML + footer;
-
-    const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    document.body.appendChild(link);
-    link.href = url;
-    link.download = `De_Thi_AI_${Date.now()}.doc`;
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 }
