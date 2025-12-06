@@ -138,13 +138,17 @@ export async function onRequest(context) {
             Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
             1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (60-70% điểm)
                - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D
-               - Câu hỏi Đúng-Sai: Mỗi câu gồm 4 ý nhỏ (a, b, c, d), học sinh chọn Đ/S
+               - Câu hỏi Đúng-Sai: Mỗi câu gồm 4 ý nhỏ (a, b, c, d), học sinh chọn Đ/S (phải thiết kế dạng bảng)
                - Câu hỏi trả lời ngắn (nếu có): Yêu cầu điền từ/cụm từ
             2. PHẦN TỰ LUẬN (30-40% điểm)
                - Câu hỏi phân theo mức độ: Biết, Hiểu, Vận dụng
                - Mỗi câu ghi rõ số điểm
 
-            3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt)
+            3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM
+            Trả lời đúng chuẩn đáp án:
+            Phần I: bảng trắc nghiệm: số câu MCQ + Đúng/Sai  + Trả lời ngắn 
+            Phần II: bảng tự luận: 3 cột, cột Câu – Nội dung – Điểm, chia nhỏ 0,25đ - 1 đ 
+            Không giải thích, không thêm ký tự, chỉ trả về nội dung đáp án theo đúng cấu trúc và định dạng trên."
 
            ** QUY TẮC CHUNG (BẮT BUỘC)
             1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
@@ -288,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
