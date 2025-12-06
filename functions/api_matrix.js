@@ -57,7 +57,7 @@ export async function onRequest(context) {
             6. Thời lượng kiểm tra: ${time} phút
             7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
 
-            ## KẾT QUẢ ĐẦU RA
+            ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
             Tạo ra 1 tài liệu sau đúng định dạng:
 
            PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
@@ -84,7 +84,9 @@ export async function onRequest(context) {
             - Cột 2: Tên chủ đề - lấy từ chủ đề nhập từ đầu vào
             - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng chủ đề)
             - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
-            - Cột 16-18 (Tổng): tính tổng từng mức độ nhận thức của từng chủ đề
+            - Cột 16: Tính tổng các ô ở cột D,G,J,M
+            - Cột 17: Tính tổng các ổ ở cột E,H,K,N
+            - Cột 18: Tính tổng các ô ở cột F,I,L,O
             - Cột 19: Tính Tỉ lệ % của từng đơn vị kiến thức (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
             Dòng "Tổng số câu": từ cột 5 đến cột 18 tính tổng số câu theo cột từ dòng 5 xuống
              - Cột 19: cộng tổng số câu của cột P, Q, R
@@ -283,5 +285,6 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
