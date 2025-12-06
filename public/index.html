@@ -3,56 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Modern ES6</title>
+    <title>ExamMatrix AI - Native Word</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.css">
     <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        
+        .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
+        .card-header { font-weight: bold; margin-bottom: 15px; color: #475569; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: #16a34a; }
+        .btn-outline { background: white; color: #475569; border: 1px dashed #94a3b8; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .hidden { display: none; }
+        .topic-item { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
+        .remove-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold; }
+        
+        #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; }
+    </style>
 </head>
 <body>
-    <header class="app-header">
-        <div class="header-content"><div class="brand"><h1>ExamMatrix AI</h1><span class="badge">ESM 2025</span></div></div>
-    </header>
 
-    <main class="main-container">
-        <div class="card">
-            <div class="card-header">1. Cấu hình</div>
-            <div class="card-body">
-                <div class="grid-2"><div class="form-group"><label>Môn</label><input id="subject" value="Toán"></div><div class="form-group"><label>Lớp</label><input id="grade" value="9"></div></div>
-                <div class="grid-3"><div class="form-group"><label>HK</label><select id="semester"><option value="1">1</option></select></div><div class="form-group"><label>Loại</label><select id="exam_type"><option value="gk">Giữa kì</option><option value="hk">Cuối kì</option></select></div><div class="form-group"><label>Phút</label><select id="time_limit"><option value="45">45</option></select></div></div>
-                <div class="form-group"><label><input type="checkbox" id="use_short"> Câu hỏi ngắn</label></div>
-                <div id="hk-config" class="hidden"><div class="grid-2"><input id="total_half1" placeholder="Tiết 1"><input id="total_half2" placeholder="Tiết 2"></div></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">2. Chủ đề</div>
-            <div class="card-body"><div id="topics-container"></div><button class="btn btn-outline" id="btnAddTopic">+ Thêm Chủ đề</button></div>
-        </div>
-        <div class="action-area">
-            <input type="text" id="license_key" placeholder="License Key" style="margin-bottom:10px; text-align:center;">
-            <button class="btn btn-primary btn-lg" id="btnGenerate">TẠO ĐỀ THI</button>
-            <div id="loadingMsg" class="hidden">Đang xử lý...</div>
-            <div id="errorMsg" class="hidden"></div>
-        </div>
-        <div id="previewSection" class="card hidden">
-            <div class="card-body">
-                <div id="previewContent" class="preview-content"></div>
-                <button class="btn btn-success btn-lg" id="btnDownloadWord">TẢI FILE DOCX</button>
-            </div>
-        </div>
-    </main>
+<div class="container">
+    <h1>ExamMatrix AI (All-in-One)</h1>
 
-    <template id="topic-template">
-        <div class="topic-item">
-            <button class="remove-topic-btn">X</button>
-            <div class="grid-2"><input class="topic-name" placeholder="Tên"><textarea class="topic-content" placeholder="Nội dung"></textarea></div>
-            <div class="grid-2 hk-period-inputs hidden"><input class="topic-period-1" type="number"><input class="topic-period-2" type="number"></div>
+    <div class="card">
+        <div class="card-header">1. Cấu hình</div>
+        <div class="form-row"><input id="subject" value="Toán"><input id="grade" value="9"></div>
+        <div class="grid-3">
+            <select id="semester"><option value="1">HK 1</option></select>
+            <select id="exam_type"><option value="gk">Giữa kì</option><option value="hk">Cuối kì</option></select>
+            <select id="time_limit"><option value="45">45'</option></select>
         </div>
-    </template>
+        <div style="margin-top: 10px;">
+            <label><input type="checkbox" id="use_short"> Câu hỏi ngắn</label>
+        </div>
+        <div id="hk-config" class="hidden form-row" style="margin-top:10px;">
+            <input id="total_half1" placeholder="Tiết 1"><input id="total_half2" placeholder="Tiết 2">
+        </div>
+    </div>
 
-    <script type="module" src="js/app.js"></script>
+    <div class="card">
+        <div class="card-header">2. Chủ đề</div>
+        <div id="topics-container"></div>
+        <button class="btn btn-outline" onclick="addTopicRow()">+ Thêm Chủ đề</button>
+    </div>
+
+    <div class="card">
+        <input type="text" id="license_key" placeholder="Nhập License Key..." style="text-align: center;">
+    </div>
+
+    <button id="btnGenerate" class="btn btn-primary">TẠO ĐỀ THI</button>
+    <div id="loadingMsg" class="hidden" style="text-align: center; margin-top: 10px;">Đang xử lý...</div>
+    <div id="errorMsg" style="color: red; text-align: center; margin-top: 10px;"></div>
+
+    <div id="previewSection" class="hidden">
+        <h3>Kết quả</h3>
+        <div id="previewContent"></div>
+        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (NATIVE)</button>
+    </div>
+</div>
+
+<template id="topic-template">
+    <div class="topic-item">
+        <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        <div class="form-row"><input class="topic-name" placeholder="Tên chủ đề..."><textarea class="topic-content" rows="1" placeholder="Nội dung..."></textarea></div>
+        <div class="form-row hk-period-inputs hidden"><input class="topic-period-1" type="number" placeholder="Tiết 1"><input class="topic-period-2" type="number" placeholder="Tiết 2"></div>
+    </div>
+</template>
+
+<script>
+    // --- LOGIC CHÍNH (Đã sửa lỗi Paragraph constructor) ---
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        addTopicRow();
+        
+        // Gán sự kiện
+        document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
+        document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
+        
+        const examType = document.getElementById('exam_type');
+        examType.addEventListener('change', function() {
+            const isHK = this.value === 'hk';
+            const cfg = document.getElementById('hk-config');
+            if(cfg) isHK ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
+            document.querySelectorAll('.hk-period-inputs').forEach(d => isHK ? d.classList.remove('hidden') : d.classList.add('hidden'));
+        });
+    });
+
+    function addTopicRow() {
+        const box = document.getElementById('topics-container');
+        const tpl = document.getElementById('topic-template');
+        const clone = tpl.content.cloneNode(true);
+        box.appendChild(clone);
+        if(document.getElementById('exam_type').value === 'hk') {
+            box.lastElementChild.querySelector('.hk-period-inputs').classList.remove('hidden');
+        }
+    }
+
+    async function handleGenerate() {
+        const btn = document.getElementById('btnGenerate');
+        const loading = document.getElementById('loadingMsg');
+        const error = document.getElementById('errorMsg');
+        const sec = document.getElementById('previewSection');
+        const prev = document.getElementById('previewContent');
+
+        loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
+
+        try {
+            // Thu thập dữ liệu
+            const get = id => document.getElementById(id).value.trim();
+            const data = {
+                license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
+                semester: get('semester'), exam_type: get('exam_type'), time: get('time_limit'),
+                use_short_answer: document.getElementById('use_short').checked,
+                totalPeriodsHalf1: parseInt(get('total_half1'))||0, totalPeriodsHalf2: parseInt(get('total_half2'))||0,
+                topics: []
+            };
+            document.querySelectorAll('.topic-item').forEach(r => {
+                const n = r.querySelector('.topic-name').value;
+                const c = r.querySelector('.topic-content').value;
+                if(n) data.topics.push({name:n, content:c, p1: parseInt(r.querySelector('.topic-period-1').value)||0, p2: parseInt(r.querySelector('.topic-period-2').value)||0});
+            });
+
+            if(data.topics.length===0) throw new Error("Chưa nhập chủ đề!");
+
+            // Gọi API
+            const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            if(!res.ok) throw new Error("Lỗi Server AI");
+
+            // Đọc Stream
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullHTML = "";
+            while(true) {
+                const {done, value} = await reader.read();
+                if(done) break;
+                fullHTML += decoder.decode(value, {stream:true});
+            }
+            
+            // Xử lý hiển thị
+            const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '');
+            prev.innerHTML = cleanHTML;
+            window.generatedHTML = cleanHTML;
+            
+            sec.classList.remove('hidden'); 
+            sec.scrollIntoView({behavior:'smooth'});
+
+        } catch(e) { 
+            error.innerText = "Lỗi: " + e.message; 
+        } finally { 
+            loading.classList.add('hidden'); btn.disabled = false; 
+        }
+    }
+
+    // ============================================================
+    // --- BỘ CHUYỂN ĐỔI CAO CẤP: HTML -> LATEX -> DOCX ---
+    // ============================================================
+    async function handleDownloadWord() {
+        if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
+        
+        // KIỂM TRA THƯ VIỆN ĐÃ NẠP CHƯA
+        if (typeof docx === 'undefined') {
+            alert("Lỗi: Thư viện DOCX chưa tải xong. Vui lòng đợi 5s hoặc tải lại trang.");
+            return;
+        }
+
+        const btn = document.getElementById('btnDownloadWord');
+        btn.innerText = "Đang tạo file..."; btn.disabled = true;
+
+        try {
+            // Lấy các thành phần từ biến toàn cục window.docx
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
+
+            // 1. Hàm đệ quy: Chuyển XML MathML -> Docx Math Object
+            function convertXmlNode(node) {
+                if (!node) return [];
+                const results = [];
+                node.childNodes.forEach(child => {
+                    if (child.nodeType === 3) { // Text
+                        if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue));
+                        return;
+                    }
+                    const tag = child.tagName.toLowerCase();
+                    const children = convertXmlNode(child);
+                    
+                    switch (tag) {
+                        case 'mn': case 'mi': case 'mo': case 'mtext': 
+                            results.push(new MathRun(child.textContent)); break;
+                        case 'mfrac':
+                            if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
+                        case 'msup':
+                            if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
+                        case 'msub':
+                            if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
+                        case 'msqrt':
+                            results.push(new MathRadical({ children: children })); break;
+                        default: results.push(...children); break;
+                    }
+                });
+                return results;
+            }
+
+            // 2. Parse nội dung
+            function parseContent(htmlText) {
+                const parts = htmlText.split(/\$\$(.*?)\$\$/g);
+                const runs = [];
+                parts.forEach((part, index) => {
+                    if (index % 2 === 1) { // LaTeX
+                        try {
+                            if (typeof temml !== 'undefined') {
+                                const xmlString = temml.renderToString(part, { xml: true });
+                                const parser = new DOMParser();
+                                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+                                const mathRoot = xmlDoc.getElementsByTagName("math")[0];
+                                const mathChildren = convertXmlNode(mathRoot);
+                                runs.push(new MathObj({ children: mathChildren }));
+                            } else {
+                                runs.push(new TextRun({ text: part, bold: true, color: "blue" }));
+                            }
+                        } catch (e) { runs.push(new TextRun({ text: `$$${part}$$`, color: "red" })); }
+                    } else { // Text
+                        const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
+                        if (cleanText.trim()) runs.push(new TextRun(cleanText));
+                    }
+                });
+                return [new Paragraph({ children: runs })];
+            }
+
+            // 3. Tạo Document
+            const parser = new DOMParser();
+            const docHTML = parser.parseFromString(window.generatedHTML, 'text/html');
+            const docChildren = [
+                new Paragraph({ text: "ĐỀ KIỂM TRA", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } })
+            ];
+
+            const tables = docHTML.querySelectorAll('table');
+            tables.forEach(table => {
+                const rows = Array.from(table.querySelectorAll('tr')).map(tr => 
+                    new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => 
+                        new TableCell({ children: parseContent(td.innerHTML), width: { size: 100, type: WidthType.PERCENTAGE }, borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} }) 
+                    )})
+                );
+                docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                docChildren.push(new Paragraph("")); 
+            });
+
+            // Nếu không có bảng, parse toàn bộ body (cho phần text)
+            if (tables.length === 0) {
+                Array.from(docHTML.body.children).forEach(el => {
+                    if(el.innerText.trim()) docChildren.push(...parseContent(el.innerHTML));
+                });
+            }
+
+            const doc = new Document({ sections: [{ children: docChildren }] });
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `De_Thi_Equation_${Date.now()}.docx`);
+
+        } catch(e) {
+            alert("Lỗi xuất file: " + e.message);
+            console.error(e);
+        } finally {
+            btn.innerText = "TẢI FILE WORD (NATIVE)"; btn.disabled = false;
+        }
+    }
+</script>
 </body>
 </html>
