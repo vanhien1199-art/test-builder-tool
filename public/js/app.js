@@ -2,7 +2,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     addTopicRow(); 
-
     const on = (id, e, f) => { const el = document.getElementById(id); if(el) el.addEventListener(e, f); }
     on('btnAddTopic', 'click', addTopicRow);
     on('btnGenerate', 'click', handleGenerate);
@@ -70,15 +69,11 @@ async function handleGenerate() {
             fullContent += decoder.decode(value, {stream:true});
         }
         
-        // 1. Lọc lấy bảng
+        // 1. Lấy bảng sạch
         let cleanHTML = extractTableHTML(fullContent);
-        if (!cleanHTML) {
-            console.warn("Raw:", fullContent);
-            throw new Error("AI trả về dữ liệu lỗi. Hãy thử lại!");
-        }
+        if (!cleanHTML) throw new Error("Lỗi dữ liệu từ AI. Hãy thử lại!");
 
-        // 2. [QUAN TRỌNG NHẤT] XÓA KHOẢNG TRẮNG GIỮA CÁC THẺ HTML/MATHML
-        // Word sẽ bị lỗi mất dấu căn nếu có dấu cách hoặc xuống dòng giữa các thẻ
+        // 2. Xóa khoảng trắng thừa (Word ghét khoảng trắng trong MathML)
         cleanHTML = cleanHTML.replace(/>\s+</g, '><').trim();
 
         prev.innerHTML = cleanHTML;
@@ -105,11 +100,33 @@ function extractTableHTML(rawString) {
     return rawString.substring(startIndex, endIndex + 8);
 }
 
+// --- HÀM THÊM PREFIX mml: (CHÌA KHÓA ĐỂ SỬA LỖI) ---
+function addMMLPrefix(html) {
+    // Danh sách các thẻ MathML phổ biến
+    const tags = ['math', 'mi', 'mn', 'mo', 'ms', 'mtext', 'mfrac', 'msqrt', 'mroot', 'mrow', 'msup', 'msub', 'msubsup', 'mtable', 'mtr', 'mtd', 'munder', 'mover', 'munderover', 'mmultiscripts', 'menclose', 'merror', 'mpadded', 'mphantom', 'mstyle'];
+    
+    let processed = html;
+    // Regex tìm thẻ mở <tag> và thẻ đóng </tag> để thêm mml:
+    tags.forEach(tag => {
+        // Thay thẻ mở <tag ...> thành <mml:tag ...>
+        const openRegex = new RegExp(`<(${tag})(\\s|>)`, 'g');
+        processed = processed.replace(openRegex, '<mml:$1$2');
+        
+        // Thay thẻ đóng </tag> thành </mml:tag>
+        const closeRegex = new RegExp(`<\\/(${tag})>`, 'g');
+        processed = processed.replace(closeRegex, '</mml:$1>');
+    });
+    
+    return processed;
+}
+
 function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
-    // Header chuẩn XML cho Word
-    // Thêm namespace mml để chắc chắn Word hiểu
+    // 1. Chuyển đổi MathML HTML5 sang MathML có Namespace (Word hiểu)
+    const wordFriendlyHTML = addMMLPrefix(window.generatedHTML);
+
+    // 2. Header chuẩn XML
     const header = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' 
           xmlns:w='urn:schemas-microsoft-com:office:word' 
@@ -123,20 +140,16 @@ function handleDownloadWord() {
             body { font-family: 'Times New Roman', serif; font-size: 12pt; }
             table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
             td, th { border: 1px solid black; padding: 5px; vertical-align: top; }
-            h2, h3 { text-align: center; margin: 10px 0; font-weight: bold; }
             
-            /* CSS Ép Font Toán học */
-            math, mml\\:math { font-family: 'Cambria Math', serif !important; }
-            math *, mml\\:math * { font-family: 'Cambria Math', serif !important; }
-            
-            /* Sửa lỗi hiển thị căn bậc trong Word */
-            msqrt, mroot { font-family: 'Cambria Math', serif !important; }
+            /* CSS cho MathML có prefix */
+            mml\\:math { font-family: 'Cambria Math', serif; }
+            mml\\:math * { font-family: 'Cambria Math', serif; }
         </style>
     </head>
     <body>`;
 
     const footer = "</body></html>";
-    const sourceHTML = header + window.generatedHTML + footer;
+    const sourceHTML = header + wordFriendlyHTML + footer;
 
     const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
