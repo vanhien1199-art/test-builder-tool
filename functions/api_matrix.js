@@ -69,6 +69,14 @@ export async function onRequest(context) {
             - Câu Đúng/Sai: Tính 1.0 điểm/câu lớn (gồm 4 ý nhỏ).
             - Câu Trả lời ngắn: 0.5 điểm/câu.
             - Câu Tự luận: 1.0 đến 2.0 điểm/câu (tùy chỉnh để tròn tổng 10).
+            - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
+            - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
+            - Nếu là đề kiểm tra HỌC KÌ:
+                 • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
+                 • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
+                 • Ví dụ: Nội dung kiến thức a (nửa đầu: 5 tiết) và tổng số tiết nửa đầu là 20 → Trọng số = (5×0.25)/20
+            - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
+          
            ** Tạo ra 1 tài liệu sau đúng định dạng:
             PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
             Tạo bảng có đúng 19 cột và cấu trúc như sau:
@@ -167,15 +175,7 @@ export async function onRequest(context) {
                     Bao quanh công thức bằng dấu $$ (ví dụ: $$ x^2 + \sqrt{5} $$).
                     KHÔNG dùng MathML.
                     LaTeX phải chuẩn (ví dụ dùng \frac{a}{b} cho phân số).
-            2. TÍNH TOÁN:
-            - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
-            - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
-            - Nếu là đề kiểm tra HỌC KÌ:
-                 • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
-                 • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
-                 • Ví dụ: Chủ đề A (nửa đầu: 5 tiết, nửa sau: 15 tiết) → Trọng số = (5×0.25 + 15×0.75)/20 = 62.5%
-            - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
-            3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
+           3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
            - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
            - Phân bổ mức độ nhận thức: Bắt buộc theo tỉ lệ:  Biết (40%), Hiểu (30), Vận dụng (30%); Trường hợp hợp không thể phân bổ được thì linh động là: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
            - Phân bố dạng câu hỏi: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
@@ -292,4 +292,5 @@ export async function onRequest(context) {
         }
     }
 }
+
 
