@@ -151,12 +151,20 @@ export async function onRequest(context) {
                - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
-               - CÔNG THỨC:
-              - Bắt buộc dùng thẻ <math> chuẩn.
+               ** CÔNG THỨC TOÁN HỌC:
+              - Bắt buộc dùng MathML chuẩn (<math>, <msqrt>, <msup>, <mfrac>).
                - KHÔNG dùng LaTeX.
-               - KHÔNG tự ý thêm namespace (như mml: hay m:), chỉ dùng thẻ chuẩn như <math>, <mi>, <mn>, <mo>, <msqrt>, <mfrac>.
-               - Viết liền mạch, KHÔNG xuống dòng giữa các thẻ toán để tránh lỗi hiển thị.
-                 Ví dụ ĐÚNG: <math><msqrt><mn>2</mn></msqrt></math>
+               - KHÔNG tự thêm "mml:" (Hệ thống sẽ tự thêm sau).
+               - **QUAN TRỌNG:** Viết liền mạch, KHÔNG xuống dòng trong thẻ toán.
+                 Đúng: <math><msqrt><mn>5</mn></msqrt></math>
+                 Sai: 
+                 <math>
+                   <msqrt>
+                     <mn>5</mn>
+                   </msqrt>
+                 </math>
+            - Căn bậc 2 dùng <msqrt>, Căn bậc 3 dùng <mroot>.
+            - Phân số dùng <mfrac>.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
             - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
@@ -285,3 +293,4 @@ export async function onRequest(context) {
         }
     }
 }
+
