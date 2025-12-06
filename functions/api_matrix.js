@@ -150,12 +150,13 @@ export async function onRequest(context) {
                - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
                - Đoạn văn: dùng thẻ <p>...</p>
                - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
-               - CÔNG THỨC TOÁN:
-                   Tất cả công thức Toán học, Hóa học, Vật lý PHẢI viết dưới dạng LaTeX.
-                   Bao quanh công thức LaTeX bằng dấu $$ (hai dấu đô la) ở hai đầu. 
-                   Ví dụ: $$ x = \frac{-b \pm \sqrt{\Delta}}{2a} $$ hoặc $$ H_2SO_4 $$.
-                   Trình bày kết quả dưới dạng HTML Table (<table>) có border.
-                   KHÔNG sử dụng hình ảnh, chỉ dùng text và LaTeX.
+               - CÔNG THỨC:
+                  Công thức toán/lý dùng LaTeX trong $$...$$ hoặc $...$
+                       Bao quanh công thức LaTeX bằng dấu $$ (hai dấu đô la) ở hai đầu. 
+                       Ví dụ: $$ x = \frac{-b \pm \sqrt{\Delta}}{2a} $$ hoặc $$ H_2SO_4 $$.
+                  Công thức hóa học viết bình thường (sẽ được xử lý thành subscript sau)
+                  Trình bày kết quả dưới dạng HTML Table (<table>) có border.
+                  KHÔNG sử dụng hình ảnh, chỉ dùng text và LaTeX.
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
@@ -285,6 +286,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
