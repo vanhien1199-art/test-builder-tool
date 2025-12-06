@@ -67,7 +67,7 @@ export async function onRequest(context) {
 
            PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
             Tạo bảng có đúng 19 cột và cấu trúc như sau:
-            * PHẦN HEADER
+            ** PHẦN HEADER
             - Dòng 1 đến dòng 4 cột 1 (TT) gộp ô A1:A4
             - Cột 2 (Chủ đề/Chương) gộp B1:B4
             - Cột 3 (Nội dung/đơn vị kiến thức) gộp ô C1:C4
@@ -77,13 +77,11 @@ export async function onRequest(context) {
             - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R2 (để trống không điền gì); ô S2 (để trống)
             - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn);gộp ô P3:R3 (để trống không điền gì); ô S2 (để trống)
             - Dòng 4: 
-              • Cột 4 - ô D4: "Biết"
-              • Cột 5 - ô E4: "Hiểu"
-              • Cột 6 - ô F4: "Vận dụng"
-              → Lặp lại đúng 3 mức độ này cho đến ô R4 theo thứ tự: Biết, Hiểu, Vận dụng
+              • ô D4: "Biết", G4: "Biết", J4: "Biết", M4: "Biết",P4: "Biết
+              • ô E4: "Hiểu", H: "Hiểu", K: "Hiểu", N: "Hiểu", Q: "Hiểu"
+              • ô F4: "Vận dụng", I: "Vận dụng", L: "Vận dụng", O: "Vận dụng", R: "Vận dụng"
               Cột 19 - ô S4: Để trống không ghi gì
-
-            * PHẦN NỘI DUNG BẢNG
+            ** PHẦN NỘI DUNG BẢNG
             Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
             - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %"
             - Cột 2: Tên chủ đề - lấy từ chủ đề nhập từ đầu vào
@@ -290,4 +288,5 @@ export async function onRequest(context) {
         }
     }
 }
+
 
