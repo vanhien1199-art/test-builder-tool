@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Ultimate Fix</title>
+    <title>ExamMatrix AI - Final Stable</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/temml/dist/temml.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/temml/dist/temml.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/Temml-Local.css" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
     
@@ -29,10 +29,13 @@
         .btn-primary { background: var(--primary); }
         .btn-success { background: #16a34a; }
         .btn-outline { background: white; color: #475569; border: 1px dashed #94a3b8; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .hidden { display: none; }
         .topic-item { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
         .remove-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold; }
         #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; font-family: "Times New Roman"; }
+        /* Style cho công thức toán trong Preview */
+        .math-tex { font-family: 'Cambria Math', serif; color: #2563eb; }
     </style>
 </head>
 <body>
@@ -82,7 +85,6 @@
 </template>
 
 <script>
-    // --- KHAI BÁO BIẾN TOÀN CỤC ---
     window.generatedHTML = "";
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -134,7 +136,6 @@
                 fullHTML += decoder.decode(value, {stream:true});
             }
             
-            // Xử lý hiển thị
             const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '');
             prev.innerHTML = cleanHTML;
             window.generatedHTML = cleanHTML;
@@ -147,23 +148,22 @@
     }
 
     // ============================================================
-    // --- XỬ LÝ DOCX (ĐÃ FIX LỖI HEX COLOR VÀ LINK LIB) ---
+    // --- XỬ LÝ DOCX (NATIVE EQUATION) ---
     // ============================================================
     async function handleDownloadWord() {
         if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
         
         if (typeof docx === 'undefined') {
-            alert("Lỗi: Thư viện DOCX chưa tải xong hoặc bị chặn mạng."); return;
+            alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
         }
 
         const btn = document.getElementById('btnDownloadWord');
         btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
         try {
-            // Lấy từ biến Global
             const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
 
-            // 1. Convert XML Node -> Docx Math Object
+            // 1. Hàm đệ quy: XML Node -> Docx Object
             function convertXmlNode(node) {
                 if (!node) return [];
                 const results = [];
@@ -174,7 +174,7 @@
                     }
                     
                     const tag = child.tagName.toLowerCase();
-                    const children = convertXmlNode(child); // Đệ quy
+                    const children = convertXmlNode(child);
                     
                     switch (tag) {
                         case 'mn': case 'mi': case 'mo': case 'mtext': 
@@ -187,8 +187,7 @@
                             if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
                         case 'msqrt':
                             results.push(new MathRadical({ children: children })); break;
-                        // Xử lý nhóm mrow/mstyle để tránh lỗi mất nội dung
-                        case 'mrow': case 'mstyle':
+                        case 'mrow': case 'mstyle': // Gộp nhóm
                             results.push(...children); break;
                         default: 
                             results.push(...children); break;
@@ -197,7 +196,7 @@
                 return results;
             }
 
-            // 2. Parse nội dung (ĐÃ FIX LỖI MÀU HEX)
+            // 2. Parse HTML -> Docx
             function parseContent(htmlText) {
                 const parts = htmlText.split(/\$\$(.*?)\$\$/g);
                 const runs = [];
@@ -212,11 +211,9 @@
                                 const mathChildren = convertXmlNode(mathRoot);
                                 runs.push(new MathObj({ children: mathChildren }));
                             } else {
-                                // FIX: Dùng mã HEX chuẩn (Không dùng "blue")
                                 runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                             }
                         } catch (e) { 
-                            // FIX: Dùng mã HEX chuẩn (Không dùng "red")
                             runs.push(new TextRun({ text: `$$${part}$$`, color: "FF0000" })); 
                         }
                     } else { // Text
@@ -243,12 +240,7 @@
                             new TableCell({ 
                                 children: parseContent(td.innerHTML), 
                                 width: { size: 100, type: WidthType.PERCENTAGE }, 
-                                borders: {
-                                    top:{style:BorderStyle.SINGLE, size:1}, 
-                                    bottom:{style:BorderStyle.SINGLE, size:1}, 
-                                    left:{style:BorderStyle.SINGLE, size:1}, 
-                                    right:{style:BorderStyle.SINGLE, size:1}
-                                } 
+                                borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
                             }) 
                         )})
                     );
