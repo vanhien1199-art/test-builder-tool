@@ -1,4 +1,4 @@
-// File: public/js/app.js - Logic xử lý chính cho ExamMatrix AI
+// File: public/js/app.js - Logic Final Tích hợp
 
 // --- KHAI BÁO BIẾN TOÀN CỤC ---
 window.generatedHTML = "";
@@ -7,19 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Khởi tạo dòng chủ đề đầu tiên
     addTopicRow();
 
-    // 2. Gán sự kiện cho các nút
-    const btnAdd = document.getElementById('btnAddTopic');
+    // 2. Gán sự kiện cho các nút chính
     const btnGen = document.getElementById('btnGenerate');
     const btnDown = document.getElementById('btnDownloadWord');
     const examTypeSelect = document.getElementById('exam_type');
 
-    if (btnAdd) btnAdd.addEventListener('click', addTopicRow);
-    if (btnGen) btnDown.addEventListener('click', handleDownloadWord); // Note: Chỉ gán download handler cho nút download
+    if (btnGen) btnGen.addEventListener('click', handleGenerate);
     if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
     
-    // Sửa lỗi gán sự kiện cho nút Generate: Cần gọi handleGenerate
-    if (btnGen) btnGen.addEventListener('click', handleGenerate);
-
     // 3. Xử lý Logic ẩn hiện ô nhập số tiết (Học kì)
     if (examTypeSelect) {
         examTypeSelect.addEventListener('change', function() {
@@ -40,7 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
         examTypeSelect.dispatchEvent(new Event('change'));
     }
     
-    // Gán sự kiện xóa cho các dòng chủ đề đã có (hoặc sẽ có)
+    // 4. Ủy quyền sự kiện (Delegation) cho nút Thêm/Xóa
+    if(document.getElementById('btnAddTopic')) {
+        document.getElementById('btnAddTopic').addEventListener('click', addTopicRow);
+    }
+    
+    // Delegation cho nút Xóa động (remove-topic-btn)
     document.getElementById('topics-container').addEventListener('click', function(e) {
         if (e.target.closest('.remove-topic-btn')) {
             e.target.closest('.topic-item').remove();
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- HÀM THÊM CHỦ ĐỀ ---
+// --- HÀM THÊM CHỦ ĐỀ (Duy trì logic giao diện gốc) ---
 function addTopicRow() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
@@ -65,7 +65,7 @@ function addTopicRow() {
     }
 }
 
-// --- HÀM TẠO DỮ LIỆU: BỎ LỌC BẢNG ---
+// --- HÀM TẠO DỮ LIỆU ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -106,11 +106,10 @@ async function handleGenerate() {
             fullHTML += decoder.decode(value, {stream:true});
         }
         
-        // GIỮ LẠI TOÀN BỘ NỘI DUNG, chỉ xóa markdown block.
         let finalContent = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
 
         prev.innerHTML = finalContent;
-        window.generatedHTML = finalContent; // LƯU TOÀN BỘ NỘI DUNG HTML
+        window.generatedHTML = finalContent;
         
         sec.classList.remove('hidden'); 
         sec.scrollIntoView({behavior:'smooth'});
@@ -119,32 +118,26 @@ async function handleGenerate() {
     finally { loading.classList.add('hidden'); btn.disabled = false; }
 }
 
-// --- LOGIC XUẤT FILE DOCX VÀ FIX LỖI BẢNG ---
+// --- LOGIC XUẤT FILE DOCX (NATIVE EQUATION) ---
 async function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
     
+    // Kiểm tra thư viện (FIX: đảm bảo docx đã nạp)
     if (typeof docx === 'undefined') {
         alert("Lỗi: Thư viện DOCX chưa tải xong."); return;
     }
-    if (typeof temml === 'undefined') {
-        alert("Lỗi: Thư viện Temml (xử lý toán) chưa tải xong."); return;
-    }
-
 
     const btn = document.getElementById('btnDownloadWord');
     btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
     try {
-        // Lấy từ biến Global
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
         
-        // Hàm Map Heading Level
         const getHeadingLevel = (tag) => {
             const map = { 'H1': HeadingLevel.HEADING_1, 'H2': HeadingLevel.HEADING_2, 'H3': HeadingLevel.HEADING_3, 'H4': HeadingLevel.HEADING_4, 'H5': HeadingLevel.HEADING_5, 'H6': HeadingLevel.HEADING_6 };
             return map[tag] || HeadingLevel.NORMAL;
         };
 
-        // 1. Hàm đệ quy: XML Node -> Docx Math Object
         function convertXmlNode(node) {
             if (!node) return [];
             const results = [];
@@ -165,7 +158,6 @@ async function handleDownloadWord() {
             return results;
         }
 
-        // 2. Parse nội dung (Text + LaTeX)
         function parseContent(htmlText) {
             const parts = htmlText.split(/\$\$(.*?)\$\$/g);
             const runs = [];
@@ -180,11 +172,9 @@ async function handleDownloadWord() {
                             const mathChildren = convertXmlNode(mathRoot);
                             runs.push(new MathObj({ children: mathChildren }));
                         } else {
-                            // Fallback (Đã fix lỗi Hex Color)
                             runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                         }
                     } catch (e) { 
-                        // Lỗi parse
                         runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
                     }
                 } else { // Text
