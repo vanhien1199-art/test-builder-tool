@@ -1,8 +1,8 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    addTopicRow();
-    
+    addTopicRow(); // Init dòng đầu
+
     // Gán sự kiện
     const on = (id, e, f) => { const el = document.getElementById(id); if(el) el.addEventListener(e, f); }
     on('btnAddTopic', 'click', addTopicRow);
@@ -39,7 +39,7 @@ async function handleGenerate() {
     const sec = document.getElementById('previewSection');
     const prev = document.getElementById('previewContent');
 
-    // Reset giao diện
+    // Reset UI
     loading.classList.remove('hidden'); 
     error.innerText = ""; 
     sec.classList.add('hidden'); 
@@ -68,11 +68,10 @@ async function handleGenerate() {
         const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
         if(!res.ok) throw new Error("Lỗi Server AI: " + res.statusText);
 
-        // --- KHẮC PHỤC LỖI VỠ GIAO DIỆN Ở ĐÂY ---
-        // Thay vì in ra ngay, ta hứng toàn bộ vào biến buffer
+        // --- HỨNG DỮ LIỆU (BUFFERING) ---
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        let fullContent = ""; // Biến chứa toàn bộ HTML sạch
+        let fullContent = "";
 
         while(true) {
             const {done, value} = await reader.read();
@@ -80,22 +79,19 @@ async function handleGenerate() {
             fullContent += decoder.decode(value, {stream:true});
         }
         
-        // Sau khi nhận đủ 100%, mới xử lý lọc rác
-        // 1. Loại bỏ markdown (```html ... ```)
-        fullContent = fullContent.replace(/```html/g, '').replace(/```/g, '');
-        
-        // 2. Tìm điểm bắt đầu và kết thúc của HTML thực sự (tránh lời nói nhảm của AI)
-        const startIndex = fullContent.indexOf('<table');
-        const endIndex = fullContent.lastIndexOf('</table>');
-        
-        if (startIndex !== -1 && endIndex !== -1) {
-            // Chỉ lấy phần Table
-            fullContent = fullContent.substring(startIndex, endIndex + 8);
+        // --- LỌC SẠCH HTML (QUAN TRỌNG) ---
+        // Hàm này sẽ tìm đúng thẻ <table>...</table> và vứt bỏ mọi thứ khác
+        const cleanHTML = extractTableHTML(fullContent);
+
+        if (!cleanHTML) {
+            // Trường hợp AI không trả về bảng, hiển thị raw text để debug
+            console.warn("AI không trả về Table. Raw content:", fullContent);
+            throw new Error("AI không trả về bảng đúng định dạng. Vui lòng thử lại.");
         }
 
-        // Hiển thị ra màn hình
-        prev.innerHTML = fullContent;
-        window.generatedHTML = fullContent;
+        // Hiển thị
+        prev.innerHTML = cleanHTML;
+        window.generatedHTML = cleanHTML;
         
         sec.classList.remove('hidden');
         sec.scrollIntoView({behavior: 'smooth'});
@@ -109,15 +105,35 @@ async function handleGenerate() {
     }
 }
 
+// --- HÀM HỖ TRỢ LỌC HTML ---
+function extractTableHTML(rawString) {
+    // 1. Tìm vị trí bắt đầu của <table
+    // (Chấp nhận cả <table border="1"> hoặc <table style...>)
+    const tableStartRegex = /<table[\s\S]*?>/i;
+    const startMatch = rawString.match(tableStartRegex);
+    
+    if (!startMatch) return null; // Không tìm thấy thẻ mở table
+    
+    const startIndex = startMatch.index;
+    
+    // 2. Tìm vị trí kết thúc của </table>
+    const endIndex = rawString.lastIndexOf('</table>');
+    
+    if (endIndex === -1 || endIndex < startIndex) return null; // Không tìm thấy thẻ đóng
+    
+    // 3. Cắt chuỗi
+    return rawString.substring(startIndex, endIndex + 8); // +8 là độ dài của </table>
+}
+
+// --- XUẤT FILE WORD NATIVE ---
 function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
-    // Header đặc biệt giúp Word nhận diện MathML (m) và Word (w)
     const header = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' 
           xmlns:w='urn:schemas-microsoft-com:office:word' 
-          xmlns:m='http://schemas.microsoft.com/office/2004/12/omml' 
-          xmlns='http://www.w3.org/TR/REC-html40'>
+          xmlns:m='[http://schemas.microsoft.com/office/2004/12/omml](http://schemas.microsoft.com/office/2004/12/omml)' 
+          xmlns='[http://www.w3.org/TR/REC-html40](http://www.w3.org/TR/REC-html40)'>
     <head>
         <meta charset='utf-8'>
         <title>Đề Thi AI</title>
@@ -132,11 +148,8 @@ function handleDownloadWord() {
     <body>`;
 
     const footer = "</body></html>";
-    
-    // Kết hợp
     const sourceHTML = header + window.generatedHTML + footer;
 
-    // Tạo file .doc (Word 97-2003) - Định dạng này hỗ trợ HTML Native tốt nhất
     const blob = new Blob(['\ufeff', sourceHTML], {
         type: 'application/msword'
     });
