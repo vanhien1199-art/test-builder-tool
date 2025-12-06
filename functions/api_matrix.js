@@ -153,7 +153,9 @@ export async function onRequest(context) {
                - CÔNG THỨC:
                   - KHÔNG dùng LaTeX ($x^2$ hay $$...$$). Word sẽ không hiểu.
                - BẮT BUỘC viết công thức bằng mã **MathML** chuẩn (<math>...</math>).
-               - Ví dụ: Thay vì x^2, hãy viết <math><msup><mi>x</mi><mn>2</mn></msup></math>.
+               - PHẢI dùng **Presentation MathML** đầy đủ.
+               - Ví dụ đúng: <math><msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo> <mn>1</mn> <mo>=</mo> <mn>0</mn></math>
+               - Không được viết tắt kiểu <math>x^2</math> (SAI).
                - Ngôn ngữ: Tiếng Việt chuẩn.
             2. TÍNH TOÁN:
             - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
@@ -283,6 +285,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
