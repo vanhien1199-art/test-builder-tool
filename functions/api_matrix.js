@@ -63,123 +63,141 @@ export async function onRequest(context) {
             
             ${exam_type === 'hk' ? `*LƯU Ý PHÂN BỐ ĐIỂM (HK): Tổng tiết Nửa đầu=${totalPeriodsHalf1}, Nửa sau=${totalPeriodsHalf2}.` : ''}
             ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
-            Tạo ra 1 tài liệu sau đúng định dạng:
+           **QUY ĐỊNH VỀ ĐIỂM SỐ ĐỂ TÍNH TOÁN (QUAN TRỌNG):**
+            *Trước khi tạo bảng, hãy sử dụng các trọng số sau để tính toán sao cho TỔNG ĐIỂM TOÀN BÀI LÀ 10:*
+            - Câu Trắc nghiệm nhiều lựa chọn (MCQ): 0.25 điểm/câu.
+            - Câu Đúng/Sai: Tính 1.0 điểm/câu lớn (gồm 4 ý nhỏ).
+            - Câu Trả lời ngắn: 0.5 điểm/câu.
+            - Câu Tự luận: 1.0 đến 2.0 điểm/câu (tùy chỉnh để tròn tổng 10).
+           ** Tạo ra 1 tài liệu sau đúng định dạng:
+            PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
+            Tạo bảng có đúng 19 cột và cấu trúc như sau:
+            * PHẦN HEADER
+            - Dòng 1 đến dòng 4 cột 1 (TT) gộp ô A1:A4
+            - Cột 2 (Chủ đề/Chương) gộp B1:B4
+            - Cột 3 (Nội dung/đơn vị kiến thức) gộp ô C1:C4
+            - Dòng 1: gộp các ô của cột 4 đến cột 15 - D1:O1 (Mức độ đánh giá)
+            - Gộp ô P1:R1 (Tổng)
+            - Cột 19 (Tỉ lệ % điểm) gộp S1:S4
+            - Dòng 2: Gộp ô D2:L2 (TNKQ); gộp ô M2:O2 (Tự luận); gộp ô P2:R2 (để trống không điền gì); ô S2 (để trống)
+            - Dòng 3: Gộp ô D3:F3 (Nhiều lựa chọn); gộp ô G3:I3 ("Đúng - Sai"); gộp ô J3:L3 (Trả lời ngắn);gộp ô P3:R3 (để trống không điền gì); ô S2 (để trống)
+            - Dòng 4: 
+              • Cột 4 - ô D4: "Biết"
+              • Cột 5 - ô E4: "Hiểu"
+              • Cột 6 - ô F4: "Vận dụng"
+              → Lặp lại đúng 3 mức độ này cho đến ô R4 theo thứ tự: Biết, Hiểu, Vận dụng
+              Cột 19 - ô S4: Để trống không ghi gì
 
-          ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGHIÊM NGẶT CÁC YÊU CẦU SAU:
-**QUY ĐỊNH VỀ ĐIỂM SỐ ĐỂ TÍNH TOÁN (QUAN TRỌNG):**
-*Trước khi tạo bảng, hãy sử dụng các trọng số sau để tính toán sao cho TỔNG ĐIỂM TOÀN BÀI LÀ 10:*
-- Câu Trắc nghiệm nhiều lựa chọn (MCQ): 0.25 điểm/câu.
-- Câu Đúng/Sai: Tính 1.0 điểm/câu lớn (gồm 4 ý nhỏ).
-- Câu Trả lời ngắn: 0.5 điểm/câu.
-- Câu Tự luận: 1.0 đến 2.0 điểm/câu (tùy chỉnh để tròn tổng 10).
+            * PHẦN NỘI DUNG BẢNG
+            Từ dòng 5 trở đi: điền nội dung ví dụ thực tế dựa trên đầu vào
+            - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %"
+            - Cột 2: Tên chủ đề - lấy từ chủ đề nhập từ đầu vào
+            - Cột 3: Nội dung/đơn vị kiến thức - lấy từ đầu vào (chi tiết cho từng chủ đề)
+            - Từ cột 4 đến cột 15: chỉ ghi số câu hỏi hoặc số điểm (ví dụ: 1, 0.5, 2…)
+            - Cột 16: Tính tổng các ô ở cột D,G,J,M
+            - Cột 17: Tính tổng các ổ ở cột E,H,K,N
+            - Cột 18: Tính tổng các ô ở cột F,I,L,O
+            - Cột 19: Tính Tỉ lệ % của từng đơn vị kiến thức (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
+            Dòng "Tổng số câu": từ cột 5 đến cột 18 tính tổng số câu theo cột từ dòng 5 xuống
+             - Cột 19: cộng tổng số câu của cột P, Q, R
+            Dòng "Tổng số điểm": Tính tổng điểm thực tế dựa trên số câu đã điền và trọng số điểm (MCQ=0.25, Đ/S=1.0, Ngắn=0.5, TL=1.0+)
+                    gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
+                    Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
+                    Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
+                    Gộp ô M:O và tính tổng điểm câu hỏi tự luận
+                    Ô P của dòng này tính tổng điểm phần  biết
+                    ô Q tính tổng điểm phần hiểu
+                    Ô R tính tổng điểm phần vận dụng
+                    Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
+            Dòng "Tỉ lệ %": Gộp ô và điền tỉ lệ tương tự  Dòng "Tổng số điểm"
+                    ô S - cột 19: Tính Tổng tỉ lệ
 
-### PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
-Tạo bảng HTML (<table border="1">) có đúng **19 cột**... và cấu trúc merge (gộp ô) như sau:
+          PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
+            Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
+            * PHẦN HEADER
+            - Dòng 1 đến dòng 4 cột 1 (TT) gộp A1:A4
+            - Cột 2 (Chủ đề/Chương) gộp B1:B4
+            - Cột 3 (Nội dung/đơn vị kiến thức) gộp C1:C4
+            - Cột 4 (Yêu cầu cần đạt) gộp D1:D4
+            - Dòng 1: gộp ô E1:P1 (Số câu hỏi ở các mức độ đánh giá)
+            - Dòng 2: gộp ô E2:M2 (TNKQ); gộp ô N2:P2 (Tự luận)
+            - Dòng 3: gộp ô E3:G3 (Nhiều lựa chọn); gộp ô H3:J3 ("Đúng - Sai"); gộp ô K3:M3 (Trả lời ngắn); gộp ô N3:P3 (để trống không ghi gì)
+            - Dòng 4:
+              • E4: "Biết", F4: "Hiểu", G4: "Vận dụng" → Nhiều lựa chọn
+              • H4: "Biết", I4: "Hiểu", J4: "Vận dụng" → Đúng - Sai
+              • K4: "Biết", L4: "Hiểu", M4: "Vận dụng" → Trả lời ngắn
+              • N4: "Biết", O4: "Hiểu", P4: "Vận dụng" → Tự luận
+            * PHẦN NỘI DUNG BẢNG
+            Từ dòng 5 trở đi (nội dung):
+            - Cột 1 (TT): 1, 2, 3, 4, … (số thứ tự)
+            - Cột 2: Tên chủ đề (giống ma trận)
+            - Cột 3: Nội dung chi tiết (giống ma trận)
+            - Cột 4 (Yêu cầu cần đạt): 
+              • Mỗi mức độ ghi trên 1 dòng riêng
+              • Bắt đầu bằng "- Biết …" (dòng 1)
+              • "- Hiểu …" (dòng 2)
+              • "- Vận dụng …" (dòng 3)
+              → Nếu là Vận dụng thì ghi thêm ở cuối dòng: (NL: THTN) hoặc (NL: GQVĐ) hoặc (NL: MĐKH) hoặc (NL: GTKH) tùy năng lực
+            - Cột 5 đến cột 16 (E đến P): ghi số thứ tự câu hỏi (ví dụ: 1, 2, 3, 4…) hoặc số điểm (0.5, 1.0…)
+            - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận)
 
-**1. PHẦN HEADER (CẤU TRÚC CỐ ĐỊNH):**
-- **Dòng 1:**
-  - Cột 1 (TT): Gộp A1:A4.
-  - Cột 2 (Chủ đề/Chương): Gộp B1:B4.
-  - Cột 3 (Nội dung/đơn vị kiến thức): Gộp C1:C4.
-  - Cột 4-15 (Mức độ đánh giá): Gộp D1:O1.
-  - Cột 16-18 (Tổng số điểm theo mức độ): Gộp P1:R1.
-  - Cột 19 (Tỉ lệ % điểm): Gộp S1:S4.
-- **Dòng 2:**
-  - Gộp D2:L2 ghi "TNKQ".
-  - Gộp M2:O2 ghi "Tự luận".
-  - P2, Q2, R2: Để trống (Merge lại nếu cần hoặc để trống).
-- **Dòng 3:**
-  - Gộp D3:F3 ghi "Nhiều lựa chọn".
-  - Gộp G3:I3 ghi "Đúng - Sai".
-  - Gộp J3:L3 ghi "Trả lời ngắn".
-  - Gộp M3:O3 ghi "Tự luận".
-  - P3, Q3, R3: Để trống.
-- **Dòng 4 (Chi tiết mức độ):**
-  - D4, G4, J4, M4: Ghi "Biết".
-  - E4, H4, K4, N4: Ghi "Hiểu".
-  - F4, I4, L4, O4: Ghi "Vận dụng".
-  - P4: "Tổng Biết", Q4: "Tổng Hiểu", R4: "Tổng Vận dụng".
+          PHẦN 3 – ĐỀ KIỂM TRA MẪU
+            Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và bản đặc tả:
+            1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (60-70% điểm)
+               - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D
+               - Câu hỏi Đúng-Sai: Mỗi câu gồm 4 ý nhỏ (a, b, c, d), học sinh chọn Đ/S
+               - Câu hỏi trả lời ngắn (nếu có): Yêu cầu điền từ/cụm từ
+            2. PHẦN TỰ LUẬN (30-40% điểm)
+               - Câu hỏi phân theo mức độ: Biết, Hiểu, Vận dụng
+               - Mỗi câu ghi rõ số điểm
 
-**2. PHẦN NỘI DUNG BẢNG (DỮ LIỆU TỰ SINH):**
-Từ dòng 5 trở đi:
-- **Cột 1 (TT):** Số thứ tự 1, 2, 3...
-- **Cột 2:** Tên chủ đề.
-- **Cột 3:** Đơn vị kiến thức chi tiết.
-- **Cột 4 đến O (Cột 4-15):** Điền **SỐ LƯỢNG CÂU HỎI** tương ứng với mức độ. (Ví dụ: 2, 1, 0...).
-- **Cột P (Tổng điểm Biết):** = (Tổng số câu Biết ở các cột D,G,J,M) quy đổi ra điểm.
-- **Cột Q (Tổng điểm Hiểu):** = (Tổng số câu Hiểu ở các cột E,H,K,N) quy đổi ra điểm.
-- **Cột R (Tổng điểm Vận dụng):** = (Tổng số câu Vận dụng ở các cột F,I,L,O) quy đổi ra điểm.
-- **Cột S (Tỉ lệ %):** = (Tổng điểm dòng đó / 10) * 100%.
+            3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt)
 
-**3. CÁC DÒNG TỔNG KẾT (CUỐI BẢNG):**
-- **Dòng "Tổng số câu":** Tính tổng dọc từ trên xuống cho các cột từ D đến O. Cột P, Q, R tính tổng số câu theo mức độ.
-- **Dòng "Tổng số điểm":**
-  - Tính tổng điểm thực tế dựa trên số câu đã điền và trọng số điểm (MCQ=0.25, Đ/S=1.0, Ngắn=0.5, TL=1.0+).
-  - **Lưu ý:** Ô S (Giao của dòng Tổng điểm và Cột 19) BẮT BUỘC PHẢI LÀ **10.0**.
-- **Dòng "Tỉ lệ %":** Tính phần trăm tương ứng của các mức độ Biết/Hiểu/Vận dụng trên tổng 10 điểm.
-
----
-
-### PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
-Tạo bảng HTML có đúng **16 cột**:
-
-**1. PHẦN HEADER:**
-- Cột 1 (TT), Cột 2 (Chương), Cột 3 (Nội dung), Cột 4 (Yêu cầu cần đạt): Gộp dòng 1-4 tương ứng.
-- **Dòng 1:** Gộp E1:P1 ("Số câu hỏi theo mức độ").
-- **Dòng 2:** Gộp E2:M2 ("TNKQ"), Gộp N2:P2 ("Tự luận").
-- **Dòng 3:**
-  - E3-G3: "Nhiều lựa chọn".
-  - H3-J3: "Đúng - Sai".
-  - K3-M3: "Trả lời ngắn".
-  - N3-P3: Để trống.
-- **Dòng 4:** Ghi Biết, Hiểu, Vận dụng tương ứng cho từng loại câu hỏi như Ma trận.
-
-**2. PHẦN NỘI DUNG:**
-- **Cột 4 (Yêu cầu cần đạt):** Ghi rõ yêu cầu, mỗi đầu dòng là một mức độ (Gạch đầu dòng "- Biết...", "- Hiểu...", "- Vận dụng...").
-  - Với mức độ Vận dụng, bắt buộc ghi mã năng lực ở cuối câu. Ví dụ: (NL: GQVĐ).
-- **Cột 5 đến 16:** Điền số lượng câu hỏi khớp hoàn toàn với Ma trận ở Phần 1.
-
----
-
-### PHẦN 3 – ĐỀ KIỂM TRA MẪU
-Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã tạo:
-1.  **I. TRẮC NGHIỆM KHÁCH QUAN** (Nhiều lựa chọn): 4 đáp án A,B,C,D.
-2.  **II. ĐÚNG - SAI:** Mỗi câu hỏi có 4 ý a), b), c), d). Học sinh chọn Đúng hoặc Sai.
-3.  **III. TRẢ LỜI NGẮN:** Câu hỏi yêu cầu điền số hoặc từ ngữ ngắn gọn.
-4.  **IV. TỰ LUẬN:** Câu hỏi yêu cầu trình bày, giải quyết vấn đề.
-
-**ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM:**
-- Trả về bảng đáp án trắc nghiệm.
-- Hướng dẫn chấm tự luận chi tiết (chia nhỏ điểm 0.25).
-
----
-
-### QUY TẮC CHUNG (BẮT BUỘC)
-
-1.  **ĐỊNH DẠNG:**
-    - Sử dụng HTML Table chuẩn (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>, \`colspan\` / \`rowspan\`.)**.
-    - Border="1", Cellpadding="5".
-    - Không dùng Markdown table, không dùng code block cho bảng.
-    - Công thức Toán/Lý/Hóa: Dùng LaTeX đặt trong dấu $$ (Ví dụ: $$ E = mc^2 $$).
-
-2.  **LOGIC PHÂN BỔ KIẾN THỨC:**
-    - Nếu đề bài có yếu tố "Học kỳ": Phân bổ điểm 25% (nửa đầu) - 75% (nửa sau) hoặc theo số tiết thực tế.
-    - Nếu không có yếu tố thời gian cụ thể: Phân bổ đều các chủ đề.
-
-3.  **CẤU TRÚC ĐỀ & ĐIỂM SỐ (QUAN TRỌNG NHẤT):**
-    - **Tổng điểm toàn bài bắt buộc: 10 điểm.**
-    - **Tỉ lệ mức độ nhận thức:** Biết (30-40%) - Hiểu (30-40%) - Vận dụng (20-30%).
-    - **Cấu trúc câu hỏi:**
-      - Trắc nghiệm nhiều lựa chọn: Chiếm khoảng 30% tổng điểm.
-      - Đúng/Sai: Chiếm khoảng 20-30% tổng điểm.
-      - Trả lời ngắn: Chiếm khoảng 20% tổng điểm.
-      - Tự luận: Chiếm khoảng 20-30% tổng điểm.
-    - *Lưu ý: AI được phép linh động số lượng câu hỏi mỗi loại +/- 1 câu để đảm bảo tổng điểm tròn 10.*
-
-4.  **KIỂM TRA CHÉO:**
-    - Số câu trong Đề = Số câu trong Đặc tả = Số câu trong Ma trận.
-    - Mã câu hỏi trong đề phải khớp với ma trận.
-            `;
+           ** QUY TẮC CHUNG (BẮT BUỘC)
+            1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
+               - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
+               - Không viết lời mở đầu. KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
+               - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
+               - Table phải có border="1".
+               - In đậm: dùng thẻ <b>...</b> (Ví dụ: <b>Câu 1.</b>)
+               - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
+               - Đoạn văn: dùng thẻ <p>...</p>
+               - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
+              - CÔNG THỨC TOÁN HỌC, VẬT LÍ, HÓA HỌC:
+                    Bao quanh công thức bằng dấu $$ (ví dụ: $$ x^2 + \sqrt{5} $$).
+                    KHÔNG dùng MathML.
+                    LaTeX phải chuẩn (ví dụ dùng \frac{a}{b} cho phân số).
+            2. TÍNH TOÁN:
+            - AI phải tự tính toán số câu hỏi dựa trên thời lượng kiểm tra
+            - Nếu là đề kiểm tra định kì giữa kì:Phân bổ đều theo chủ đề
+            - Nếu là đề kiểm tra HỌC KÌ:
+                 • Tính tỉ lệ % kiến thức: 25% nửa đầu học kì + 75% nửa sau học kì
+                 • Dựa vào số tiết dạy để tính trọng số từng đơn vị kiến thức
+                 • Ví dụ: Chủ đề A (nửa đầu: 5 tiết, nửa sau: 15 tiết) → Trọng số = (5×0.25 + 15×0.75)/20 = 62.5%
+            - Tự động tính số lượng câu hỏi phù hợp với ${time} phút.
+            3. ĐỘ KHÓ VÀ PHÂN BỔ MỨC ĐỘ:
+           - Mỗi chủ đề phải có ít nhất 20% câu hỏi ở mức Vận dụng
+           - Phân bổ mức độ nhận thức: Bắt buộc theo tỉ lệ:  Biết (40%), Hiểu (30), Vận dụng (30%); Trường hợp hợp không thể phân bổ được thì linh động là: Biết (30-40%), Hiểu (30-40%), Vận dụng (20-30%)
+           - Phân bố dạng câu hỏi: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
+           - Phân bố tỉ lệ điểm: Câu hỏi nhiều lựa chọn (30%), Đúng - Sai (20%), trả lời ngăn (20%), tự luận (30%)
+           - Cấu trúc đề: TNKQ (60-70%), Tự luận (30-40%)
+            4. NĂNG LỰC ĐÁNH GIÁ:
+               - Mỗi chủ đề phải đánh giá ít nhất 1 năng lực chuyên biệt
+               - Mã năng lực:
+                 • NL: THTN = Tìm hiểu tự nhiên
+                 • NL: GQVĐ = Giải quyết vấn đề
+                 • NL: MĐKH = Mô tả và giải thích hiện tượng
+                 • NL: GTKH = Giao tiếp khoa học
+                 • NL: SDCN = Sử dụng công cụ và ngôn ngữ khoa học
+            5. LIÊN KẾT VÀ KIỂM TRA:
+               - Mỗi câu hỏi trong đề phải có mã tham chiếu đến ô trong ma trận (Ví dụ: Câu 1 [M1-B])
+               - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm bản đặc tả = 10 điểm
+               - Số câu hỏi trong đề = Số câu trong ma trận
+            6. TÍNH TOÁN THỜI LƯỢNG - SỐ CÂU - ĐIỂM:
+               - 45 phút: 20-30 câu (15-22 TN + 2-3 TL)
+               - 60 phút: 25-35 câu (28-26 TN + 3-4 TL)
+               - 90 phút: 30-40 câu (20-30 TN + 4-5 TL)
+              `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
             const response = await fetch(API_URL, {
@@ -274,13 +292,4 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
         }
     }
 }
-
-
-
-
-
-
-
-
-
 
