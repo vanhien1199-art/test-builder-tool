@@ -106,11 +106,9 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <i class="fas fa-sliders-h"></i> 1. Cấu Hình Chung
-            </div>
+            <div class="card-header"><i class="fas fa-sliders-h"></i> 1. Cấu Hình Chung</div>
             <div class="card-body">
-                <div class="grid-2">
+                <div class="grid-3">
                     <div class="form-group">
                         <label>Môn học</label>
                         <input type="text" id="subject" placeholder="Ví dụ: KHTN" value="Toán học">
@@ -118,6 +116,15 @@
                     <div class="form-group">
                         <label>Lớp</label>
                         <input type="text" id="grade" placeholder="Ví dụ: 9" value="9">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #d97706; font-weight: bold;">Bộ sách</label>
+                        <select id="book_series" style="border: 2px solid #d97706;">
+                            <option value="Kết nối tri thức với cuộc sống">Kết nối tri thức</option>
+                            <option value="Chân trời sáng tạo">Chân trời sáng tạo</option>
+                            <option value="Cánh diều">Cánh diều</option>
+                            <option value="Tự do">Tự do / Chung</option>
+                        </select>
                     </div>
                 </div>
 
@@ -153,8 +160,7 @@
                         <span class="label-text">Có sử dụng câu hỏi "Trả lời ngắn"</span>
                     </label>
                 </div>
-                
-                </div>
+            </div>
         </div>
 
         <div class="card">
@@ -262,3 +268,4 @@
     <script src="js/app.js"></script>
 </body>
 </html>
+
