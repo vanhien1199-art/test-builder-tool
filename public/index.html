@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI - Fix Native Word</title>
+    <title>ExamMatrix AI - Auto Equation</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/temml@0.10.27/dist/temml.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
@@ -18,9 +20,7 @@
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
         .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
-        .card-header { font-weight: bold; margin-bottom: 15px; color: #475569; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
         .btn-primary { background: var(--primary); }
@@ -29,32 +29,27 @@
         .hidden { display: none; }
         .topic-item { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
         .remove-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold; }
-        #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; }
+        #previewContent { border: 1px solid #ccc; padding: 20px; max-height: 400px; overflow-y: auto; margin-top: 15px; font-family: "Times New Roman"; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>ExamMatrix AI (Final)</h1>
+    <h1>ExamMatrix AI (Native Equation)</h1>
 
     <div class="card">
-        <div class="card-header">1. Cấu hình</div>
         <div class="form-row"><input id="subject" value="Toán"><input id="grade" value="9"></div>
-        <div class="grid-3">
+        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
             <select id="semester"><option value="1">HK 1</option></select>
-            <select id="exam_type"><option value="gk">Giữa kì</option><option value="hk">Cuối kì</option></select>
+            <select id="exam_type"><option value="gk">Giữa kì</option></select>
             <select id="time_limit"><option value="45">45'</option></select>
         </div>
         <div style="margin-top: 10px;">
             <label><input type="checkbox" id="use_short"> Câu hỏi ngắn</label>
         </div>
-        <div id="hk-config" class="hidden form-row" style="margin-top:10px;">
-            <input id="total_half1" placeholder="Tiết 1"><input id="total_half2" placeholder="Tiết 2">
-        </div>
     </div>
 
     <div class="card">
-        <div class="card-header">2. Chủ đề</div>
         <div id="topics-container"></div>
         <button class="btn btn-outline" onclick="addTopicRow()">+ Thêm Chủ đề</button>
     </div>
@@ -70,7 +65,7 @@
     <div id="previewSection" class="hidden">
         <h3>Kết quả</h3>
         <div id="previewContent"></div>
-        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (.DOCX)</button>
+        <button id="btnDownloadWord" class="btn btn-success">TẢI FILE WORD (CHỈNH SỬA ĐƯỢC NGAY)</button>
     </div>
 </div>
 
@@ -78,23 +73,17 @@
     <div class="topic-item">
         <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
         <div class="form-row"><input class="topic-name" placeholder="Tên chủ đề..."><textarea class="topic-content" rows="1" placeholder="Nội dung..."></textarea></div>
-        <div class="form-row hk-period-inputs hidden"><input class="topic-period-1" type="number" placeholder="Tiết 1"><input class="topic-period-2" type="number" placeholder="Tiết 2"></div>
     </div>
 </template>
 
 <script>
+    // --- KHAI BÁO BIẾN TOÀN CỤC ---
+    let generatedHTML = "";
+
     document.addEventListener('DOMContentLoaded', () => {
         addTopicRow();
         document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
         document.getElementById('btnDownloadWord').addEventListener('click', handleDownloadWord);
-        
-        const examType = document.getElementById('exam_type');
-        examType.addEventListener('change', function() {
-            const isHK = this.value === 'hk';
-            const cfg = document.getElementById('hk-config');
-            if(cfg) isHK ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
-            document.querySelectorAll('.hk-period-inputs').forEach(d => isHK ? d.classList.remove('hidden') : d.classList.add('hidden'));
-        });
     });
 
     function addTopicRow() {
@@ -102,9 +91,6 @@
         const tpl = document.getElementById('topic-template');
         const clone = tpl.content.cloneNode(true);
         box.appendChild(clone);
-        if(document.getElementById('exam_type').value === 'hk') {
-            box.lastElementChild.querySelector('.hk-period-inputs').classList.remove('hidden');
-        }
     }
 
     async function handleGenerate() {
@@ -120,15 +106,13 @@
             const get = id => document.getElementById(id).value.trim();
             const data = {
                 license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
-                semester: get('semester'), exam_type: get('exam_type'), time: get('time_limit'),
-                use_short_answer: document.getElementById('use_short').checked,
-                totalPeriodsHalf1: parseInt(get('total_half1'))||0, totalPeriodsHalf2: parseInt(get('total_half2'))||0,
+                semester: '1', exam_type: 'gk', time: '45', use_short_answer: false, totalPeriodsHalf1: 0, totalPeriodsHalf2: 0,
                 topics: []
             };
             document.querySelectorAll('.topic-item').forEach(r => {
                 const n = r.querySelector('.topic-name').value;
                 const c = r.querySelector('.topic-content').value;
-                if(n) data.topics.push({name:n, content:c, p1: parseInt(r.querySelector('.topic-period-1').value)||0, p2: parseInt(r.querySelector('.topic-period-2').value)||0});
+                if(n) data.topics.push({name:n, content:c, p1: 0, p2: 0});
             });
 
             if(data.topics.length===0) throw new Error("Chưa nhập chủ đề!");
@@ -147,23 +131,24 @@
             
             const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '');
             prev.innerHTML = cleanHTML;
-            window.generatedHTML = cleanHTML;
+            generatedHTML = cleanHTML;
+            
+            // Render Math trên Web cho đẹp (không ảnh hưởng file word)
+            // Nếu muốn hiện đẹp trên web thì dùng temml.renderDom() ở đây (tùy chọn)
+            
             sec.classList.remove('hidden'); 
             sec.scrollIntoView({behavior:'smooth'});
 
-        } catch(e) { 
-            error.innerText = "Lỗi: " + e.message; 
-        } finally { 
-            loading.classList.add('hidden'); btn.disabled = false; 
-        }
+        } catch(e) { error.innerText = "Lỗi: " + e.message; } 
+        finally { loading.classList.add('hidden'); btn.disabled = false; }
     }
 
     // ============================================================
-    // --- XỬ LÝ CONVERT TOÁN HỌC CHÍNH XÁC ---
+    // --- CORE LOGIC: CHUYỂN LATEX -> DOCX NATIVE EQUATION ---
     // ============================================================
     async function handleDownloadWord() {
-        if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-        if (typeof docx === 'undefined') { alert("Lỗi thư viện DOCX!"); return; }
+        if(!generatedHTML) { alert("Chưa có nội dung!"); return; }
+        if (typeof docx === 'undefined') { alert("Lỗi: Thư viện DOCX chưa tải xong."); return; }
 
         const btn = document.getElementById('btnDownloadWord');
         btn.innerText = "Đang tạo file..."; btn.disabled = true;
@@ -171,7 +156,8 @@
         try {
             const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
 
-            // 1. Hàm đệ quy: XML Node -> Docx Math Object
+            // 1. CHUYỂN CÂY XML (TỪ LATEX) SANG ĐỐI TƯỢNG DOCX
+            // Hàm đệ quy này là "trái tim" của giải pháp
             function convertXmlNode(node) {
                 if (!node) return [];
                 const results = [];
@@ -186,51 +172,52 @@
                     switch (tag) {
                         case 'mn': case 'mi': case 'mo': case 'mtext': 
                             results.push(new MathRun(child.textContent)); break;
-                        case 'mfrac':
+                        case 'mfrac': // Phân số
                             if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
-                        case 'msup':
+                        case 'msup': // Số mũ
                             if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
-                        case 'msub':
+                        case 'msub': // Chỉ số dưới
                             if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
-                        case 'msqrt':
+                        case 'msqrt': // Căn bậc 2
                             results.push(new MathRadical({ children: children })); break;
-                        default: results.push(...children); break;
+                        case 'mroot': // Căn bậc n (ví dụ căn bậc 3)
+                            if (children.length >= 2) results.push(new MathRadical({ children: [children[0]], degree: [children[1]] })); break;
+                        default: // Mặc định (nhóm)
+                            results.push(...children); break;
                     }
                 });
                 return results;
             }
 
-            // 2. PARSE HTML VÀ TẠO EQUATION THẬT SỰ
+            // 2. QUÉT HTML VÀ TÌM LATEX $$...$$
             function parseContent(htmlText) {
-                // Tách theo dấu $$ (LaTeX)
-                const parts = htmlText.split(/\$\$(.*?)\$\$/g);
+                const parts = htmlText.split(/\$\$(.*?)\$\$/g); // Tách bởi $$
                 const runs = [];
 
                 parts.forEach((part, index) => {
-                    if (index % 2 === 1) { // Đây là LaTeX -> Cần convert thành Equation
+                    if (index % 2 === 1) { // Đây là phần nằm trong $$ (LaTeX)
                         try {
                             if (typeof temml !== 'undefined') {
-                                // A. Render LaTeX -> XML String bằng Temml
+                                // A. Dùng Temml chuyển LaTeX -> XML String
                                 const xmlString = temml.renderToString(part, { xml: true });
                                 
-                                // B. Parse XML String -> DOM
+                                // B. Parse XML String -> DOM Node
                                 const parser = new DOMParser();
                                 const xmlDoc = parser.parseFromString(xmlString, "text/xml");
                                 const mathRoot = xmlDoc.getElementsByTagName("math")[0];
                                 
-                                // C. Gọi hàm convert để tạo Object Docx Math
+                                // C. Gọi hàm đệ quy để tạo Native Equation
                                 const mathChildren = convertXmlNode(mathRoot);
-                                
-                                // D. Đẩy Object Math vào mảng (CHỨ KHÔNG PHẢI TEXT MÀU ĐỎ)
                                 runs.push(new MathObj({ children: mathChildren }));
                             } else {
                                 runs.push(new TextRun({ text: part, bold: true, color: "2E75B6" }));
                             }
                         } catch (e) { 
-                            console.error("Lỗi parse công thức:", part, e);
-                            runs.push(new TextRun({ text: `(Lỗi CT: ${part})`, color: "FF0000" })); 
+                            console.error(e);
+                            // Nếu lỗi thì hiện text màu đỏ (đã fix lỗi hex color)
+                            runs.push(new TextRun({ text: `(Lỗi: ${part})`, color: "FF0000" })); 
                         }
-                    } else { // Text thường
+                    } else { // Đây là Text thường
                         const cleanText = part.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ");
                         if (cleanText.trim()) runs.push(new TextRun(cleanText));
                     }
@@ -238,22 +225,22 @@
                 return [new Paragraph({ children: runs })];
             }
 
-            // 3. Quét bảng HTML và tạo Table Word
+            // 3. TẠO DOCUMENT
             const parser = new DOMParser();
-            const docHTML = parser.parseFromString(window.generatedHTML, 'text/html');
+            const docHTML = parser.parseFromString(generatedHTML, 'text/html');
             const docChildren = [
                 new Paragraph({ text: "ĐỀ KIỂM TRA", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } })
             ];
 
             const tables = docHTML.querySelectorAll('table');
             
-            // Xử lý bảng nếu có
+            // Xử lý bảng (nếu có)
             if (tables.length > 0) {
                 tables.forEach(table => {
                     const rows = Array.from(table.querySelectorAll('tr')).map(tr => 
                         new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => 
                             new TableCell({ 
-                                children: parseContent(td.innerHTML), // Gọi hàm parse xịn ở trên
+                                children: parseContent(td.innerHTML), // Gọi hàm parse xịn
                                 width: { size: 100, type: WidthType.PERCENTAGE }, 
                                 borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
                             }) 
@@ -263,7 +250,7 @@
                     docChildren.push(new Paragraph("")); 
                 });
             } else {
-                // Nếu không có bảng, parse toàn bộ body
+                // Xử lý text (nếu không có bảng)
                 Array.from(docHTML.body.children).forEach(el => {
                     if(el.innerText.trim()) docChildren.push(...parseContent(el.innerHTML));
                 });
@@ -271,13 +258,13 @@
 
             const doc = new Document({ sections: [{ children: docChildren }] });
             const blob = await Packer.toBlob(doc);
-            saveAs(blob, `De_Thi_Equation_${Date.now()}.docx`);
+            saveAs(blob, `De_Thi_AutoEquation_${Date.now()}.docx`);
 
         } catch(e) {
             alert("Lỗi xuất file: " + e.message);
             console.error(e);
         } finally {
-            btn.innerText = "TẢI FILE DOCX (.DOCX)"; btn.disabled = false;
+            btn.innerText = "TẢI FILE WORD (.DOCX)"; btn.disabled = false;
         }
     }
 </script>
