@@ -74,7 +74,7 @@ export async function onRequest(context) {
 - Câu Tự luận: 1.0 đến 2.0 điểm/câu (tùy chỉnh để tròn tổng 10).
 
 ### PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
-Tạo bảng HTML (`<table border="1">`) có đúng **19 cột** và cấu trúc merge (gộp ô) như sau:
+Tạo bảng HTML (<table border="1">) có đúng **19 cột**... và cấu trúc merge (gộp ô) như sau:
 
 **1. PHẦN HEADER (CẤU TRÚC CỐ ĐỊNH):**
 - **Dòng 1:**
@@ -274,6 +274,7 @@ Soạn thảo đề thi hoàn chỉnh dựa trên Ma trận và Đặc tả đã
         }
     }
 }
+
 
 
 
