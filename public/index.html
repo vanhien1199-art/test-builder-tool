@@ -166,32 +166,40 @@
     </footer>
 
     <template id="topic-template">
-        <div class="topic-item">
-            <div class="topic-header">
-                <span class="topic-label">Chủ đề</span>
-                <button class="btn-icon-danger remove-topic-btn" title="Xóa chủ đề này"><i class="fas fa-times"></i></button>
+    <div class="topic-item">
+        <div class="topic-header">
+            <span class="topic-label">Chủ đề / Nội dung</span>
+            <button class="remove-btn btn-icon-danger" title="Xóa dòng này"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <input type="text" class="topic-name" placeholder="Tên Chủ đề (Ví dụ: Chương 1)...">
+            </div>
+            <div class="form-group">
+                <textarea class="topic-content" rows="1" placeholder="Chi tiết nội dung kiến thức..."></textarea>
+            </div>
+        </div>
+
+        <div class="hk-period-inputs hidden" style="margin-top: 10px; background: #fff7ed; padding: 10px; border-radius: 6px;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #c2410c; margin-bottom: 5px;">
+                <i class="fas fa-clock"></i> Số tiết dạy của nội dung này:
             </div>
             <div class="grid-2">
-                <div class="form-group">
-                    <input type="text" class="topic-name" placeholder="Tên Chủ đề / Chương...">
-                </div>
-                <div class="form-group">
-                    <textarea class="topic-content" rows="1" placeholder="Nội dung chi tiết..."></textarea>
-                </div>
-            </div>
-            <div class="grid-2 hk-period-inputs hidden">
                 <div class="form-group mini">
-                    <label>Tiết (Nửa đầu)</label>
-                    <input type="number" class="topic-period-1" value="0" min="0">
+                    <label>Nửa đầu HK</label>
+                    <input type="number" class="topic-period-1" value="0" min="0" placeholder="Số tiết...">
                 </div>
                 <div class="form-group mini">
-                    <label>Tiết (Nửa sau)</label>
-                    <input type="number" class="topic-period-2" value="0" min="0">
+                    <label>Nửa sau HK</label>
+                    <input type="number" class="topic-period-2" value="0" min="0" placeholder="Số tiết...">
                 </div>
             </div>
         </div>
-    </template>
+    </div>
+</template>
 
     <script src="js/app.js"></script>
 </body>
 </html>
+
