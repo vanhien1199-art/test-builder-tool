@@ -1,15 +1,12 @@
 // File: functions/api_matrix.js
 export async function onRequest(context) {
     const { request, env } = context;
-    
-    // Cấu hình CORS (Cho phép Frontend gọi)
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // Xử lý Preflight Request
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
     if (request.method === "POST") {
@@ -17,46 +14,54 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            // --- CẤU HÌNH MODEL (GỌI TRỰC TIẾP) ---
-            // Bạn có thể đổi thành "gemini-1.5-flash" hoặc "gemini-2.0-flash-exp" tùy ý tại đây
-            const MODEL_NAME = "gemini-2.5-pro"; 
-            
-            // URL chuẩn của Google API (Chế độ Streaming Server-Sent Events)
+            const MODEL_NAME = "gemini-2.0-flash";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
-            const { license_key, subject, grade, semester, time, totalPeriodsHalf1, totalPeriodsHalf2, topics, exam_type, use_short_answer } = body;
-
-            // --- 1. KIỂM TRA LICENSE (KV) ---
-            if (env.TEST_TOOL && license_key) {
-                const creditStr = await env.TEST_TOOL.get(license_key);
-                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ KHÔNG TỒN TẠI!" }), { status: 403, headers: corsHeaders });
-                
-                let currentCredit = parseInt(creditStr);
-                if (currentCredit <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT SỬ DỤNG!" }), { status: 402, headers: corsHeaders });
+            
+            // Lấy thêm biến book_series
+            const { 
+                license_key, topics, subject, grade, semester, 
+                exam_type, time, use_short_answer, 
+                totalPeriodsHalf1, totalPeriodsHalf2,
+                book_series // <--- BIẾN MỚI
+            } = body;
+            
+            // --- KIỂM TRA LICENSE KV ---
+            if (env.TEST_TOOL && license_key) { 
+                const creditStr = await env.TEST_TOOL.get(license_key); 
+                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ SAI!" }), { status: 403, headers: corsHeaders });
+                if (parseInt(creditStr) <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT!" }), { status: 402, headers: corsHeaders });
             }
 
-            // --- 2. CHUẨN BỊ DỮ LIỆU ---
-            let topicsDescription = topics.map((t, index) => {
-                return `Chủ đề ${index + 1}: ${t.name} (Nội dung: ${t.content}, Tiết đầu: ${t.p1}, Tiết sau: ${t.p2})`;
-            }).join("\n");
+            // Xử lý mô tả topics
+            let topicsDescription = "";
+            topics.forEach((topic, index) => {
+                topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
+                topic.units.forEach((unit, uIndex) => {
+                    let periodInfo = "";
+                    if (exam_type === 'hk') periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+                    topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
+                });
+            });
            
-            // --- PROMPT (GIỮ NGUYÊN VĂN BẠN CUNG CẤP) ---
+            // --- PROMPT (GIỮ NGUYÊN) ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
-            Bạn hiểu biết chuyên sâu về sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
+            Bạn hiểu biết chuyên sâu về ${book_series} sách giáo khoa lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
             ## YÊU CẦU ĐẦU VÀO
-            Cung cấp các thông tin sau để tạo ma trận và đề kiểm tra:
+       
+            1. Môn học: ${subject} - Lớp ${grade}
+            2. Bộ sách giáo khoa: **${book_series}** (Quan trọng: Hãy sử dụng ngữ liệu, thuật ngữ và thứ tự kiến thức chuẩn xác theo bộ sách này).
+            3. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester}.
+            4. Thời gian: ${time} phút.
+            5. Câu hỏi ngắn: ${use_short_answer ? 'CÓ' : 'KHÔNG'}.
 
-            1. Môn học: ${subject} lớp ${grade}
-            2. Học kì: ${semester}, năm học 2024-2025
-            3. Loại kiểm tra: ${exam_type === 'hk' ? 'Kiểm tra học kì' : 'Kiểm tra định kì giữa kì'}
-            4. Chủ đề/Chương cần kiểm tra: (Xem danh sách bên dưới)
-            5. Nội dung/đơn vị kiến thức: ${topicsDescription}
-            6. Thời lượng kiểm tra: ${time} phút
-            7. Có sử dụng câu hỏi "Trả lời ngắn" không? ${use_short_answer ? 'Có' : 'Không'}
-
+            ## NỘI DUNG KIẾN THỨC CẦN RA ĐỀ:
+            ${topicsDescription}
+            
+            ${exam_type === 'hk' ? `*LƯU Ý PHÂN BỐ ĐIỂM (HK): Tổng tiết Nửa đầu=${totalPeriodsHalf1}, Nửa sau=${totalPeriodsHalf2}.` : ''}
             ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
             Tạo ra 1 tài liệu sau đúng định dạng:
 
