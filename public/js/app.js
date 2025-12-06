@@ -1,10 +1,10 @@
 // File: public/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    addTopicRow(); 
-
+    addTopicRow();
+    
     // Gán sự kiện
-    const on = (id, e, f) => document.getElementById(id) && document.getElementById(id).addEventListener(e, f);
+    const on = (id, e, f) => { const el = document.getElementById(id); if(el) el.addEventListener(e, f); }
     on('btnAddTopic', 'click', addTopicRow);
     on('btnGenerate', 'click', handleGenerate);
     on('btnDownloadWord', 'click', handleDownloadWord);
@@ -39,15 +39,21 @@ async function handleGenerate() {
     const sec = document.getElementById('previewSection');
     const prev = document.getElementById('previewContent');
 
-    loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
+    // Reset giao diện
+    loading.classList.remove('hidden'); 
+    error.innerText = ""; 
+    sec.classList.add('hidden'); 
+    prev.innerHTML = ""; 
+    btn.disabled = true;
 
     try {
         const get = id => document.getElementById(id).value.trim();
-        
         const data = {
-            license_key: get('license_key'), subject: get('subject'), grade: get('grade'), semester: get('semester'),
-            exam_type: get('exam_type'), time: get('time_limit'), use_short_answer: document.getElementById('use_short').checked,
-            totalPeriodsHalf1: parseInt(get('total_half1'))||0, totalPeriodsHalf2: parseInt(get('total_half2'))||0, topics: []
+            license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
+            semester: get('semester'), exam_type: get('exam_type'), time: get('time_limit'),
+            use_short_answer: document.getElementById('use_short').checked,
+            totalPeriodsHalf1: parseInt(get('total_half1'))||0, totalPeriodsHalf2: parseInt(get('total_half2'))||0,
+            topics: []
         };
 
         document.querySelectorAll('.topic-item').forEach(r => {
@@ -60,37 +66,53 @@ async function handleGenerate() {
 
         // Gọi API
         const res = await fetch('/api_matrix', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-        if(!res.ok) throw new Error("Lỗi Server AI");
+        if(!res.ok) throw new Error("Lỗi Server AI: " + res.statusText);
 
-        sec.classList.remove('hidden');
-        sec.scrollIntoView({behavior: 'smooth'});
-        
+        // --- KHẮC PHỤC LỖI VỠ GIAO DIỆN Ở ĐÂY ---
+        // Thay vì in ra ngay, ta hứng toàn bộ vào biến buffer
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        
+        let fullContent = ""; // Biến chứa toàn bộ HTML sạch
+
         while(true) {
             const {done, value} = await reader.read();
             if(done) break;
-            const chunk = decoder.decode(value, {stream:true});
-            // Xóa các ký tự thừa
-            prev.innerHTML += chunk.replace(/```html/g,'').replace(/```/g,'');
+            fullContent += decoder.decode(value, {stream:true});
         }
-        window.generatedHTML = prev.innerHTML; // Lưu nội dung HTML+MathML
+        
+        // Sau khi nhận đủ 100%, mới xử lý lọc rác
+        // 1. Loại bỏ markdown (```html ... ```)
+        fullContent = fullContent.replace(/```html/g, '').replace(/```/g, '');
+        
+        // 2. Tìm điểm bắt đầu và kết thúc của HTML thực sự (tránh lời nói nhảm của AI)
+        const startIndex = fullContent.indexOf('<table');
+        const endIndex = fullContent.lastIndexOf('</table>');
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+            // Chỉ lấy phần Table
+            fullContent = fullContent.substring(startIndex, endIndex + 8);
+        }
+
+        // Hiển thị ra màn hình
+        prev.innerHTML = fullContent;
+        window.generatedHTML = fullContent;
+        
+        sec.classList.remove('hidden');
+        sec.scrollIntoView({behavior: 'smooth'});
 
     } catch(e) {
         error.innerText = "Lỗi: " + e.message;
         error.classList.remove('hidden');
     } finally {
-        loading.classList.add('hidden'); btn.disabled = false;
+        loading.classList.add('hidden'); 
+        btn.disabled = false;
     }
 }
 
-// --- HÀM XUẤT FILE WORD NATIVE (KHÔNG CẦN THƯ VIỆN) ---
 function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
 
-    // Header đặc biệt cho Microsoft Word
-    // Bao gồm namespace 'm' cho MathML và 'w' cho Word
+    // Header đặc biệt giúp Word nhận diện MathML (m) và Word (w)
     const header = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' 
           xmlns:w='urn:schemas-microsoft-com:office:word' 
@@ -103,32 +125,29 @@ function handleDownloadWord() {
             body { font-family: 'Times New Roman', serif; font-size: 12pt; }
             table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
             td, th { border: 1px solid black; padding: 5px; vertical-align: top; }
-            h2, h3 { text-align: center; margin: 10px 0; }
+            h2, h3 { text-align: center; margin: 10px 0; font-weight: bold; }
+            p { margin: 5px 0; }
         </style>
     </head>
     <body>`;
 
     const footer = "</body></html>";
+    
+    // Kết hợp
     const sourceHTML = header + window.generatedHTML + footer;
 
-    // Tạo Blob với MIME type 'application/msword'
+    // Tạo file .doc (Word 97-2003) - Định dạng này hỗ trợ HTML Native tốt nhất
     const blob = new Blob(['\ufeff', sourceHTML], {
         type: 'application/msword'
     });
 
-    // Tạo link tải xuống
-    const downloadLink = document.createElement("a");
-    document.body.appendChild(downloadLink);
-    
     const url = URL.createObjectURL(blob);
-    downloadLink.href = url;
+    const link = document.createElement("a");
+    document.body.appendChild(link);
+    link.href = url;
+    link.download = `De_Thi_AI_${Date.now()}.doc`;
+    link.click();
     
-    // Lưu ý: Đuôi file là .doc (Word 97-2003) 
-    // Word hiện đại vẫn mở tốt và tự convert MathML
-    downloadLink.download = `De_Thi_AI_${Date.now()}.doc`;
-    
-    downloadLink.click();
-    
-    document.body.removeChild(downloadLink);
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
