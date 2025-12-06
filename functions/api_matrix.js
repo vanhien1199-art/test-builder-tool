@@ -92,9 +92,9 @@ export async function onRequest(context) {
             - Cột 18: Tính tổng các ô ở cột F,I,L,O
             - Cột 19: Tính Tỉ lệ % của từng đơn vị kiến thức (tự tính dựa trên điểm và QUY TẮC PHÂN BỔ)
             Dòng "Tổng số câu": từ cột 5 đến cột 18 tính tổng số câu theo cột từ dòng 5 xuống
-             - Cột 19: cộng tổng số câu của cột P, Q, R
+             - Cột 19: tính tổng số câu của cột P, Q, R
             Dòng "Tổng số điểm": 
-                    gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
+                    gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn (["tổng số câu" cột D,E,E]nhân với số điểm của một câu])
                     Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
                     Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
                     Gộp ô M:O và tính tổng điểm câu hỏi tự luận
@@ -288,6 +288,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
