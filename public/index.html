@@ -3,18 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamMatrix AI Pro</title>
+    <title>ExamMatrix AI - Nested Structure</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="css/style.css"> 
 
+    <style>
+        /* Khung bao quanh 1 Chủ đề lớn */
+        .topic-wrapper {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        
+        /* Header của Chủ đề lớn */
+        .topic-header-row {
+            background: #eff6ff; /* Màu xanh nhạt */
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Container chứa các bài học con */
+        .units-container {
+            padding: 15px;
+            background: #fff;
+        }
+        
+        /* Dòng Đơn vị kiến thức con */
+        .unit-item {
+            display: grid;
+            grid-template-columns: 1fr 100px 100px 40px; /* Nội dung | Tiết 1 | Tiết 2 | Xóa */
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px dashed #e2e8f0;
+            background: #f8fafc;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .unit-item:hover { background: #f1f5f9; }
+        .unit-item:last-child { margin-bottom: 0; }
+
+        /* Nút thêm Unit */
+        .btn-add-unit {
+            width: 100%;
+            border: 2px dashed #cbd5e1;
+            color: #64748b;
+            margin-top: 0;
+            background: white;
+        }
+        .btn-add-unit:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .unit-item {
+                grid-template-columns: 1fr 40px; /* Gom nhóm input lại */
+                grid-template-rows: auto auto;
+                gap: 5px;
+            }
+            .hk-input-1, .hk-input-2 { grid-column: 1 / -1; }
+        }
+    </style>
+    
     <script src="https://cdn.jsdelivr.net/npm/temml/dist/temml.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/temml/dist/temml.css" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
@@ -25,7 +92,7 @@
                 <div class="logo-icon"><i class="fas fa-brain"></i></div>
                 <div class="brand-text">
                     <h1>ExamMatrix AI</h1>
-                    <span class="badge">PRO 2.0</span>
+                    <span class="badge">NESTED 2.0</span>
                 </div>
             </div>
         </div>
@@ -35,22 +102,22 @@
         
         <div class="intro-section">
             <h2>Xây Dựng Ma Trận & Đề Kiểm Tra</h2>
-            <p>Chuẩn Công văn 7991/BGDĐT-GDTrH • Xuất Word Native Equation</p>
+            <p>Cấu trúc: Chương/Chủ đề lớn ➔ Bài học/Đơn vị kiến thức</p>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-sliders-h"></i> 1. Cấu Hình Đề Thi
+                <i class="fas fa-sliders-h"></i> 1. Cấu Hình Chung
             </div>
             <div class="card-body">
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Môn học</label>
-                        <input type="text" id="subject" placeholder="Ví dụ: Khoa học tự nhiên" value="Toán học">
+                        <input type="text" id="subject" placeholder="Ví dụ: KHTN" value="Toán học">
                     </div>
                     <div class="form-group">
                         <label>Lớp</label>
-                        <input type="text" id="grade" placeholder="Ví dụ: 8" value="9">
+                        <input type="text" id="grade" placeholder="Ví dụ: 9" value="9">
                     </div>
                 </div>
 
@@ -86,33 +153,19 @@
                         <span class="label-text">Có sử dụng câu hỏi "Trả lời ngắn"</span>
                     </label>
                 </div>
-
-                <div id="hk-config" class="highlight-box hidden">
-                    <div class="box-title"><i class="fas fa-calculator"></i> Tính trọng số điểm (25% / 75%)</div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Tổng tiết (Nửa đầu HK)</label>
-                            <input type="number" id="total_half1" placeholder="Nhập số tiết...">
-                        </div>
-                        <div class="form-group">
-                            <label>Tổng tiết (Nửa sau HK)</label>
-                            <input type="number" id="total_half2" placeholder="Nhập số tiết...">
-                        </div>
-                    </div>
+                
                 </div>
-            </div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-list-ol"></i> 2. Nội dung & Chủ đề
+                <i class="fas fa-list-ol"></i> 2. Nội dung kiến thức
             </div>
             <div class="card-body">
-                <div id="topics-container">
-                    </div>
+                <div id="topics-container"></div>
                 
-                <button class="btn btn-outline" id="btnAddTopic">
-                    <i class="fas fa-plus-circle"></i> Thêm Chủ đề mới
+                <button class="btn btn-primary" id="btnAddTopic" style="margin-top: 20px;">
+                    <i class="fas fa-folder-plus"></i> THÊM CHỦ ĐỀ / CHƯƠNG MỚI
                 </button>
             </div>
         </div>
@@ -121,7 +174,7 @@
             <div class="license-icon"><i class="fas fa-key"></i></div>
             <div class="license-input">
                 <label>Mã kích hoạt phần mềm</label>
-                <input type="text" id="license_key" placeholder="Nhập mã License Key của bạn...">
+                <input type="text" id="license_key" placeholder="Nhập mã License Key...">
             </div>
         </div>
 
@@ -129,12 +182,10 @@
             <button class="btn btn-primary btn-lg" id="btnGenerate">
                 <i class="fas fa-magic"></i> BẮT ĐẦU TẠO DỮ LIỆU
             </button>
-            
             <div id="loadingMsg" class="loading-state hidden">
                 <div class="spinner"></div>
-                <span>Đang kết nối siêu máy chủ AI... Vui lòng đợi...</span>
+                <span>Đang xử lý dữ liệu... Vui lòng đợi...</span>
             </div>
-            
             <div id="errorMsg" class="error-box hidden"></div>
         </div>
 
@@ -148,7 +199,7 @@
                 </div>
                 <div class="preview-footer">
                     <button class="btn btn-success btn-lg" id="btnDownloadWord">
-                        <i class="fas fa-file-word"></i> TẢI VỀ MÁY (.DOCX)
+                        <i class="fas fa-file-word"></i> TẢI VỀ WORD (NATIVE EQUATION)
                     </button>
                 </div>
             </div>
@@ -156,50 +207,58 @@
 
     </main>
 
-    <footer class="app-footer" style="text-align: center; padding: 20px; color: #64748b; font-size: 0.9rem;">
+    <footer class="app-footer" style="text-align: center; padding: 20px; color: #64748b;">
         © 2025 ExamMatrix AI System. All rights reserved.
-        <div style="margin-top: 8px;">
-            Liên hệ: 
-            <a href="#" style="color: #2563eb; text-decoration: none;"><i class="fab fa-facebook"></i> Facebook</a> | 
-            <a href="#" style="color: #2563eb; text-decoration: none;"><i class="fas fa-phone"></i> Zalo</a>
-        </div>
     </footer>
 
     <template id="topic-template">
-    <div class="topic-item">
-        <div class="topic-header">
-            <span class="topic-label">Chủ đề / Nội dung</span>
-            <button class="remove-btn btn-icon-danger" title="Xóa dòng này"><i class="fas fa-times"></i></button>
-        </div>
-        
-        <div class="grid-2">
-            <div class="form-group">
-                <input type="text" class="topic-name" placeholder="Tên Chủ đề (Ví dụ: Chương 1)...">
-            </div>
-            <div class="form-group">
-                <textarea class="topic-content" rows="1" placeholder="Chi tiết nội dung kiến thức..."></textarea>
-            </div>
-        </div>
-
-        <div class="hk-period-inputs hidden" style="margin-top: 10px; background: #fff7ed; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.85rem; font-weight: bold; color: #c2410c; margin-bottom: 5px;">
-                <i class="fas fa-clock"></i> Số tiết dạy của nội dung này:
-            </div>
-            <div class="grid-2">
-                <div class="form-group mini">
-                    <label>Nửa đầu HK</label>
-                    <input type="number" class="topic-period-1" value="0" min="0" placeholder="Số tiết...">
+        <div class="topic-wrapper">
+            <div class="topic-header-row">
+                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-folder-open" style="color: var(--primary);"></i>
+                    <input type="text" class="topic-name" placeholder="Tên Chương / Chủ đề lớn (Ví dụ: Chương 1 - Chất)..." 
+                           style="font-weight: 700; border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px; width: 100%;">
                 </div>
-                <div class="form-group mini">
-                    <label>Nửa sau HK</label>
-                    <input type="number" class="topic-period-2" value="0" min="0" placeholder="Số tiết...">
+                <button class="remove-topic-btn btn-icon-danger" title="Xóa toàn bộ chương này"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            
+            <div class="units-container">
                 </div>
+
+            <div style="padding: 0 15px 15px;">
+                <button class="btn-add-unit btn btn-outline">
+                    <i class="fas fa-plus"></i> Thêm Đơn vị kiến thức / Bài học
+                </button>
             </div>
         </div>
-    </div>
-</template>
+    </template>
 
+    <template id="unit-template">
+        <div class="unit-item">
+            <div>
+                <input type="text" class="unit-content" placeholder="Tên bài học / Đơn vị kiến thức chi tiết..." style="width: 100%;">
+            </div>
+            
+            <div class="hk-input-1 hidden">
+                <input type="number" class="unit-p1" placeholder="Tiết (Nửa đầu)" min="0" title="Số tiết dạy ở nửa đầu học kì">
+            </div>
+
+            <div class="hk-input-2 hidden">
+                <input type="number" class="unit-p2" placeholder="Tiết (Nửa sau)" min="0" title="Số tiết dạy ở nửa sau học kì">
+            </div>
+
+            <div style="text-align: center;">
+                <button class="remove-unit-btn" style="color: #ef4444; border: none; background: none; cursor: pointer;" title="Xóa bài này">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // Khai báo biến toàn cục ở đây để tránh lỗi Reference
+        window.generatedHTML = "";
+    </script>
     <script src="js/app.js"></script>
 </body>
 </html>
-
