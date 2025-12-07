@@ -169,14 +169,27 @@ async function handleGenerate() {
             if(done) break;
             fullHTML += decoder.decode(value, {stream:true});
         }
+            
+        // 6. XỬ LÝ & LÀM SẠCH HTML (NÂNG CẤP)
+        let cleanHTML = fullHTML
+            .replace(/```html/g, '') // Xóa markdown mở
+            .replace(/```/g, '')     // Xóa markdown đóng
+            .trim();
+
+        // FIX LỖI: Tự động thêm <br> trước các đáp án B., C., D. nếu AI viết dính liền
+        // Tìm các mẫu " B.", " C.", " D." (có khoảng trắng phía trước) và thay bằng "<br><b>B.</b>"
+        cleanHTML = cleanHTML.replace(/(\s+)(B\.|C\.|D\.)/g, '<br><b>$2</b>');
         
-        const cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
+        // In đậm luôn đáp án A.
+        cleanHTML = cleanHTML.replace(/(A\.)/g, '<b>$1</b>');
+
         prev.innerHTML = cleanHTML;
         window.generatedHTML = cleanHTML;
         
         sec.classList.remove('hidden'); 
         sec.scrollIntoView({behavior:'smooth'});
-
+        
+     
     } catch(e) { 
         error.innerHTML = e.message; error.classList.remove('hidden'); 
     } finally { 
