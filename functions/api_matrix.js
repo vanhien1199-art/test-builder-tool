@@ -135,6 +135,7 @@ export async function onRequest(context) {
 PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 19 cột và cấu trúc như sau:
 * PHẦN HEADER
+* PHẦN HEADER
 - **Dòng 1:**
   - Cột 1 (TT): Gộp A1:A4.
   - Cột 2 (Chủ đề/Chương): Gộp B1:B4.
@@ -145,30 +146,37 @@ Tạo bảng có đúng 19 cột và cấu trúc như sau:
 - **Dòng 2:**
   - Gộp D2:L2 ghi "TNKQ".
   - Gộp M2:O2 ghi "Tự luận".
-  - P2, Q2, R2: Để trống.
+  - Gôp P2:R3: Để trống không ghi gì kể cả dấu cách
 - **Dòng 3:**
   - Gộp D3:F3 ghi "Nhiều lựa chọn".
   - Gộp G3:I3 ghi "Đúng - Sai".
   - Gộp J3:L3 ghi "Trả lời ngắn".
   - Gộp M3:O3 ghi "Tự luận".
-  - P3, Q3, R3: Để trống.
-- **Dòng 4 (Chi tiết mức độ):**
+ - **Dòng 4 (Chi tiết mức độ):**
   - D4, G4, J4, M4: Ghi "Biết".
   - E4, H4, K4, N4: Ghi "Hiểu".
   - F4, I4, L4, O4: Ghi "Vận dụng".
-  - P4: "Tổng Biết", Q4: "Tổng Hiểu", R4: "Tổng Vận dụng".
+  - P4: "Biết", Q4: "Hiểu", R4: "Vận dụng".
 * PHẦN NỘI DUNG BẢNG
 Từ dòng 5 trở đi: điền nội dung dựa trên tính toán và đầu vào.
 - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %".
 - Cột 2: Tên chủ đề từ đầu vào.
 - Cột 3: Nội dung/đơn vị kiến thức từ đầu vào.
 - Từ cột 4 đến cột 15: Ghi số câu hỏi (cho MCQ, Đúng-Sai, Trả lời ngắn) hoặc điểm (cho Tự luận).
-- Cột 16: Tính tổng điểm Biết (D+G+J+M).
-- Cột 17: Tính tổng điểm Hiểu (E+H+K+N).
-- Cột 18: Tính tổng điểm Vận dụng (F+I+L+O).
-- Cột 19: Tỉ lệ % điểm của đơn vị (điểm đơn vị / 10 × 100%).
-Dòng "Tổng số câu": Tính tổng số câu theo cột (riêng cột 19: Tổng P+Q+R).
-Dòng "Tổng số điểm": Tính tổng điểm theo cột và dạng (gộp D:F cho MCQ tổng điểm, G:I cho Đúng-Sai, J:L cho Trả lời ngắn, M:O cho Tự luận; P: Tổng Biết, Q: Tổng Hiểu, R: Tổng Vận dụng; S: 10.0).
+- Cột 16: Tính tổng số câu phần Biết (=D+G+J+M).
+- Cột 17: Tính tổng (=E+H+K+N).
+- Cột 18: Tính tổng (=F+I+L+O).
+- Cột 19: Tỉ lệ % điểm của đơn vị.
+Dòng "Tổng số câu": Tính tổng số câu theo cột (riêng cột 19 = P+Q+R).
+Dòng "Tổng số điểm": Tính tổng điểm của từng loại câu hỏi
+	gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
+        Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
+        Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
+        Gộp ô M:O và tính tổng điểm câu hỏi tự luận
+        Ô P của dòng này tính tổng điểm phần  biết
+        ô Q tính tổng điểm phần hiểu
+        Ô R tính tổng điểm phần vận dụng
+        Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
 Dòng "Tỉ lệ %": Tương tự "Tổng số điểm" nhưng % (S: 100%).
 
 PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
@@ -316,6 +324,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
