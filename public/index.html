@@ -77,6 +77,20 @@
             }
             .hk-input-1, .hk-input-2 { grid-column: 1 / -1; }
         }
+           
+    /* Ép hiển thị xuống dòng cho nội dung trong bảng */
+    .preview-content table td, 
+    .preview-content table th {
+        white-space: pre-wrap; /* Quan trọng: Hiển thị \n thành xuống dòng */
+        word-wrap: break-word; /* Ngắt dòng nếu từ quá dài */
+        vertical-align: top;
+        padding: 8px;
+    }
+
+    /* Định dạng riêng cho các đáp án trắc nghiệm để dễ nhìn */
+    .preview-content p {
+        margin-bottom: 5px;
+    }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/temml/dist/temml.min.js"></script>
@@ -272,5 +286,6 @@
     <script src="js/app.js"></script>
 </body>
 </html>
+
 
 
