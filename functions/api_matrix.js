@@ -170,11 +170,11 @@ Từ dòng 5 trở đi: điền nội dung dựa trên tính toán và đầu v�
 Dòng "Tổng số câu": Tính tổng số câu theo cột (riêng cột 19 = P+Q+R).
 Dòng "Tổng số điểm": Tính tổng điểm của từng loại câu hỏi
 	gộp ô D:F và tính tổng điểm câu hỏi nhiều lựa chọn
-        Gộp ô G:I và tính tổng điểm câu hỏi Đúng-Sai
-        Gộp ô J:L và tính tổng điểm câu hỏi trả lời ngắn
-        Gộp ô M:O và tính tổng điểm câu hỏi tự luận
-        Ô P của dòng này tính tổng điểm phần  biết
-        ô Q tính tổng điểm phần hiểu
+        gộp ô D:F và điền tổng điểm của các câu hỏi nhiều lựa chọn ở cột D,E,F
+        Gộp ô G:I và điền tổng điểm của các câu hỏi Đúng-Sai ở cột G,H,I
+        Gộp ô J:L và điền tổng điểm của các câu hỏi trả lời ngắn ở cột J,K,L
+        Gộp ô M:O và điền tổng điểm của các câu hỏi tự luận ở cột M, N,O
+        Ô Q tính tổng điểm phần hiểu
         Ô R tính tổng điểm phần vận dụng
         Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
 Dòng "Tỉ lệ %": Tương tự "Tổng số điểm" nhưng % (S: 100%).
@@ -324,6 +324,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
