@@ -18,50 +18,69 @@ export async function onRequest(context) {
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
-            
-            // Lấy thêm biến book_series
             const { 
                 license_key, topics, subject, grade, semester, 
                 exam_type, time, use_short_answer, 
                 totalPeriodsHalf1, totalPeriodsHalf2,
-                book_series // <--- BIẾN MỚI
+                book_series 
             } = body;
             
-            // --- KIỂM TRA LICENSE KV ---
+            // --- CHECK LICENSE ---
             if (env.TEST_TOOL && license_key) { 
                 const creditStr = await env.TEST_TOOL.get(license_key); 
-                if (!creditStr) return new Response(JSON.stringify({ error: "MÃ SAI!" }), { status: 403, headers: corsHeaders });
-                if (parseInt(creditStr) <= 0) return new Response(JSON.stringify({ error: "HẾT LƯỢT!" }), { status: 402, headers: corsHeaders });
+                if (!creditStr || parseInt(creditStr) <= 0) {
+                    return new Response(JSON.stringify({ error: "License không hợp lệ hoặc hết hạn!" }), { status: 403, headers: corsHeaders });
+                }
             }
 
-            // Xử lý mô tả topics
+            // --- XỬ LÝ MÔ TẢ CHỦ ĐỀ & SỐ TIẾT ---
             let topicsDescription = "";
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
                 topic.units.forEach((unit, uIndex) => {
                     let periodInfo = "";
-                    if (exam_type === 'hk') periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+                    if (exam_type === 'hk') {
+                        // Cuối kì: Có 2 loại tiết
+                        periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+                    } else {
+                        // Giữa kì: Chỉ có 1 loại tiết (p1 đóng vai trò tổng tiết bài đó)
+                        periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
+                    }
                     topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
                 });
             });
            
-            // --- PROMPT (GIỮ NGUYÊN) ---
+            // --- LOGIC PROMPT PHÂN BỐ ĐIỂM ---
+            let scoreLogic = "";
+            if (exam_type === 'hk') {
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): 
+                - Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}.
+                - Tổng tiết Nửa sau HK: ${totalPeriodsHalf2}.
+                - Hãy phân bổ điểm số theo trọng số thời gian (Nửa sau thường chiếm tỷ trọng cao hơn, khoảng 70-75%).`;
+            } else {
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ):
+                - Tổng số tiết toàn bộ nội dung kiểm tra: ${totalPeriodsHalf1}.
+                - Hãy tính % điểm của từng bài dựa trên công thức: (Số tiết của bài / ${totalPeriodsHalf1}) * 100%.
+                - Làm tròn số điểm cho hợp lý (ưu tiên các bài có thời lượng dài).`;
+            }
+
+            // --- PROMPT FINAL ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
-            ## YÊU CẦU ĐẦU VÀO
-       
-            1. Môn học: ${subject} - Lớp ${grade}
-            2. Bộ sách giáo khoa: **${book_series}** (Quan trọng: Hãy sử dụng ngữ liệu, thuật ngữ và thứ tự kiến thức chuẩn xác theo bộ sách này).
+           
+            ## THÔNG TIN
+            1. Môn: ${subject} - Lớp ${grade}
+            2. Bộ sách: **${book_series}** (Quan trọng: Dùng đúng thuật ngữ bộ sách này).
             3. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester}.
             4. Thời gian: ${time} phút.
             5. Câu hỏi ngắn: ${use_short_answer ? 'CÓ' : 'KHÔNG'}.
 
-            ## NỘI DUNG KIẾN THỨC CẦN RA ĐỀ:
+            ## NỘI DUNG & THỜI LƯỢNG:
             ${topicsDescription}
             
-            ${exam_type === 'hk' ? `*LƯU Ý PHÂN BỐ ĐIỂM (HK): Tổng tiết Nửa đầu=${totalPeriodsHalf1}, Nửa sau=${totalPeriodsHalf2}.` : ''}
+            ${scoreLogic}
            ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
 **QUY ĐỊNH VỀ ĐIỂM SỐ VÀ TÍNH TOÁN (QUAN TRỌNG):**
 *Trước khi tạo bất kỳ bảng nào, hãy thực hiện các bước tính toán sau một cách chính xác để đảm bảo TỔNG ĐIỂM TOÀN BÀI LUÔN LÀ 10, tuân thủ phân bố điểm và số lượng câu hỏi dựa trên thời lượng:*
@@ -297,6 +316,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
