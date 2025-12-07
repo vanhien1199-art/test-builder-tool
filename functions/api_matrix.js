@@ -25,7 +25,7 @@ export async function onRequest(context) {
                 book_series 
             } = body;
             
-            // --- CHECK LICENSE ---
+            // --- 1. CHECK LICENSE ---
             if (env.TEST_TOOL && license_key) { 
                 const creditStr = await env.TEST_TOOL.get(license_key); 
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -33,35 +33,48 @@ export async function onRequest(context) {
                 }
             }
 
-            // --- XỬ LÝ MÔ TẢ CHỦ ĐỀ & SỐ TIẾT ---
+            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ ---
             let topicsDescription = "";
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
                 topic.units.forEach((unit, uIndex) => {
                     let periodInfo = "";
                     if (exam_type === 'hk') {
-                        // Cuối kì: Có 2 loại tiết
                         periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
                     } else {
-                        // Giữa kì: Chỉ có 1 loại tiết (p1 đóng vai trò tổng tiết bài đó)
                         periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
                     }
                     topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
                 });
             });
            
-            // --- LOGIC PROMPT PHÂN BỐ ĐIỂM ---
+            // --- 3. XÂY DỰNG CẤU TRÚC ĐỀ THI DỰA TRÊN LỰA CHỌN (FIX LỖI) ---
+            let structurePrompt = "";
+            
+            if (use_short_answer) {
+                // Cấu trúc mới 2025 (Có trả lời ngắn)
+                structurePrompt = `
+                CẤU TRÚC ĐỀ THI (3 PHẦN):
+                - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
+                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
+                - Phần III: Câu hỏi Trả lời ngắn (Điền đáp số/kết quả).
+                `;
+            } else {
+                // Cấu trúc truyền thống (Không có trả lời ngắn)
+                structurePrompt = `
+                CẤU TRÚC ĐỀ THI (2 PHẦN):
+                - Phần I: Trắc nghiệm khách quan (4 lựa chọn).
+                - Phần II: Tự luận (Giải chi tiết).
+                *** YÊU CẦU ĐẶC BIỆT: TUYỆT ĐỐI KHÔNG SOẠN CÂU HỎI DẠNG "TRẢ LỜI NGẮN" HAY "ĐIỀN ĐÁP SỐ". CHỈ DÙNG TRẮC NGHIỆM VÀ TỰ LUẬN. ***
+                `;
+            }
+
+            // --- 4. LOGIC PHÂN BỐ ĐIỂM ---
             let scoreLogic = "";
             if (exam_type === 'hk') {
-                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): 
-                - Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}.
-                - Tổng tiết Nửa sau HK: ${totalPeriodsHalf2}.
-                - Hãy phân bổ điểm số theo trọng số thời gian (Nửa sau thường chiếm tỷ trọng cao hơn, khoảng 70-75%).`;
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ thuận với thời lượng.`;
             } else {
-                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ):
-                - Tổng số tiết toàn bộ nội dung kiểm tra: ${totalPeriodsHalf1}.
-                - Hãy tính % điểm của từng bài dựa trên công thức: (Số tiết của bài / ${totalPeriodsHalf1}) * 100%.
-                - Làm tròn số điểm cho hợp lý (ưu tiên các bài có thời lượng dài).`;
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm dựa trên số tiết từng bài.`;
             }
 
             // --- PROMPT FINAL ---
@@ -71,11 +84,12 @@ export async function onRequest(context) {
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
            
             ## THÔNG TIN
-            1. Môn: ${subject} - Lớp ${grade}
-            2. Bộ sách: **${book_series}** (Quan trọng: Dùng đúng thuật ngữ bộ sách này).
+           1. Môn: ${subject} - Lớp ${grade}
+            2. Bộ sách: **${book_series}** (Dùng đúng thuật ngữ sách này).
             3. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester}.
             4. Thời gian: ${time} phút.
-            5. Câu hỏi ngắn: ${use_short_answer ? 'CÓ' : 'KHÔNG'}.
+
+            ${structurePrompt}
 
             ## NỘI DUNG & THỜI LƯỢNG:
             ${topicsDescription}
@@ -323,6 +337,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
