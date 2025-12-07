@@ -153,12 +153,11 @@ export async function onRequest(context) {
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
 * **BODY (Dữ liệu - YÊU CẦU TÍNH TOÁN NGƯỢC QUAN TRỌNG):**
-        - Hãy phân bổ số lượng câu hỏi vào các ô từ Cột 4 đến Cột 15 sao cho thỏa mãn đồng thời các điều kiện sau:
-        1. **Điều kiện về điểm số (BẮT BUỘC):**
-        - Tổng số câu MCQ (Cộng dồn cột 4,5,6 của tất cả các dòng) * 0.25 điểm = **3.0 điểm** (Tức là tổng cộng phải có đúng 12 câu MCQ).
-        - Tổng số câu Đúng-Sai (Cộng dồn cột 7,8,9) * 1.0 điểm = **2.0 điểm** (Tức là tổng cộng phải có đúng 2 câu chùm).
-        - Tổng số câu Trả lời ngắn (Cộng dồn cột 10,11,12) * 0.5 điểm = **2.0 điểm** (Tức là tổng cộng phải có đúng 4 câu).
-        - Tổng điểm Tự luận (Cộng dồn điểm các câu ở cột 13,14,15) = **3.0 điểm**.
+        1. Quy tắc phân bổ
+        - Hãy nhìn vào % thời lượng của từng đơn vị kiến thức ở trên.
+            - Phân chia số lượng câu hỏi (Quota) vào các chương tương ứng với % đó.
+            - Ví dụ: Chương chiếm 50% thời lượng thì nhận 50% số câu MCQ (tức là 6 câu), 50% số câu Đúng-Sai (1 câu)...
+            - **QUAN TRỌNG:** Sau khi phân chia, HÃY CỘNG LẠI. Nếu tổng chưa đủ (ví dụ mới có 11 câu MCQ), hãy thêm 1 câu vào chương quan trọng nhất để ĐẢM BẢO TỔNG LÀ 12.
         2. **Điều kiện về phân bổ:** Số lượng câu hỏi của mỗi bài học phải tương ứng với tỉ lệ điểm đã tính toán (bài học nhiều tiết thì nhiều câu hỏi hơn).
         - Cột 16-18: Tự động tính tổng ngang.
         - Cột 19: Ghi tỉ lệ % điểm thực tế.
@@ -302,6 +301,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
