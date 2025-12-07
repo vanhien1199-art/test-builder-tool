@@ -131,22 +131,21 @@ export async function onRequest(context) {
    - Đảm bảo mỗi chủ đề đánh giá ít nhất 1 năng lực chuyên biệt ở mức Vận dụng (mã: NL: THTN = Tìm hiểu tự nhiên; NL: GQVĐ = Giải quyết vấn đề; NL: MĐKH = Mô tả và giải thích hiện tượng; NL: GTKH = Giao tiếp khoa học; NL: SDCN = Sử dụng công cụ và ngôn ngữ khoa học).
    - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm đặc tả = Tổng điểm đề = 10. Số câu đề = Số câu ma trận.
 
-** Tạo ra 1 tài liệu sau đúng định dạng:
+** Tạo ra 1 tài liệu sau đúng định dạng - tuân thủ cực kì nghiêm ngặt cấu trúc bảng:
 PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 19 cột và cấu trúc như sau:
-* PHẦN HEADER
 * PHẦN HEADER
 - **Dòng 1:**
   - Cột 1 (TT): Gộp A1:A4.
   - Cột 2 (Chủ đề/Chương): Gộp B1:B4.
   - Cột 3 (Nội dung/đơn vị kiến thức): Gộp C1:C4.
   - Cột 4-15 (Mức độ đánh giá): Gộp D1:O1.
-  - Cột 16-18 (Tổng số điểm theo mức độ): Gộp P1:R1.
+  - Cột 16-18 (Tổng): Gộp P1:R1.
   - Cột 19 (Tỉ lệ % điểm): Gộp S1:S4.
 - **Dòng 2:**
   - Gộp D2:L2 ghi "TNKQ".
   - Gộp M2:O2 ghi "Tự luận".
-  - Gôp P2:R3: Để trống không ghi gì kể cả dấu cách
+  - Gôp P2:R3: Để trống
 - **Dòng 3:**
   - Gộp D3:F3 ghi "Nhiều lựa chọn".
   - Gộp G3:I3 ghi "Đúng - Sai".
@@ -156,7 +155,7 @@ Tạo bảng có đúng 19 cột và cấu trúc như sau:
   - D4, G4, J4, M4: Ghi "Biết".
   - E4, H4, K4, N4: Ghi "Hiểu".
   - F4, I4, L4, O4: Ghi "Vận dụng".
-  - P4: "Biết", Q4: "Hiểu", R4: "Vận dụng".
+  - P4: Ghi "Biết", Q4: Ghi "Hiểu", R4: Ghi "Vận dụng".
 * PHẦN NỘI DUNG BẢNG
 Từ dòng 5 trở đi: điền nội dung dựa trên tính toán và đầu vào.
 - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %".
@@ -324,6 +323,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
