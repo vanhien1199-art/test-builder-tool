@@ -257,20 +257,22 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
 		- Cột "Điểm": 
 		  + Phân bổ điểm cho từng bước
 		  + Tổng điểm mỗi câu phải khớp với đề bài
-** QUY TẮC CHUNG (BẮT BUỘC)
-1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
-   - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
-   - Không viết lời mở đầu. KHÔNG sử dụng Markdown table (|---|); không sử dụng code block (\`\`\`). Tuyệt đối không dùng dấu ** (sao sao), dấu #.
-   - Khi cần gộp ô, dùng thuộc tính \`colspan\` / \`rowspan\`.
-   - Table phải có border="1".
-   - In đậm: dùng thẻ <b>...</b> (Ví dụ: <b>Câu 1.</b>)
-   - Xuống dòng: dùng thẻ <br> (Ví dụ: A. Đáp án A <br> B. Đáp án B)
-   - Đoạn văn: dùng thẻ <p>...</p>
-   - Trả về chuẩn HTML (UTF-8), KHÔNG chèn JavaScript hay CSS inline trong phần bảng.
-- CÔNG THỨC TOÁN HỌC, VẬT LÍ, HÓA HỌC:
-      Bao quanh công thức bằng dấu $$ (ví dụ: $$ x^2 + \sqrt{5} $$).
-      KHÔNG dùng MathML.
-      LaTeX phải chuẩn (ví dụ dùng \frac{a}{b} cho phân số).
+## QUY ĐỊNH ĐỊNH DẠNG HTML (BẮT BUỘC TUÂN THỦ 100%):
+    1. Chỉ trả về mã **HTML Table** (<table> border="1").
+    2. KHÔNG dùng Markdown (\`\`\`), KHÔNG viết lời dẫn.
+    3. **XUỐNG DÒNG:**
+    - Bắt buộc dùng thẻ **<br>** để xuống dòng. 
+    - Trình duyệt KHÔNG hiểu ký tự xuống dòng (Enter), nên phải dùng <br>.
+    4. **ĐỊNH DẠNG ĐÁP ÁN TRẮC NGHIỆM:**
+    - Mỗi đáp án A, B, C, D phải nằm trên một dòng riêng biệt.
+    - Ví dụ ĐÚNG: 
+                 A. Đáp án A <br>
+                 B. Đáp án B <br>
+                 C. Đáp án C <br>
+                 D. Đáp án D
+    - Ví dụ SAI: A. Đáp án A  B. Đáp án B (Viết liền tù tì).
+    5. **CÔNG THỨC TOÁN:** - Dùng **LATEX** chuẩn, bao quanh bởi dấu $$(Ví dụ:$$ x^2 + \\sqrt{5} $$).
+    - KHÔNG dùng MathML.
               `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -366,6 +368,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
