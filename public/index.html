@@ -241,19 +241,23 @@
 
     <template id="unit-template">
         <div class="unit-item">
-            <div>
+            <div style="flex-grow: 1;">
                 <input type="text" class="unit-content" placeholder="Tên bài học / Đơn vị kiến thức chi tiết..." style="width: 100%;">
             </div>
             
-            <div class="hk-input-1 hidden">
-                <input type="number" class="unit-p1" placeholder="Tiết (Nửa đầu)" min="0" title="Số tiết dạy ở nửa đầu học kì">
+            <div class="hk-input-1 hidden" style="width: 110px;">
+                <input type="number" class="unit-p1" placeholder="Số tiết" min="0" 
+                       style="text-align: center; border: 1px solid #f59e0b; font-weight: bold;"
+                       title="Nhập số tiết dạy của bài này">
             </div>
 
-            <div class="hk-input-2 hidden">
-                <input type="number" class="unit-p2" placeholder="Tiết (Nửa sau)" min="0" title="Số tiết dạy ở nửa sau học kì">
+            <div class="hk-input-2 hidden" style="width: 110px;">
+                <input type="number" class="unit-p2" placeholder="Tiết sau" min="0" 
+                       style="text-align: center;"
+                       title="Số tiết dạy ở nửa sau học kì">
             </div>
 
-            <div style="text-align: center;">
+            <div style="width: 40px; text-align: center;">
                 <button class="remove-unit-btn" style="color: #ef4444; border: none; background: none; cursor: pointer;" title="Xóa bài này">
                     <i class="fas fa-times"></i>
                 </button>
@@ -268,4 +272,5 @@
     <script src="js/app.js"></script>
 </body>
 </html>
+
 
