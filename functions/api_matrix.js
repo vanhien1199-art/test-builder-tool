@@ -227,7 +227,38 @@ Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và đặc tả:
    - Mỗi câu ghi rõ số điểm.
 3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt).
 Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví dụ: Câu 1 [M1-B]).
+PHẦN I. TRẮC NGHIỆM KHÁCH QUAN
 
+A. PHẦN 1: Câu trắc nghiệm nhiều phương án lựa chọn (3,0đ)
+- Mỗi câu hỏi thí sinh chỉ chọn một phương án
+- Mỗi câu đúng được 0,25 điểm
+- Định dạng bảng:
+  + Dòng 1: Tiêu đề "Câu" + số câu từ 1 đến 12
+  + Dòng 2: Tiêu đề "Đ. Án" + đáp án tương ứng (A/B/C/D)
+B. PHẦN 2: Câu trắc nghiệm đúng sai (2,0đ)
+- Điểm tối đa của 01 câu hỏi là 1,0 điểm
+- Mỗi ý đúng được 0,25 điểm
+- Mỗi câu có 4 ý nhỏ (a, b, c, d)
+- Định dạng bảng cho mỗi câu:
+  + Dòng 1: Tiêu đề "Câu" + số câu
+  + Dòng 2: Tiêu đề "Ý" + a, b, c, d
+  + Dòng 3: Tiêu đề "Đáp án" + Đ/S tương ứng
+
+C. PHẦN 3: Câu trắc nghiệm trả lời ngắn (2,0đ)
+- Mỗi câu trả lời đúng được 0,25 điểm
+- Định dạng: Liệt kê từng câu với câu trả lời ngắn
+
+PHẦN II. TỰ LUẬN (3,0 điểm)
+
+- Dùng bảng 3 cột: Câu, Nội dung, Điểm
+- Cột "Câu": Ghi số câu (1, 2, 3, 4...)
+- Cột "Nội dung": 
+  + Câu tự luận phải có lời giải chi tiết
+  + Các bước giải rõ ràng
+  + Công thức tính toán đầy đủ
+- Cột "Điểm": 
+  + Phân bổ điểm cho từng bước
+  + Tổng điểm mỗi câu phải khớp với đề bài
 ** QUY TẮC CHUNG (BẮT BUỘC)
 1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
    - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
@@ -337,6 +368,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
