@@ -126,12 +126,12 @@ export async function onRequest(context) {
 4. **Tính số lượng câu hỏi dựa trên trọng số điểm mỗi dạng và thời lượng kiểm tra (${time} phút):**
    - Trọng số điểm từng dạng câu hỏi:
      - MCQ: 0.25 điểm/câu.
-     - Đúng-Sai: 1.0 điểm/câu lớn (mỗi câu lớn gồm đúng 4 ý nhỏ a,b,c,d).
+     - Đúng-Sai: 1.0 điểm/câu chùm (mỗi câu chùm gồm đúng 4 câu nhỏ a,b,c,d).
      - Trả lời ngắn: 0.5 điểm/câu.
      - Tự luận: 1.0 đến 2.0 điểm/câu (điều chỉnh để tổng điểm chính xác là 3.0 cho phần này, ưu tiên tròn số).
    - Tính số câu tối thiểu dựa trên điểm phân bổ:
      - MCQ: Số câu = 3.0 / 0.25 = 12 câu.
-     - Đúng-Sai: Số câu lớn = 2.0 / 1.0 = 2 câu (tức 8 ý nhỏ).
+     - Đúng-Sai: Số câu chùm = 1-2 câu (tức 4-8 ý nhỏ, mỗi câu: 0,25đ).
      - Trả lời ngắn: Số câu = 2.0 / 0.5 = 4 câu.
      - Tự luận: Số câu = khoảng 2-4 câu, điều chỉnh điểm từng câu để tổng = 3.0 (ví dụ: 2 câu × 1.5 = 3.0).
    - Điều chỉnh số câu tổng thể phù hợp thời lượng (tổng câu bao gồm câu lớn Đúng-Sai tính là 1 câu/câu lớn):
@@ -146,7 +146,7 @@ export async function onRequest(context) {
    - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm đặc tả = Tổng điểm đề = 10. Số câu đề = Số câu ma trận.
 
 ** Tạo ra 1 tài liệu sau đúng định dạng - tuân thủ cực kì nghiêm ngặt cấu trúc bảng:
-PHẦN 1 – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
+I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 19 cột và cấu trúc như sau:
 * PHẦN HEADER
 - **Dòng 1:**
@@ -192,7 +192,7 @@ Dòng "Tổng số điểm": Tính tổng điểm của từng loại câu hỏi
         Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
 Dòng "Tỉ lệ %": Tương tự "Tổng số điểm" nhưng % (S: 100%).
 
-PHẦN 2 – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
+II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
 * PHẦN HEADER
 - Dòng 1 đến dòng 4 cột 1 (TT) gộp A1:A4.
@@ -216,49 +216,47 @@ Từ dòng 5 trở đi:
 - Cột 5 đến 16 (E đến P): Ghi số thứ tự câu hỏi hoặc điểm.
 - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận).
 
-PHẦN 3 – ĐỀ KIỂM TRA MẪU
+III – ĐỀ KIỂM TRA MẪU
 Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và đặc tả:
 1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (7.0 điểm)
-   - Câu hỏi nhiều lựa chọn: Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D.
-   - Câu hỏi Đúng-Sai: Mỗi câu lớn gồm 4 ý nhỏ (a, b, c, d), chọn Đ/S.
-   - Câu hỏi trả lời ngắn: Yêu cầu điền từ/cụm từ.
+   A. PHẦN 1: Câu trắc nghiệm nhiều phương án lựa chọn (3,0đ): Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D.
+   B. PHẦN 2: Câu hỏi Đúng-Sai: Mỗi câu chùm gồm 4 câu nhỏ (a, b, c, d). Ở mỗi câu chùm thí sinh chọn phương án đúng hoặc phương án sai. (Đúng ghi Đ; Sai ghi S).
+   				dùng bảng 3 cột: Nội dung, Đúng, Sai. Cột nội dung: Ghi nội dung câu hỏi; Cột Đúng, Sai: Để trống
+   C. Phần 3: Câu hỏi trả lời ngắn: Yêu cầu điền từ/cụm từ.
 2. PHẦN TỰ LUẬN (3.0 điểm)
    - Câu hỏi phân theo mức độ: Biết, Hiểu, Vận dụng.
    - Mỗi câu ghi rõ số điểm.
-3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM (tóm tắt).
+3. ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM.
 Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví dụ: Câu 1 [M1-B]).
-PHẦN I. TRẮC NGHIỆM KHÁCH QUAN
-
-A. PHẦN 1: Câu trắc nghiệm nhiều phương án lựa chọn (3,0đ)
-- Mỗi câu hỏi thí sinh chỉ chọn một phương án
-- Mỗi câu đúng được 0,25 điểm
-- Định dạng bảng:
-  + Dòng 1: Tiêu đề "Câu" + số câu từ 1 đến 12
-  + Dòng 2: Tiêu đề "Đ. Án" + đáp án tương ứng (A/B/C/D)
-B. PHẦN 2: Câu trắc nghiệm đúng sai (2,0đ)
-- Điểm tối đa của 01 câu hỏi là 1,0 điểm
-- Mỗi ý đúng được 0,25 điểm
-- Mỗi câu có 4 ý nhỏ (a, b, c, d)
-- Định dạng bảng cho mỗi câu:
-  + Dòng 1: Tiêu đề "Câu" + số câu
-  + Dòng 2: Tiêu đề "Ý" + a, b, c, d
-  + Dòng 3: Tiêu đề "Đáp án" + Đ/S tương ứng
-
-C. PHẦN 3: Câu trắc nghiệm trả lời ngắn (2,0đ)
-- Mỗi câu trả lời đúng được 0,25 điểm
-- Định dạng: Liệt kê từng câu với câu trả lời ngắn
-
-PHẦN II. TỰ LUẬN (3,0 điểm)
-
-- Dùng bảng 3 cột: Câu, Nội dung, Điểm
-- Cột "Câu": Ghi số câu (1, 2, 3, 4...)
-- Cột "Nội dung": 
-  + Câu tự luận phải có lời giải chi tiết
-  + Các bước giải rõ ràng
-  + Công thức tính toán đầy đủ
-- Cột "Điểm": 
-  + Phân bổ điểm cho từng bước
-  + Tổng điểm mỗi câu phải khớp với đề bài
+		YÊU CẦU CẤU TRÚC ĐÁP ÁN & HDC:
+		PHẦN I. TRẮC NGHIỆM KHÁCH QUAN
+		A. PHẦN 1: Câu trắc nghiệm nhiều phương án lựa chọn (3,0đ)
+		- Mỗi câu hỏi thí sinh chỉ chọn một phương án
+		- Mỗi câu đúng được 0,25 điểm
+		- Định dạng bảng:
+	  	+ Dòng 1: Tiêu đề "Câu" + số câu từ 1 đến 12
+	  	+ Dòng 2: Tiêu đề "Đ. Án" + đáp án tương ứng (A/B/C/D)
+		B. PHẦN 2: Câu trắc nghiệm đúng sai (2,0đ)
+		- Điểm tối đa của 01 câu hỏi là 1,0 điểm (dạng câu chùm)
+		- Mỗi ý đúng được 0,25 điểm
+		- Mỗi câu có 4 ý nhỏ (a, b, c, d)
+		- Định dạng bảng như phần đề bổ sung đáp án
+		
+		C. PHẦN 3: Câu trắc nghiệm trả lời ngắn (2,0đ)
+		- Mỗi câu trả lời đúng được 0,5 điểm
+		- Định dạng: Liệt kê từng câu với câu trả lời ngắn
+		
+		PHẦN II. TỰ LUẬN (3,0 điểm)
+		
+		- Dùng bảng 3 cột: Câu, Nội dung, Điểm
+		- Cột "Câu": Ghi số câu (1, 2, 3, 4...)
+		- Cột "Nội dung": 
+		  + Câu tự luận phải có lời giải chi tiết
+		  + Các bước giải rõ ràng
+		  + Công thức tính toán đầy đủ
+		- Cột "Điểm": 
+		  + Phân bổ điểm cho từng bước
+		  + Tổng điểm mỗi câu phải khớp với đề bài
 ** QUY TẮC CHUNG (BẮT BUỘC)
 1. ĐỊNH DẠNG VÀ NGÔN NGỮ:
    - MỌI ma trận và bảng dữ liệu phải được xuất dưới dạng HTML TABLE (thẻ <table>, <thead>, <tbody>, <tr>, <th>, <td>).
@@ -368,6 +366,7 @@ PHẦN II. TỰ LUẬN (3,0 điểm)
         }
     }
 }
+
 
 
 
