@@ -152,28 +152,27 @@ export async function onRequest(context) {
         * Các cột con (Biết, Hiểu, Vận dụng) tương ứng cho từng nhóm ở dòng 3.
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
-* **BODY (Dữ liệu):**
-    * Điền dữ liệu từng dòng cho mỗi đơn vị kiến thức.
-    * Cột 4-15: Ghi số lượng câu hỏi (ví dụ: 2, 1, 0...).
-    * Cột 16-18: Tính tổng số câu theo hàng ngang cho từng mức độ.
-    * Cột 19: Ghi tỉ lệ % điểm của đơn vị đó.
+* **BODY (Dữ liệu - YÊU CẦU TÍNH TOÁN NGƯỢC QUAN TRỌNG):**
+        - Hãy phân bổ số lượng câu hỏi vào các ô từ Cột 4 đến Cột 15 sao cho thỏa mãn đồng thời các điều kiện sau:
+        1. **Điều kiện về điểm số (BẮT BUỘC):**
+        - Tổng số câu MCQ (Cộng dồn cột 4,5,6 của tất cả các dòng) * 0.25 điểm = **3.0 điểm** (Tức là tổng cộng phải có đúng 12 câu MCQ).
+        - Tổng số câu Đúng-Sai (Cộng dồn cột 7,8,9) * 1.0 điểm = **2.0 điểm** (Tức là tổng cộng phải có đúng 2 câu chùm).
+        - Tổng số câu Trả lời ngắn (Cộng dồn cột 10,11,12) * 0.5 điểm = **2.0 điểm** (Tức là tổng cộng phải có đúng 4 câu).
+        - Tổng điểm Tự luận (Cộng dồn điểm các câu ở cột 13,14,15) = **3.0 điểm**.
+        2. **Điều kiện về phân bổ:** Số lượng câu hỏi của mỗi bài học phải tương ứng với tỉ lệ điểm đã tính toán (bài học nhiều tiết thì nhiều câu hỏi hơn).
+        - Cột 16-18: Tự động tính tổng ngang.
+        - Cột 19: Ghi tỉ lệ % điểm thực tế.
 
-* **FOOTER (Tổng kết - Quan trọng):**
-    * **Dòng "Tổng số câu":** Cộng tổng dọc từng cột từ 4 đến 18. Cột 19 để trống hoặc ghi tổng số câu toàn bài.
-    * **Dòng "Tổng số điểm":**
-        * Cột 1 (A): Ghi **"Tổng số điểm"**.
-        * Cột 2-3 (B-C): Để trống.
-        * **Cột 4-6 (D-F):** 'colspan="3"': Ghi **3.0** (Tổng điểm MCQ).
-        * **Cột 7-9 (G-I):** 'colspan="3"': Ghi **2.0** (Tổng điểm Đúng-Sai).
-        * **Cột 10-12 (J-L):** 'colspan="3"': Ghi **2.0** (Tổng điểm Trả lời ngắn).
-        * **Cột 13-15 (M-O):** 'colspan="3"': Ghi **3.0** (Tổng điểm Tự luận).
-        * **Cột 16 (P):** Tổng điểm mức Biết (khoảng 4.0).
-        * **Cột 17 (Q):** Tổng điểm mức Hiểu (khoảng 3.0).
-        * **Cột 18 (R):** Tổng điểm mức Vận dụng (khoảng 3.0).
-        * **Cột 19 (S):** Ghi **10.0**.
-    * **Dòng "Tỉ lệ %":**
-        * Cấu trúc gộp ô y hệt dòng "Tổng số điểm".
-        * Thay giá trị điểm bằng phần trăm tương ứng (30%, 20%, 20%, 30%, 40%, 30%, 30%, 100%).
+ * **FOOTER (Tổng kết):**
+        - Dòng 'Tổng số câu': Cộng tổng dọc chính xác từ dữ liệu phía trên.
+        - Dòng 'Tổng số điểm' (Gộp ô như sau):
+            + Cột 1: Ghi 'Tổng số điểm'.
+            + Cột 4-6 (Gộp 3 ô): Ghi công thức: '(Tổng số câu MCQ) x 0.25 = 3.0'.
+            + Cột 7-9 (Gộp 3 ô): Ghi công thức: '(Tổng số câu Đ-S) x 1.0 = 2.0'.
+            + Cột 10-12 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TLN) x 0.5 = 2.0'.
+            + Cột 13-15 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TN) x số điểm của câu tự luận = 3.0'.
+            + Cột 19: Ghi `10.0`.
+        - Dòng 'Tỉ lệ %': Ghi tương ứng (30%, 20%, 20%, 30%, 100%).
 
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
 *Tạo bảng HTML có 16 cột:*
@@ -299,6 +298,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
