@@ -4,10 +4,10 @@
 window.generatedHTML = "";
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Khởi tạo: Thêm 1 chủ đề mặc định
+    // 1. Khởi tạo
     addTopic();
 
-    // 2. Gán sự kiện cho các nút chính
+    // 2. Gán sự kiện
     const btnGen = document.getElementById('btnGenerate');
     const btnDown = document.getElementById('btnDownloadWord');
     const btnAddTopic = document.getElementById('btnAddTopic');
@@ -17,96 +17,62 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnGen) btnGen.addEventListener('click', handleGenerate);
     if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
 
-    // 3. Logic ẩn hiện ô nhập tiết (Kích hoạt khi thay đổi loại kiểm tra)
+    // 3. Logic ẩn hiện ô nhập tiết
     if (examTypeSelect) {
         examTypeSelect.addEventListener('change', updatePeriodInputs);
-        // Kích hoạt ngay lần đầu để đồng bộ giao diện
         setTimeout(updatePeriodInputs, 100); 
     }
 
-    // 4. Sự kiện ủy quyền (Event Delegation) cho các nút động
+    // 4. Sự kiện ủy quyền (Event Delegation)
     document.getElementById('topics-container').addEventListener('click', function(e) {
         const target = e.target;
-        
-        // Nút Xóa Chủ đề lớn (Cha)
-        const btnRemoveTopic = target.closest('.remove-topic-btn');
-        if (btnRemoveTopic) {
-            if(confirm("Bạn có chắc muốn xóa toàn bộ Chương/Chủ đề này?")) {
-                btnRemoveTopic.closest('.topic-wrapper').remove();
-            }
-            return;
-        }
-        
-        // Nút Thêm Đơn vị kiến thức (Con)
-        const btnAddUnit = target.closest('.btn-add-unit');
-        if (btnAddUnit) {
-            const topicWrapper = btnAddUnit.closest('.topic-wrapper');
-            addUnit(topicWrapper.querySelector('.units-container'));
-            return;
-        }
-
-        // Nút Xóa Đơn vị kiến thức (Con)
-        const btnRemoveUnit = target.closest('.remove-unit-btn');
-        if (btnRemoveUnit) {
-            btnRemoveUnit.closest('.unit-item').remove();
-            return;
+        if (target.closest('.remove-topic-btn')) {
+            if(confirm("Xóa chương này?")) target.closest('.topic-wrapper').remove();
+        } else if (target.closest('.btn-add-unit')) {
+            addUnit(target.closest('.topic-wrapper').querySelector('.units-container'));
+        } else if (target.closest('.remove-unit-btn')) {
+            target.closest('.unit-item').remove();
         }
     });
 });
 
-// --- HÀM ẨN HIỆN Ô NHẬP TIẾT (LOGIC MỚI BẠN YÊU CẦU) ---
+// --- CÁC HÀM GIAO DIỆN (UI) ---
 function updatePeriodInputs() {
-    const type = document.getElementById('exam_type').value; // 'gk' hoặc 'hk'
-    
-    // Quét qua tất cả các dòng Unit đang có
+    const type = document.getElementById('exam_type').value; 
     document.querySelectorAll('.unit-item').forEach(item => {
         const div1 = item.querySelector('.hk-input-1');
         const input1 = item.querySelector('.unit-p1');
         const div2 = item.querySelector('.hk-input-2');
 
         if (type === 'hk') {
-            // CHẾ ĐỘ CUỐI KÌ: Hiện cả 2 ô
-            div1.classList.remove('hidden');
-            input1.placeholder = "Tiết (Đầu)";
+            div1.classList.remove('hidden'); input1.placeholder = "Tiết (Đầu)";
             div2.classList.remove('hidden');
         } else {
-            // CHẾ ĐỘ GIỮA KÌ: Hiện ô 1 (làm Tổng tiết), Ẩn ô 2
-            div1.classList.remove('hidden');
-            input1.placeholder = "Tổng tiết"; // Đổi nhãn cho dễ hiểu
+            div1.classList.remove('hidden'); input1.placeholder = "Tổng tiết";
             div2.classList.add('hidden');
         }
     });
 }
 
-// --- HÀM THÊM CHỦ ĐỀ (CHA) ---
 function addTopic() {
     const container = document.getElementById('topics-container');
     const template = document.getElementById('topic-template');
     if (!container || !template) return;
-
     const clone = template.content.cloneNode(true);
-    
-    // Thêm sẵn 1 dòng con mặc định cho chủ đề mới
     const unitsContainer = clone.querySelector('.units-container');
     container.appendChild(clone);
-    
-    // Thêm ngay 1 bài học con vào chủ đề vừa tạo
     addUnit(unitsContainer);
 }
 
-// --- HÀM THÊM ĐƠN VỊ KIẾN THỨC (CON) ---
 function addUnit(container) {
     const template = document.getElementById('unit-template');
     if (!container || !template) return;
-
     const clone = template.content.cloneNode(true);
     container.appendChild(clone);
-    
-    // Cập nhật lại trạng thái ẩn hiện số tiết cho dòng mới thêm
     updatePeriodInputs();
 }
 
-// --- HÀM XỬ LÝ GỬI DỮ LIỆU (LOGIC NESTED + BOOK SERIES) ---
+// --- HÀM TẠO DỮ LIỆU ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -114,92 +80,49 @@ async function handleGenerate() {
     const sec = document.getElementById('previewSection');
     const prev = document.getElementById('previewContent');
 
-    // UI Reset
-    loading.classList.remove('hidden'); 
-    error.classList.add('hidden'); 
-    error.innerHTML = "";
-    sec.classList.add('hidden'); 
-    prev.innerHTML = ""; 
-    btn.disabled = true;
+    loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
 
     try {
-        const get = id => {
-            const el = document.getElementById(id);
-            return el ? el.value.trim() : "";
-        };
-        
-        // 1. Kiểm tra License Key
-        const licenseKey = get('license_key');
-        if (!licenseKey) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
+        const get = id => document.getElementById(id).value.trim();
+        if (!get('license_key')) throw new Error("Vui lòng nhập Mã Kích Hoạt!");
 
-        // 2. Thu thập dữ liệu LỒNG NHAU & Tính tổng tiết
         const topicsData = [];
-        let totalP1 = 0; // Tổng tiết nửa đầu (hoặc tổng tiết GK)
-        let totalP2 = 0; // Tổng tiết nửa sau
+        let totalP1 = 0, totalP2 = 0;
 
-        // Duyệt từng Chủ đề lớn (Wrapper)
         document.querySelectorAll('.topic-wrapper').forEach(topicEl => {
             const topicName = topicEl.querySelector('.topic-name').value.trim();
-            if (!topicName) return; // Bỏ qua nếu tên chương rỗng
-
+            if (!topicName) return; 
             const units = [];
-            // Duyệt từng Đơn vị con trong chủ đề đó
             topicEl.querySelectorAll('.unit-item').forEach(unitEl => {
                 const content = unitEl.querySelector('.unit-content').value.trim();
-                
-                // Lấy số tiết (nếu có)
-                const p1Input = unitEl.querySelector('.unit-p1');
-                const p2Input = unitEl.querySelector('.unit-p2');
-                const p1 = p1Input ? (parseInt(p1Input.value) || 0) : 0;
-                const p2 = p2Input ? (parseInt(p2Input.value) || 0) : 0;
-
+                const p1 = parseInt(unitEl.querySelector('.unit-p1').value) || 0;
+                const p2 = parseInt(unitEl.querySelector('.unit-p2').value) || 0;
                 if (content) {
                     units.push({ content, p1, p2 });
-                    // Cộng dồn vào tổng
-                    totalP1 += p1;
-                    totalP2 += p2;
+                    totalP1 += p1; totalP2 += p2;
                 }
             });
-
-            if (units.length > 0) {
-                topicsData.push({
-                    name: topicName,
-                    units: units // Mảng con chứa các bài học
-                });
-            }
+            if (units.length > 0) topicsData.push({ name: topicName, units: units });
         });
 
-        if (topicsData.length === 0) throw new Error("Vui lòng nhập ít nhất 1 Chương và 1 Bài học!");
+        if (topicsData.length === 0) throw new Error("Nhập ít nhất 1 nội dung!");
 
-        // 3. Đóng gói dữ liệu gửi đi (Kèm BOOK SERIES)
         const requestData = {
-            license_key: licenseKey, 
-            subject: get('subject'), 
-            grade: get('grade'),
-            book_series: document.getElementById('book_series').value, // Lấy tên bộ sách
-            semester: get('semester'), 
-            exam_type: get('exam_type'), 
-            time: get('time_limit'),
+            license_key: get('license_key'), subject: get('subject'), grade: get('grade'),
+            book_series: document.getElementById('book_series').value,
+            semester: get('semester'), exam_type: get('exam_type'), time: get('time_limit'),
             use_short_answer: document.getElementById('use_short').checked,
-            totalPeriodsHalf1: totalP1, // Tổng tự tính
-            totalPeriodsHalf2: totalP2,
-            topics: topicsData // Cấu trúc mới: Mảng lồng nhau
+            totalPeriodsHalf1: totalP1, totalPeriodsHalf2: totalP2, topics: topicsData 
         };
 
-        // 4. Gọi API
         const res = await fetch('/api_matrix', {
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(requestData)
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(requestData)
         });
         
         if(!res.ok) {
-            let t = await res.text();
-            try { t = JSON.parse(t).error } catch(e){}
-            throw new Error(`Lỗi Server: ${t}`);
+            let t = await res.text(); try { t = JSON.parse(t).error } catch(e){} throw new Error(`Server: ${t}`);
         }
 
-        // 5. Stream & Render
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullHTML = "";
@@ -209,48 +132,37 @@ async function handleGenerate() {
             fullHTML += decoder.decode(value, {stream:true});
         }
         
-        // Làm sạch HTML (chỉ xóa markdown, giữ nguyên thẻ HTML)
+        // Clean HTML cơ bản
         let cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
-        
-        // Mẹo nhỏ: Thêm <br> trước các đáp án B,C,D nếu dính liền để hiển thị đẹp trên Web
-        // (Word dùng Logic DOM Parser riêng nên không bị ảnh hưởng)
+        // Fix hiển thị Web
         cleanHTML = cleanHTML.replace(/(\s+)(B\.|C\.|D\.)/g, '<br><b>$2</b>').replace(/(A\.)/g, '<b>$1</b>');
 
         prev.innerHTML = cleanHTML;
         window.generatedHTML = cleanHTML;
-        
-        sec.classList.remove('hidden'); 
-        sec.scrollIntoView({behavior:'smooth'});
+        sec.classList.remove('hidden'); sec.scrollIntoView({behavior:'smooth'});
 
     } catch(e) { 
-        error.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${e.message}`; 
-        error.classList.remove('hidden'); 
+        error.innerHTML = e.message; error.classList.remove('hidden'); 
     } finally { 
-        loading.classList.add('hidden'); 
-        btn.disabled = false; 
+        loading.classList.add('hidden'); btn.disabled = false; 
     }
 }
 
 // ============================================================
-// --- LOGIC XUẤT WORD "THẦN THÁNH" (DOM TRAVERSAL - KHÔNG MẤT CHỮ) ---
+// --- LOGIC XUẤT WORD CAO CẤP (XỬ LÝ MỌI LOẠI THẺ HTML) ---
 // ============================================================
 async function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-    
-    // Kiểm tra thư viện
-    if (typeof docx === 'undefined') {
-        alert("Lỗi: Thư viện DOCX chưa tải xong. Vui lòng F5."); return;
-    }
+    if (typeof docx === 'undefined') { alert("Thư viện lỗi. F5 lại trang!"); return; }
 
     const btn = document.getElementById('btnDownloadWord');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Đang xử lý...`; 
-    btn.disabled = true;
+    const oldText = btn.innerText;
+    btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
     try {
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
-        
-        // 1. Chuyển đổi MathML XML -> Docx Math Object
+
+        // 1. Convert MathML XML -> Docx Math
         function convertXmlNode(node) {
             if (!node) return [];
             const results = [];
@@ -258,78 +170,52 @@ async function handleDownloadWord() {
                 if (child.nodeType === 3) { if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue)); return; }
                 const tag = child.tagName.toLowerCase();
                 const children = convertXmlNode(child);
-                
                 switch (tag) {
-                    case 'mn': case 'mi': case 'mo': case 'mtext': 
-                        results.push(new MathRun(child.textContent)); break;
-                    case 'mfrac': 
-                        if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
-                    case 'msup': 
-                        if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
-                    case 'msub': 
-                        if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
-                    case 'msqrt': 
-                        results.push(new MathRadical({ children: children })); break;
-                    case 'mrow': case 'mstyle': 
-                        results.push(...children); break; 
-                    default: 
-                        results.push(...children); break;
+                    case 'mn': case 'mi': case 'mo': case 'mtext': results.push(new MathRun(child.textContent)); break;
+                    case 'mfrac': if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
+                    case 'msup': if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
+                    case 'msub': if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
+                    case 'msqrt': results.push(new MathRadical({ children: children })); break;
+                    case 'mrow': case 'mstyle': results.push(...children); break;
+                    default: results.push(...children); break;
                 }
             });
             return results;
         }
 
-        // 2. HÀM DUYỆT CÂY DOM ĐỂ LẤY NỘI DUNG (KEY FUNCTION)
-        // Hàm này đi vào từng text node để lấy chữ, không dùng regex xóa thẻ
+        // 2. HÀM QUAN TRỌNG: Phân tích Node Text & Style (In đậm, nghiêng, Toán)
         function getRunsFromNode(node, style = {}) {
             let runs = [];
-
-            if (node.nodeType === 3) { // Text Node
+            if (node.nodeType === 3) { // TEXT NODE
                 const text = node.nodeValue;
                 if (!text) return [];
-
-                // Tách công thức Toán ($$..$$)
+                // Tách LaTeX $$..$$
                 const parts = text.split(/(\$\$[\s\S]*?\$\$)/g);
                 parts.forEach(part => {
                     if (part.startsWith('$$') && part.endsWith('$$')) {
-                        // Xử lý Toán
                         const latex = part.slice(2, -2);
                         try {
                             if (typeof temml !== 'undefined') {
                                 const xml = temml.renderToString(latex, { xml: true });
                                 const mathRoot = new DOMParser().parseFromString(xml, "text/xml").documentElement;
                                 runs.push(new MathObj({ children: convertXmlNode(mathRoot) }));
-                            } else {
-                                runs.push(new TextRun({ text: part, color: "2E75B6" }));
-                            }
+                            } else { runs.push(new TextRun({ text: part, color: "2E75B6" })); }
                         } catch(e) { runs.push(new TextRun({ text: part, color: "FF0000" })); }
                     } else {
-                        // Xử lý Text thường
                         if (part) {
-                            // Thay thế ký tự xuống dòng của HTML thành dấu cách (trừ khi có thẻ br)
-                            let cleanPart = part.replace(/\n/g, " "); 
-                            runs.push(new TextRun({
-                                text: cleanPart,
-                                bold: style.bold,
-                                italics: style.italic,
-                                break: style.break ? 1 : 0
-                            }));
-                            style.break = false; // Reset break
+                            let cleanPart = part.replace(/\n/g, " "); // Xóa xuống dòng thừa của HTML
+                            runs.push(new TextRun({ text: cleanPart, bold: style.bold, italics: style.italic, break: style.break ? 1 : 0 }));
+                            style.break = false;
                         }
                     }
                 });
-
-            } else if (node.nodeType === 1) { // Element Node
+            } else if (node.nodeType === 1) { // ELEMENT NODE
                 const tag = node.tagName.toLowerCase();
                 const newStyle = { ...style };
-
                 if (tag === 'b' || tag === 'strong') newStyle.bold = true;
                 if (tag === 'i' || tag === 'em') newStyle.italic = true;
-                if (tag === 'br') {
-                    runs.push(new TextRun({ text: "", break: 1 })); // Xuống dòng chuẩn
-                }
+                if (tag === 'br') runs.push(new TextRun({ text: "", break: 1 })); // Xuống dòng cứng
                 
-                // Duyệt đệ quy con
                 node.childNodes.forEach(child => {
                     runs = runs.concat(getRunsFromNode(child, newStyle));
                 });
@@ -337,22 +223,84 @@ async function handleDownloadWord() {
             return runs;
         }
 
-        // 3. Hàm chuyển HTML String thành mảng Paragraphs DOCX
-        function parseToParagraphs(htmlContent) {
-            const paragraphs = [];
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlContent;
+        // 3. HÀM QUAN TRỌNG NHẤT: Chuyển đổi khối HTML bất kỳ thành mảng Docx Element (Paragraph/Table)
+        function processHtmlToDocx(childNodes) {
+            const docElements = [];
+            let currentRuns = [];
 
-            // Duyệt qua các node con trực tiếp
-            Array.from(tempDiv.childNodes).forEach(node => {
-                const runs = getRunsFromNode(node);
-                if (runs.length > 0) {
-                    paragraphs.push(new Paragraph({ children: runs }));
+            function flushRuns(opts = {}) {
+                if (currentRuns.length > 0) {
+                    docElements.push(new Paragraph({ children: [...currentRuns], ...opts }));
+                    currentRuns = [];
+                }
+            }
+
+            Array.from(childNodes).forEach(node => {
+                if (node.nodeType === 1) { // Element Node
+                    const tag = node.tagName.toLowerCase();
+
+                    // --- XỬ LÝ BẢNG ---
+                    if (tag === 'table') {
+                        flushRuns(); // Kết thúc đoạn văn trước đó nếu có
+                        const rows = Array.from(node.querySelectorAll('tr')).map(tr => 
+                            new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
+                                const colSpan = td.getAttribute('colspan');
+                                const rowSpan = td.getAttribute('rowspan');
+                                // Đệ quy: Parse nội dung trong ô bảng
+                                const cellElements = processHtmlToDocx(td.childNodes);
+                                // TableCell chỉ nhận Paragraph, không nhận Table lồng nhau ở level này (đơn giản hóa)
+                                // Lọc chỉ lấy Paragraphs từ kết quả đệ quy
+                                const cellParas = cellElements.filter(el => el instanceof Paragraph);
+                                if(cellParas.length === 0) cellParas.push(new Paragraph(""));
+
+                                return new TableCell({ 
+                                    children: cellParas,
+                                    columnSpan: colSpan ? parseInt(colSpan) : 1,
+                                    rowSpan: rowSpan ? parseInt(rowSpan) : 1,
+                                    width: { size: 100, type: WidthType.PERCENTAGE }, 
+                                    borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
+                                }); 
+                            })})
+                        );
+                        docElements.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                        docElements.push(new Paragraph("")); // Cách dòng sau bảng
+                    } 
+                    // --- XỬ LÝ TIÊU ĐỀ ---
+                    else if (tag.match(/^h[1-6]$/)) {
+                        flushRuns();
+                        const runs = getRunsFromNode(node);
+                        docElements.push(new Paragraph({
+                            children: runs,
+                            heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 100 }
+                        }));
+                    }
+                    // --- XỬ LÝ ĐOẠN VĂN (P, DIV, LI) ---
+                    else if (['p', 'div', 'li', 'ul', 'ol'].includes(tag)) {
+                        flushRuns();
+                        // Nếu là div/p chứa text trực tiếp -> Tạo paragraph
+                        // Nếu div chứa div khác -> Đệ quy tiếp
+                        // Ở đây ta dùng getRunsFromNode để "làm phẳng" nội dung bên trong thành 1 đoạn văn
+                        // Đây là cách an toàn nhất để lấy A. B. C. D.
+                        const runs = getRunsFromNode(node);
+                        if (runs.length > 0) {
+                            docElements.push(new Paragraph({ children: runs, spacing: { after: 50 } }));
+                        }
+                    }
+                    // --- CÁC THẺ KHÁC (SPAN, B, I...) ---
+                    else {
+                        // Gom vào đoạn văn hiện tại
+                        const runs = getRunsFromNode(node);
+                        currentRuns.push(...runs);
+                    }
+                } 
+                else if (node.nodeType === 3) { // Text Node trôi nổi
+                    const runs = getRunsFromNode(node);
+                    currentRuns.push(...runs);
                 }
             });
-            
-            if (paragraphs.length === 0) return [new Paragraph("")];
-            return paragraphs;
+
+            flushRuns(); // Đẩy nốt đoạn văn cuối
+            return docElements;
         }
 
         // 4. Xây dựng Document
@@ -360,67 +308,23 @@ async function handleDownloadWord() {
         // Bọc trong div để đảm bảo parse được hết
         const docHTML = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
         
-        const docChildren = [
-            new Paragraph({ 
-                text: "ĐỀ KIỂM TRA", 
-                heading: HeadingLevel.HEADING_1, 
-                alignment: AlignmentType.CENTER, 
-                spacing: { after: 300 },
-                run: { font: "Times New Roman", size: 28, bold: true }
-            })
-        ];
-
-        // Duyệt nội dung từ div ảo
-        const rootNode = docHTML.body.firstElementChild || docHTML.body;
-
-        Array.from(rootNode.childNodes).forEach(el => {
-            // Chỉ xử lý Element Node (1) hoặc Text Node (3) có nội dung
-            if (el.nodeType === 3 && !el.nodeValue.trim()) return;
-
-            const tagName = el.tagName ? el.tagName.toUpperCase() : "";
-            
-            if (tagName.match(/^H[1-6]$/)) {
-                // Tiêu đề
-                const runs = getRunsFromNode(el);
-                docChildren.push(new Paragraph({
-                    children: runs,
-                    heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 100 }
-                }));
-            } else if (tagName === 'TABLE') {
-                // Bảng
-                const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
-                    new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
-                        const colSpan = td.getAttribute('colspan');
-                        const rowSpan = td.getAttribute('rowspan');
-                        
-                        // Parse nội dung ô bằng DOM Walker
-                        const cellParas = parseToParagraphs(td.innerHTML);
-
-                        return new TableCell({ 
-                            children: cellParas,
-                            columnSpan: colSpan ? parseInt(colSpan) : 1,
-                            rowSpan: rowSpan ? parseInt(rowSpan) : 1,
-                            width: { size: 100, type: WidthType.PERCENTAGE }, 
-                            borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
-                        }); 
-                    })})
-                );
-                docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
-                docChildren.push(new Paragraph(""));
-            } else {
-                // Các thẻ khác (div, p, ul...) -> Coi là đoạn văn
-                // Sử dụng parseToParagraphs để xử lý các block con bên trong
-                if (el.innerHTML) {
-                    const paras = parseToParagraphs(el.innerHTML);
-                    docChildren.push(...paras);
-                }
-            }
+        // Header
+        const headerPara = new Paragraph({ 
+            text: "ĐỀ KIỂM TRA & MA TRẬN", 
+            heading: HeadingLevel.HEADING_1, 
+            alignment: AlignmentType.CENTER, 
+            spacing: { after: 300 },
+            run: { font: "Times New Roman", size: 28, bold: true }
         });
 
-        const doc = new Document({ sections: [{ children: docChildren }] });
+        // Xử lý toàn bộ nội dung
+        const rootDiv = docHTML.body.firstElementChild || docHTML.body;
+        const generatedElements = processHtmlToDocx(rootDiv.childNodes);
+
+        const doc = new Document({ sections: [{ children: [headerPara, ...generatedElements] }] });
         const blob = await Packer.toBlob(doc);
-        saveAs(blob, `De_Thi_Final_Pro_${Date.now()}.docx`);
+        saveAs(blob, `De_Thi_Final_${Date.now()}.docx`);
 
     } catch(e) { alert("Lỗi xuất file: " + e.message); console.error(e); } 
-    finally { btn.innerHTML = originalText; btn.disabled = false; }
+    finally { btn.innerText = oldText; btn.disabled = false; }
 }
