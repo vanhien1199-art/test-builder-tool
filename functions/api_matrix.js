@@ -175,7 +175,7 @@ Từ dòng 5 trở đi: điền nội dung dựa trên tính toán và đầu v�
 - Cột 1 (TT): 1, 2, 3, 4, …, sau cùng là các dòng: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %".
 - Cột 2: Tên chủ đề từ đầu vào.
 - Cột 3: Nội dung/đơn vị kiến thức từ đầu vào.
-- Từ cột 4 đến cột 15: Ghi số câu hỏi (cho MCQ, Đúng-Sai, Trả lời ngắn) hoặc điểm (cho Tự luận).
+- Từ cột 4 đến cột 15: Ghi số câu hỏi (cho MCQ, Đúng-Sai, Trả lời ngắn, cho Tự luận). Ví dụ 1 hoặc 2 hoặc 3 ...
 - Cột 16: Tính tổng số câu phần Biết (=D+G+J+M).
 - Cột 17: Tính tổng (=E+H+K+N).
 - Cột 18: Tính tổng (=F+I+L+O).
@@ -368,6 +368,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
