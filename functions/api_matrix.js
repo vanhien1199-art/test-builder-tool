@@ -134,20 +134,20 @@ export async function onRequest(context) {
 
 * **HEADER (Dòng 1-4):**
     * **Dòng 1:**
-        * Cột 1 (A): `rowspan="4"`: **TT**
-        * Cột 2 (B): `rowspan="4"`: **Chủ đề/Chương**
-        * Cột 3 (C): `rowspan="4"`: **Nội dung/đơn vị kiến thức**
-        * Cột 4-15 (D-O): `colspan="12"`: **Mức độ đánh giá**
-        * Cột 16-18 (P-R): `colspan="3"`: **Tổng số câu**
-        * Cột 19 (S): `rowspan="4"`: **Tỉ lệ % điểm**
+        * Cột 1 (A): 'rowspan="4"': **TT**
+        * Cột 2 (B): 'rowspan="4"': **Chủ đề/Chương**
+        * Cột 3 (C): 'rowspan="4"': **Nội dung/đơn vị kiến thức**
+        * Cột 4-15 (D-O): 'colspan="12"': **Mức độ đánh giá**
+        * Cột 16-18 (P-R): 'colspan="3"': **Tổng số câu**
+        * Cột 19 (S): 'rowspan="4"': **Tỉ lệ % điểm**
     * **Dòng 2:**
-        * Cột 4-12 (D-L): `colspan="9"`: **TNKQ**
-        * Cột 13-15 (M-O): `colspan="3"`: **Tự luận**
+        * Cột 4-12 (D-L): 'colspan="9"': **TNKQ**
+        * Cột 13-15 (M-O): 'colspan="3"': **Tự luận**
     * **Dòng 3:**
-        * Cột 4-6 (D-F): `colspan="3"`: **Nhiều lựa chọn**
-        * Cột 7-9 (G-I): `colspan="3"`: **Đúng - Sai**
-        * Cột 10-12 (J-L): `colspan="3"`: **Trả lời ngắn**
-        * Cột 13-15 (M-O): `colspan="3"`: **Tự luận**
+        * Cột 4-6 (D-F): 'colspan="3"': **Nhiều lựa chọn**
+        * Cột 7-9 (G-I): 'colspan="3"': **Đúng - Sai**
+        * Cột 10-12 (J-L): 'colspan="3"': **Trả lời ngắn**
+        * Cột 13-15 (M-O): 'colspan="3"': **Tự luận**
     * **Dòng 4:**
         * Các cột con (Biết, Hiểu, Vận dụng) tương ứng cho từng nhóm ở dòng 3.
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
@@ -163,10 +163,10 @@ export async function onRequest(context) {
     * **Dòng "Tổng số điểm":**
         * Cột 1 (A): Ghi **"Tổng số điểm"**.
         * Cột 2-3 (B-C): Để trống.
-        * **Cột 4-6 (D-F):** `colspan="3"`: Ghi **3.0** (Tổng điểm MCQ).
-        * **Cột 7-9 (G-I):** `colspan="3"`: Ghi **2.0** (Tổng điểm Đúng-Sai).
-        * **Cột 10-12 (J-L):** `colspan="3"`: Ghi **2.0** (Tổng điểm Trả lời ngắn).
-        * **Cột 13-15 (M-O):** `colspan="3"`: Ghi **3.0** (Tổng điểm Tự luận).
+        * **Cột 4-6 (D-F):** 'colspan="3"': Ghi **3.0** (Tổng điểm MCQ).
+        * **Cột 7-9 (G-I):** 'colspan="3"': Ghi **2.0** (Tổng điểm Đúng-Sai).
+        * **Cột 10-12 (J-L):** 'colspan="3"': Ghi **2.0** (Tổng điểm Trả lời ngắn).
+        * **Cột 13-15 (M-O):** 'colspan="3"': Ghi **3.0** (Tổng điểm Tự luận).
         * **Cột 16 (P):** Tổng điểm mức Biết (khoảng 4.0).
         * **Cột 17 (Q):** Tổng điểm mức Hiểu (khoảng 3.0).
         * **Cột 18 (R):** Tổng điểm mức Vận dụng (khoảng 3.0).
@@ -178,7 +178,7 @@ export async function onRequest(context) {
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
 *Tạo bảng HTML có 16 cột:*
 * Cột 1-3: Giống phần Ma trận.
-* Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ `<br>`).
+* Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>').
 * Cột 5-16: Số câu hỏi ở các mức độ (tương ứng với các cột D-O ở ma trận).
 
 **C. PHẦN III – ĐỀ KIỂM TRA & ĐÁP ÁN**
@@ -189,7 +189,7 @@ export async function onRequest(context) {
         * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung | Đúng | Sai cho học sinh tích).
         * **Phần 3 (Trả lời ngắn):** 4 câu.
     * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
-    * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: `[M1-B]` cho Mức 1 - Biết).
+    * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '(M1-B)' cho Mức 1 - Biết).
 * **Đáp án & Hướng dẫn chấm:**
     * **Phần 1 (MCQ):** Kẻ bảng 2 dòng (Dòng 1: Số câu 1-12, Dòng 2: Đáp án A/B/C/D).
     * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (4 ý a,b,c,d -> Đ/S).
@@ -197,12 +197,12 @@ export async function onRequest(context) {
     * **Tự luận:** Kẻ bảng 3 cột (Câu | Nội dung/Đáp án chi tiết | Điểm thành phần).
 
 **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
-1.  **Định dạng:** Chỉ trả về mã **HTML Table** (`<table border="1">...</table>`).
+1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
 2.  **Không dùng Markdown:** Tuyệt đối không dùng ` ```html ` hoặc `|---|`.
-3.  **Xuống dòng:** Sử dụng thẻ `<br>` thay cho dấu xuống dòng `\n`.
-4.  **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu `$$` (ví dụ: `$$x^2 + \sqrt{5}$$`). Không dùng MathML.
-5.  **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng `<br>`).
-    * Ví dụ: `A. Đáp án A <br> B. Đáp án B...`
+3.  **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng '\n'.
+4.  **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
+5.  **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>).
+    * Ví dụ: A. Đáp án A <br> B. Đáp án B...
 6.  **Tính toán:** Hãy kiểm tra lại các phép cộng hàng dọc và hàng ngang trong ma trận để đảm bảo số liệu khớp 100%.
               `;
 
@@ -299,6 +299,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
