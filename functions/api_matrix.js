@@ -198,7 +198,7 @@ export async function onRequest(context) {
 
 **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
 1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
-2.  **Không dùng Markdown:** Tuyệt đối không dùng ` ```html ` hoặc `|---|`.
+2.  **Không dùng Markdown:** Tuyệt đối không dùng \html \ hoặc\|---|\.
 3.  **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng '\n'.
 4.  **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
 5.  **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>).
@@ -299,6 +299,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
