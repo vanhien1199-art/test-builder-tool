@@ -167,7 +167,7 @@ Từ dòng 5 trở đi: điền nội dung dựa trên tính toán và đầu v�
 - Cột 17: Tính tổng điểm Hiểu (E+H+K+N).
 - Cột 18: Tính tổng điểm Vận dụng (F+I+L+O).
 - Cột 19: Tỉ lệ % điểm của đơn vị (điểm đơn vị / 10 × 100%).
-Dòng "Tổng số câu": Tính tổng số câu theo cột (cột 19: Tổng P+Q+R).
+Dòng "Tổng số câu": Tính tổng số câu theo cột (riêng cột 19: Tổng P+Q+R).
 Dòng "Tổng số điểm": Tính tổng điểm theo cột và dạng (gộp D:F cho MCQ tổng điểm, G:I cho Đúng-Sai, J:L cho Trả lời ngắn, M:O cho Tự luận; P: Tổng Biết, Q: Tổng Hiểu, R: Tổng Vận dụng; S: 10.0).
 Dòng "Tỉ lệ %": Tương tự "Tổng số điểm" nhưng % (S: 100%).
 
@@ -316,6 +316,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
