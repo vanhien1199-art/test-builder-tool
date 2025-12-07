@@ -171,7 +171,7 @@ export async function onRequest(context) {
             + Cột 7-9 (Gộp 3 ô): Ghi công thức: '(Tổng số câu Đ-S) x 1.0 = 2.0'.
             + Cột 10-12 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TLN) x 0.5 = 2.0'.
             + Cột 13-15 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TN) x số điểm của câu tự luận = 3.0'.
-            + Cột 19: Ghi `10.0`.
+            + Cột 19: Ghi '10.0'.
         - Dòng 'Tỉ lệ %': Ghi tương ứng (30%, 20%, 20%, 30%, 100%).
 
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
@@ -298,6 +298,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
