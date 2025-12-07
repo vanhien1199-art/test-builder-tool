@@ -163,17 +163,21 @@ export async function onRequest(context) {
         - Cột 16-18: Tự động tính tổng ngang.
         - Cột 19: Ghi tỉ lệ % điểm thực tế.
 
- * **FOOTER (Tổng kết):**
-        - Dòng 'Tổng số câu': Cộng tổng dọc chính xác từ dữ liệu phía trên.
-        - Dòng 'Tổng số điểm' (Gộp ô như sau):
-            + Cột 1: Ghi 'Tổng số điểm'.
-            + Cột 4-6 (Gộp 3 ô): Ghi công thức: '(Tổng số câu MCQ) x 0.25 = 3.0'.
-            + Cột 7-9 (Gộp 3 ô): Ghi công thức: '(Tổng số câu Đ-S) x 1.0 = 2.0'.
-            + Cột 10-12 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TLN) x 0.5 = 2.0'.
-            + Cột 13-15 (Gộp 3 ô): Ghi công thức: '(Tổng số câu TN) x số điểm của câu tự luận = 3.0'.
-            + Cột 19: Ghi '10.0'.
-        - Dòng 'Tỉ lệ %': Ghi tương ứng (30%, 20%, 20%, 30%, 100%).
-
+ * **FOOTER (Tổng kết - Quan trọng):**
+    - Dòng 'Tổng số câu': Cộng tổng dọc chính xác từ dữ liệu phía trên.
+    * **Dòng "Tổng số điểm":**
+        * Cột 1-2-3 (A-C)*'colspan="3": Ghi **"Tổng số điểm"**.
+         * Cột 4-6 (D-F):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu MCQ) x 0.25 '.
+        * Cột 7-9 (G-I):** 'colspan="3"': Điền kết quả phép tính (Tổng số câu Đ-S) x 1.0'.
+        * Cột 10-12 (J-L):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu TLN) x 0.5'.
+        * Cột 13-15 (M-O):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu TL) x số điểm phân bổ cho mỗi câu'.
+        * Cột 16 (P):Tính tổng điểm mức Biết
+        * Cột 17 (Q): Tính tổng điểm mức Hiểu
+        * Cột 18 (R): Tính tổng điểm mức Vận dụng
+        * Cột 19 (S): Ghi **10.0**.
+    * **Dòng "Tỉ lệ %":**
+        * Cấu trúc gộp ô y hệt dòng "Tổng số điểm".
+        * Thay giá trị điểm bằng phần trăm tương ứng (30%, 20%, 20%, 30%, 40%, 30%, 30%, 100%).
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
 *Tạo bảng HTML có 16 cột:*
 * Cột 1-3: Giống phần Ma trận.
@@ -298,6 +302,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
