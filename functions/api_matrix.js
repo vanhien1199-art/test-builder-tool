@@ -146,7 +146,7 @@ export async function onRequest(context) {
    - Kiểm tra chéo: Tổng điểm ma trận = Tổng điểm đặc tả = Tổng điểm đề = 10. Số câu đề = Số câu ma trận.
 
 ** Tạo ra 1 tài liệu sau đúng định dạng - tuân thủ cực kì nghiêm ngặt cấu trúc bảng:
-I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
+PHẦN I– MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 19 cột và cấu trúc như sau:
 * PHẦN HEADER
 - **Dòng 1:**
@@ -192,7 +192,7 @@ Dòng "Tổng số điểm": Tính tổng điểm của từng loại câu hỏi
         Ô S - cột 19: tính tổng các ô P, Q, R của dòng này (tổng phải đúng 10,0 điểm)
 Dòng "Tỉ lệ %": Tương tự "Tổng số điểm" nhưng % (S: 100%).
 
-II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
+PHẦN II– BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
 Tạo bảng có đúng 16 cột và cấu trúc gộp ô như sau:
 * PHẦN HEADER
 - Dòng 1 đến dòng 4 cột 1 (TT) gộp A1:A4.
@@ -216,7 +216,7 @@ Từ dòng 5 trở đi:
 - Cột 5 đến 16 (E đến P): Ghi số thứ tự câu hỏi hoặc điểm.
 - Dòng cuối: "Tổng số câu", "Tổng số điểm", "Tỉ lệ %" (lấy từ ma trận).
 
-III – ĐỀ KIỂM TRA MẪU
+PHẦN III– ĐỀ KIỂM TRA MẪU
 Tạo đề kiểm tra hoàn chỉnh dựa trên ma trận và đặc tả:
 1. PHẦN TRẮC NGHIỆM KHÁCH QUAN (7.0 điểm)
    A. PHẦN 1: Câu trắc nghiệm nhiều phương án lựa chọn (3,0đ): Đánh số từ 1 đến N, mỗi câu 4 phương án A, B, C, D.
@@ -366,6 +366,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
