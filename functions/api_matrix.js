@@ -66,14 +66,14 @@ export async function onRequest(context) {
 **QUY ĐỊNH VỀ ĐIỂM SỐ VÀ TÍNH TOÁN (QUAN TRỌNG):**
 *Trước khi tạo bất kỳ bảng nào, hãy thực hiện các bước tính toán sau một cách chính xác để đảm bảo TỔNG ĐIỂM TOÀN BÀI LUÔN LÀ 10, tuân thủ phân bố điểm và số lượng câu hỏi dựa trên thời lượng:*
 1. **Xác định loại đề và phân bổ kiến thức theo chủ đề:**
-   - Nếu là đề kiểm tra định kỳ giữa kỳ: Phân bổ điểm đều theo số lượng chủ đề/đơn vị kiến thức từ đầu vào.
+   - Nếu là đề kiểm tra định kỳ giữa kỳ: Phân bổ điểm đều theo số lượng chủ đề/đơn vị kiến thức từ đầu vào.Theo công thức: tỉ lệ điểm = Số tiết/tổng số tiết 
    - Nếu là đề kiểm tra học kỳ:
      - Phân bổ tỉ lệ kiến thức tổng thể: 25% cho nửa đầu học kỳ + 75% cho nửa sau học kỳ.
      - Tính trọng số điểm cho từng đơn vị kiến thức dựa trên số tiết dạy:
        - Tổng tiết nửa đầu: Tính tổng số tiết của các đơn vị thuộc nửa đầu.
        - Tổng tiết nửa sau: Tính tổng số tiết của các đơn vị thuộc nửa sau.
-       - Trọng số điểm cho một đơn vị ở nửa đầu = (Số tiết của đơn vị × 0.25 × 10) / Tổng tiết nửa đầu.
-       - Trọng số điểm cho một đơn vị ở nửa sau = (Số tiết của đơn vị × 0.75 × 10) / Tổng tiết nửa sau.
+       - Trọng số điểm cho một đơn vị ở nửa đầu = (Số tiết của đơn vị × 0.25) / Tổng tiết nửa đầu.
+       - Trọng số điểm cho một đơn vị ở nửa sau = (Số tiết của đơn vị × 0.75) / Tổng tiết nửa sau.
        - Đảm bảo tổng trọng số tất cả đơn vị = 10 điểm.
 
 2. **Phân bổ điểm theo dạng câu hỏi (tổng 10 điểm):**
@@ -297,6 +297,7 @@ Mỗi câu hỏi trong đề phải có mã tham chiếu đến ma trận (ví d
         }
     }
 }
+
 
 
 
