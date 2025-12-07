@@ -44,14 +44,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- HÀM ẨN HIỆN Ô NHẬP TIẾT ---
+// --- HÀM ẨN HIỆN Ô NHẬP TIẾT (LOGIC MỚI) ---
 function updatePeriodInputs() {
-    const isHK = document.getElementById('exam_type').value === 'hk';
+    const type = document.getElementById('exam_type').value; // 'gk' hoặc 'hk'
     
-    // Tìm tất cả ô nhập tiết 1 và tiết 2
-    document.querySelectorAll('.hk-input-1, .hk-input-2').forEach(div => {
-        if (isHK) div.classList.remove('hidden');
-        else div.classList.add('hidden');
+    // Quét qua tất cả các dòng Unit đang có
+    document.querySelectorAll('.unit-item').forEach(item => {
+        const div1 = item.querySelector('.hk-input-1');
+        const input1 = item.querySelector('.unit-p1');
+        const div2 = item.querySelector('.hk-input-2');
+
+        if (type === 'hk') {
+            // CHẾ ĐỘ CUỐI KÌ: Hiện cả 2 ô
+            div1.classList.remove('hidden');
+            input1.placeholder = "Tiết (Đầu)";
+            div2.classList.remove('hidden');
+        } else {
+            // CHẾ ĐỘ GIỮA KÌ: Hiện ô 1 (làm Tổng tiết), Ẩn ô 2
+            div1.classList.remove('hidden');
+            input1.placeholder = "Tổng tiết"; // Đổi nhãn cho dễ hiểu
+            div2.classList.add('hidden');
+        }
     });
 }
 
