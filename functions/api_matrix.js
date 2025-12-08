@@ -138,7 +138,7 @@ export async function onRequest(context) {
                     * Cột 2 (B): 'rowspan="4"': **Chủ đề/Chương**
                     * Cột 3 (C): 'rowspan="4"': **Nội dung/đơn vị kiến thức**
                     * Cột 4-15 (D-O): 'colspan="12"': **Mức độ đánh giá**
-                    * Cột 16-18 (P-R): 'colspan="3"': **Tổng số câu**
+                    * Cột 16-18 (P-R): 'colspan="3"': **Tổng**
                     * Cột 19 (S): 'rowspan="4"': **Tỉ lệ % điểm**
                 * **Dòng 2:**
                     * Cột 4-12 (D-L): 'colspan="9"': **TNKQ**
@@ -292,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
