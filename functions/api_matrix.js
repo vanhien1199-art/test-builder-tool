@@ -215,7 +215,7 @@ BODY (Dữ liệu cho từng đơn vị kiến thức) — **QUY TẮC RÕ RÀNG
 - Cột TT, Chủ đề, Nội dung: Điền chính xác nội dung đơn vị kiến thức (chuỗi văn bản).
 - Ở các cột con của mỗi dạng câu (MCQ-Biết, MCQ-Hiểu, MCQ-Vận dụng, Đ-S-Biết,... TL-Vận dụng,...):
   - **Chỉ điền số lượng câu** (số nguyên ≥ 0). **Không** điền phần trăm hay điểm ở đây.
-  - Nếu là ô thuộc phần Tự luận (TL), và nếu câu tự luận có điểm khác nhau, phải **điền thêm ô phụ trong hàng đó** (cùng hàng, định dạng nội bộ) chỉ định điểm từng câu TL của hàng này (ví dụ: TL_câu1:1.5; TL_câu2:1.0). Nếu không có nhiều ô phụ, Gemini phải ghi chú điểm từng câu TL ở dạng `TL_points=[1.5,1.0]` trong một ô được phép (theo định dạng HTML cell tôi đã chỉ định).
+  - Nếu là ô thuộc phần Tự luận (TL), và nếu câu tự luận có điểm khác nhau, phải **điền thêm ô phụ trong hàng đó** (cùng hàng, định dạng nội bộ) chỉ định điểm từng câu TL của hàng này (ví dụ: TL_câu1:1.5; TL_câu2:1.0). Nếu không có nhiều ô phụ, Gemini phải ghi chú điểm từng câu TL ở dạng 'TL_points=[1.5,1.0]' trong một ô được phép (theo định dạng HTML cell tôi đã chỉ định).
 - Cột Tổng số câu (P, Q, R cho hàng): **KHÔNG** nhập tay — hệ thống **TỰ ĐỘNG TÍNH** tổng số câu theo từng mức độ cho hàng đó.
 - Cột Tỉ lệ % điểm (S hàng): Ghi chính xác tỉ lệ phần trăm điểm của **đơn vị kiến thức đó** theo công thức tỉ lệ điểm ở trên (đã đề cập trong phần I). Gemini phải định dạng số phần trăm theo 2 chữ số thập phân.
 
@@ -368,6 +368,7 @@ FOOTER (Dòng TỔNG KẾT - THỰC HIỆN TÍNH TOÁN SAU KHI ĐIỀN HẾT BOD
         }
     }
 }
+
 
 
 
