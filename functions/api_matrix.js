@@ -14,7 +14,7 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            const MODEL_NAME = "gemini-2.0-flash";
+            const MODEL_NAME = "gemini-2.5-flash";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
@@ -308,4 +308,5 @@ Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm
         }
     }
 }
+
 
