@@ -14,7 +14,7 @@ export async function onRequest(context) {
             const apiKey = env.GOOGLE_API_KEY;
             if (!apiKey) throw new Error("Thiếu API Key");
 
-            const MODEL_NAME = "gemini-3-pro-preview";
+            const MODEL_NAME = "gemini-2.5-pro";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
@@ -82,7 +82,8 @@ export async function onRequest(context) {
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
-           
+           ### TÀI LIỆU THAM KHẢO (QUAN TRỌNG):
+            ${DOCUMENT_CONTENT_7991}
             ## THÔNG TIN
            1. Môn: ${subject} - Lớp ${grade}
             2. Bộ sách: **${book_series}** (Dùng đúng thuật ngữ sách này).
@@ -317,22 +318,81 @@ export async function onRequest(context) {
     }
 }
 
+// --- ĐẶT NỘI DUNG VĂN BẢN Ở CUỐI FILE ĐỂ CODE GỌN GÀNG ---
+const DOCUMENT_CONTENT_7991 = `
+BỘ GIÁO DỤC VÀ ĐÀO TẠO
+CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
 
+Độc lập - Tự do - Hạnh phúc
 
+Số: 7991/BGDĐT-GDTrH
+V/v thực hiện kiểm tra, đánh giá đối với cấp THCS, THPT
+Hà Nội, ngày 17 tháng 12 năm 2024
 
+Kính gửi: Các Sở Giáo dục và Đào tạo
 
+Để thực hiện việc kiểm tra, đánh giá theo quy định tại Thông tư số 22/2021/TT-BGDĐT ngày 20/7/2021 quy định về đánh giá học sinh trung học cơ sở và học sinh trung học phổ thông của Bộ trưởng Bộ Giáo dục và Đào tạo (GDĐT), Bộ GDĐT đề nghị các Sở GDĐT căn cứ nội dung đã được tập huấn cho giáo viên cốt cán vào tháng 11/2024(1), tổ chức tập huấn cho cán bộ quản lí, giáo viên của các cơ sở giáo dục có thực hiện chương trình giáo dục phổ thông trên địa bàn quản lí.
 
+Đối với các môn học đánh giá bằng nhận xét kết hợp đánh giá bằng điểm số, Sở GDĐT hướng dẫn các cơ sở giáo dục ở cấp trung học phổ thông xây dựng ma trận, bản đặc tả, đề kiểm tra và hướng dẫn chấm đề kiểm tra định kì bảo đảm các yêu cầu về chuyên môn, kĩ thuật (tham khảo Phụ lục kèm theo); trong năm học 2024-2025 triển khai thực hiện từ học kì 2.
 
+Trong quá trình thực hiện, nếu có vướng mắc, đề nghị Sở GDĐT phản ánh về Bộ GDĐT (qua Vụ Giáo dục Trung học).
 
+Nơi nhận
 
+Như trên;
 
+Bộ trưởng (để báo cáo);
 
+TT. Phạm Ngọc Thưởng (để báo cáo);
 
+Vụ trưởng (để báo cáo);
 
+Lưu: VT, Vụ GDTrH.
 
+TL. BỘ TRƯỞNG
+KT. VỤ TRƯỞNG VỤ GIÁO DỤC TRUNG HỌC
+PHÓ VỤ TRƯỞNG
 
+(đã ký)
+Đỗ Đức Quế
 
+(1) Công văn số 6569/BGDĐT-GDTrH ngày 16/10/2024 về việc tập huấn giáo viên cốt cán về tăng cường năng lực thực hiện CT GDPT 2018 của Bộ GDĐT.
 
+📎 PHỤ LỤC
 
+(Kèm theo Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 của Bộ GDĐT)
+1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
+| TT | Chủ đề/Chương | Nội dung/ĐV kiến thức | TNKQ – Nhiều lựa chọn | TNKQ – Đúng/Sai | TNKQ – Trả lời ngắn | Tự luận | Tổng | Tỉ lệ % |
+|----|----------------|------------------------|------------------------|------------------|----------------------|----------|--------|----------|
+| 1 | Chủ đề 1 | | Biết / Hiểu / VD | Biết / Hiểu / VD | Biết / Hiểu / VD | Biết / Hiểu / VD | (n) |    |
+| 2 | Chủ đề 2 | | | | | | | |
+| … | Chủ đề … | | | | | | | |
 
+**Tổng số câu:**  
+**Tổng số điểm:** 3.0 – 2.0 – 2.0 – 3.0 – 4.0 – 3.0 – 3.0  
+**Tỉ lệ %:** 30 – 20 – 20 – 30 – 40 – 30 – 30
+Ghi chú
 
+(2) Mỗi câu hỏi Đúng – Sai gồm 4 ý nhỏ.
+
+(3) Nếu môn không dùng dạng “Trả lời ngắn” → chuyển điểm sang Đúng – Sai.
+
+(4) “n” = số câu.
+
+(5) Phân phối điểm để đạt tỉ lệ khoảng 30%.
+2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
+| TT | Chủ đề/Chương | Đơn vị kiến thức | Yêu cầu cần đạt | Số câu TNKQ | Số câu tự luận |
+|----|----------------|------------------|------------------|--------------|-----------------|
+| 1 | Chủ đề 1 | - Biết…  |  | (n) / NL? |  |
+|   |              | - Hiểu… |  |            |  |
+|   |              | - Vận dụng… | |            |  |
+| 2 | Chủ đề 2 | - Biết… | | | |
+| … | Chủ đề … | | | | |
+
+**Tổng số câu:**  
+**Tổng số điểm:** 3.0 – 2.0 – 2.0 – 3.0  
+**Tỉ lệ %:** 30 – 20 – 20 – 30
+Ghi chú
+
+(6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
+`;
