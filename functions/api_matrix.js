@@ -203,7 +203,7 @@ export async function onRequest(context) {
             2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
             3. **Xuống dòng (QUAN TRỌNG):**
                - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
-               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ `<br>`.
+               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ '<br>'.
             4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
             5. **Định dạng Trắc nghiệm (MCQ):**
                - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... '<br>' B. ... '<br>' C. ... '<br>' D. ...
@@ -310,6 +310,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
