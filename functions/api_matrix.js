@@ -152,31 +152,38 @@ export async function onRequest(context) {
         * Các cột con (Biết, Hiểu, Vận dụng) tương ứng cho từng nhóm ở dòng 3.
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
-* **BODY (Dữ liệu - YÊU CẦU TÍNH TOÁN NGƯỢC QUAN TRỌNG):**
-        1. Quy tắc phân bổ
-        - Hãy nhìn vào % thời lượng của từng đơn vị kiến thức ở trên.
-            - Phân chia số lượng câu hỏi (Quota) vào các chương tương ứng với % đó.
-            - Ví dụ: Chương chiếm 50% thời lượng thì nhận 50% số câu MCQ (tức là 6 câu), 50% số câu Đúng-Sai (1 câu)...
-            - **QUAN TRỌNG:** Sau khi phân chia, HÃY CỘNG LẠI. Nếu tổng chưa đủ (ví dụ mới có 11 câu MCQ), hãy thêm 1 câu vào chương quan trọng nhất để ĐẢM BẢO TỔNG LÀ 12.
-        2. **Điều kiện về phân bổ:** Số lượng câu hỏi của mỗi bài học phải tương ứng với tỉ lệ điểm đã tính toán (bài học nhiều tiết thì nhiều câu hỏi hơn).
-        - Cột 16-18: Tự động tính tổng ngang.
-        - Cột 19: Ghi tỉ lệ % điểm thực tế.
-
- * **FOOTER (Tổng kết - Quan trọng):**
-    - Dòng 'Tổng số câu': Cộng tổng dọc chính xác từ dữ liệu phía trên.
-    * **Dòng "Tổng số điểm":**
-        * Cột 1-2-3 (A-C)*'colspan="3": Ghi **"Tổng số điểm"**.
-         * Cột 4-6 (D-F):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu MCQ) x 0.25 '.
-        * Cột 7-9 (G-I):** 'colspan="3"': Điền kết quả phép tính (Tổng số câu Đ-S) x 1.0'.
-        * Cột 10-12 (J-L):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu TLN) x 0.5'.
-        * Cột 13-15 (M-O):** 'colspan="3"': Điền kết quả phép tính'(Tổng số câu TL) x số điểm phân bổ cho mỗi câu'.
-        * Cột 16 (P):Tính tổng điểm mức Biết
-        * Cột 17 (Q): Tính tổng điểm mức Hiểu
-        * Cột 18 (R): Tính tổng điểm mức Vận dụng
-        * Cột 19 (S): Ghi **10.0**.
-    * **Dòng "Tỉ lệ %":**
-        * Cấu trúc gộp ô y hệt dòng "Tổng số điểm".
-        * Thay giá trị điểm bằng phần trăm tương ứng (30%, 20%, 20%, 30%, 40%, 30%, 30%, 100%).
+B. PHẦN II – HƯỚNG DẪN ĐIỀN VÀ TÍNH TOÁN DỮ LIỆU TRONG BẢNG MA TRẬN
+BODY (Dữ liệu cho từng đơn vị kiến thức):
+Cột TT, Chủ đề, Nội dung: Điền thông tin đơn vị kiến thức.
+Cột Biết/Hiểu/Vận dụng cho từng dạng câu (MCQ, Đ-S, TLN, TL): Điền số lượng câu hỏi đã được phân bổ ở Bước 4.
+Cột Tổng số câu (P, Q, R): Hệ thống TỰ ĐỘNG TÍNH tổng số câu theo từng mức độ (Biết, Hiểu, Vận dụng) cho hàng đó.
+Cột Tỉ lệ % điểm (S): Ghi chính xác tỉ lệ phần trăm điểm đã tính ở Bước 1 cho đơn vị kiến thức đó.
+FOOTER (Dòng TỔNG KẾT - THỰC HIỆN TÍNH TOÁN SAU KHI ĐIỀN HẾT BODY):
+Dòng "Tổng số câu":
+Cột 4-15 (D-O): Cộng dọc tất cả số câu đã điền ở các hàng trong Body, để ra tổng số câu cho từng ô nhỏ (VD: MCQ-Biết, Đ-S-Hiểu...).
+Cột 16-18 (P-R): Cộng dọc các giá trị "Tổng số câu" của từng hàng, ra tổng số câu toàn bài theo mức độ.
+KIỂM TRA: Tổng số câu các phần (MCQ, Đ-S, TLN, TL) phải khớp với số lượng đã quy đổi ở Bước 3.
+Dòng "Tổng số điểm": Lưu ý: Các công thức dưới đây PHẢI được tính toán tự động dựa trên "Tổng số câu" vừa tính ở trên.
+Ô A-C (gộp): Ghi chữ "Tổng số điểm".
+Ô D-F (gộp, cho phần MCQ): Tính = (Tổng số câu MCQ) * 0.25. Kết quả PHẢI là 3.0.
+Ô G-I (gộp, cho phần Đúng-Sai): Tính = (Tổng số câu dạng Đ-S) * 1.0. Kết quả PHẢI là 2.0. (Lưu ý: 1 "câu" Đ-S là 1 chùm 4 ý, tính là 1 câu).
+Ô J-L (gộp, cho phần Trả lời ngắn): Tính = (Tổng số câu TLN) * 0.5. Kết quả PHẢI là 2.0.
+Ô M-O (gộp, cho phần Tự luận): Tính = Tổng điểm của tất cả câu Tự luận. Kết quả PHẢI là 3.0. (Điểm mỗi câu TL đã được xác định khi phân bổ ở Bước 4).
+Ô P (Tổng điểm mức Biết): Tính = (Tổng câu MCQ-Biết * 0.25) + (Tổng câu Đ-S-Biết * 1.0) + (Tổng câu TLN-Biết * 0.5) + (Tổng điểm TL-Biết).
+Ô Q (Tổng điểm mức Hiểu): Tính tương tự như ô P, cho các câu ở mức Hiểu.
+Ô R (Tổng điểm mức Vận dụng): Tính tương tự như ô P, cho các câu ở mức Vận dụng.
+Ô S: Ghi 10.0.
+Dòng "Tỉ lệ %":
+Cấu trúc gộp ô giống hệt dòng "Tổng số điểm".
+Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm so với tổng điểm 10.
+Ô D-F (gộp): (Điểm MCQ / 10) * 100% = 30%.
+Ô G-I (gộp): 20%.
+Ô J-L (gộp): 20%.
+Ô M-O (gộp): 30%.
+Ô P: (Điểm mức Biết / 10) * 100% (VD: ~40%).
+Ô Q: (Điểm mức Hiểu / 10) * 100% (VD: ~30%).
+Ô R: (Điểm mức Vận dụng / 10) * 100% (VD: ~30%).
+Ô S: 100%.
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
 *Tạo bảng HTML có 16 cột:*
 * Cột 1-3: Giống phần Ma trận.
@@ -301,6 +308,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
