@@ -114,11 +114,11 @@ export async function onRequest(context) {
    - **Phần IV (Tự luận):** 3.0 điểm (30%).
    - *Tổng cộng:* TNKQ (7.0 điểm) + Tự luận (3.0 điểm) = 10.0 điểm.
 
-3. **Cấu trúc điểm theo mức độ nhận thức (Linh hoạt):**
-   - **Biết:** ~40% (4.0 điểm).
-   - **Hiểu:** ~30% (3.0 điểm).
-   - **Vận dụng:** ~30% (3.0 điểm).
-   - *Yêu cầu:* Mỗi đơn vị kiến thức phải có ít nhất 20% điểm ở mức Vận dụng.
+3. **Cấu trúc điểm theo mức độ nhận thức (cố định bắt buộc):**
+   - **Biết:** ~40% (4.0 điểm), không được lớn hơn 40% .
+   - **Hiểu:** ~30% (3.0 điểm), không được hơn.
+   - **Vận dụng:** ~30% (3.0 điểm), không được hơn.
+   - *Yêu cầu:* Mỗi loại câu hỏi phải có đủ cả 3 mức độ.
 
 4. **Quy đổi số lượng câu hỏi (Dựa trên thời lượng ${time} phút):**
    - **MCQ (0.25đ/câu):** Cần 3.0 điểm => 12 câu.
@@ -368,6 +368,7 @@ FOOTER (Dòng TỔNG KẾT - THỰC HIỆN TÍNH TOÁN SAU KHI ĐIỀN HẾT BOD
         }
     }
 }
+
 
 
 
