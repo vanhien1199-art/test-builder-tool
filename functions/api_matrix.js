@@ -153,6 +153,43 @@ export async function onRequest(context) {
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
 B. PHẦN II – HƯỚNG DẪN ĐIỀN VÀ TÍNH TOÁN DỮ LIỆU TRONG BẢNG MA TRẬN
+                *QUY TẮC TÍNH TOÁN BẮT BUỘC (áp dụng cho footer của bảng)
+                    1. Tổng số câu hỏi (Total Questions)
+                     = tổng của tất cả số câu ở từng mức độ
+                    = Tổng M1 + M2 + M3 + M4
+                    Tuyệt đối không được làm tròn sai.
+                    2. Tổng điểm (Total Points)
+                    Tổng điểm của bài = tôi sẽ cung cấp (ví dụ: 10 điểm hoặc 100 điểm).
+                    Điểm mỗi câu = Tổng điểm / Tổng số câu.
+                    Mỗi câu phải có điểm bằng nhau.
+                    Ví dụ:
+                    Tổng điểm = 10
+          Tổng số câu = 25
+                    Điểm mỗi câu = 10 / 25 = 0.4
+                    3. Điểm theo từng mức độ (Row Points)
+                    = (Số câu mức độ đó) × (Điểm mỗi câu)
+                    Không làm tròn số khi nhân.
+                    Chỉ làm tròn đến 2 hoặc 3 chữ số thập phân (tôi sẽ chỉ định).
+                    4. Phần trăm (%) theo từng mức độ
+                     Công thức chuẩn:
+                    % mức độ = (Điểm mức độ / Tổng điểm) × 100
+                    Kết quả cuối phải khớp 100% trừ sai số làm tròn (tối đa ±0.01%).
+                    5. Kiểm tra toàn vẹn dữ liệu trước khi trả kết quả (Validation)
+                    Gemini phải tự kiểm tra:
+                    ✔ Tổng điểm mức độ = đúng Tổng điểm bài
+                    ✔ Tổng % = 100%
+                    ✔ Số câu khớp cấu trúc bảng
+                    ✔ Không tự ý thay đổi cấu trúc bảng hoặc vị trí footer
+                    ✔ Không viết thừa hoặc thiếu cột
+                     Nếu phát hiện sai → tự sửa trước khi xuất kết quả.
+                    II. QUY TẮC VỀ CÁCH ĐIỀN NỘI DUNG
+                    1. Không tự ý thay đổi cấu trúc bảng
+                    Không thêm, không xóa ô
+                    Không thay đổi colspan, rowspan
+                    Không đổi vị trí header/footer
+                    2. Chỉ được điền nội dung vào các ô tôi ký hiệu (…điền nội dung…)
+                    3. Không sinh thêm HTML ngoài cấu trúc bảng đã cung cấp
+                    4. Tuyệt đối không sáng tạo thêm logic khác
 BODY (Dữ liệu cho từng đơn vị kiến thức):
 Cột TT, Chủ đề, Nội dung: Điền thông tin đơn vị kiến thức.
 Cột Biết/Hiểu/Vận dụng cho từng dạng câu (MCQ, Đ-S, TLN, TL): Điền số lượng câu hỏi đã được phân bổ ở Bước 4.
@@ -308,6 +345,7 @@ Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm
         }
     }
 }
+
 
 
 
