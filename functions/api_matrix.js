@@ -131,7 +131,7 @@ export async function onRequest(context) {
 
                **Trường hợp 4.2: Nếu thời gian là 45 phút (${time} <= 45 phút):**
                - **MCQ (0.5đ/câu):** Cần 3.0 điểm => **6 câu**. (Lưu ý hệ số điểm thay đổi thành 0.5đ).
-               - **Đúng-Sai:** Cần 2.0 điểm => **1 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d).
+               - **Đúng-Sai:** Cần 2.0 điểm => **1 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d; 0.5đ/ý).
                - **Trả lời ngắn (0.5đ/câu):** Cần 2.0 điểm => **4 câu**.
                - **Tự luận:** Cần 3.0 điểm => **2-3 câu** (phân phối điểm linh hoạt, ví dụ: 1.5đ + 1.0đ + 0.5đ).
                - *Tổng số câu:* Phải khớp với cấu trúc trên.
@@ -299,6 +299,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
