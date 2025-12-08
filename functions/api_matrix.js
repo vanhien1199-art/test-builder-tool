@@ -195,7 +195,7 @@ export async function onRequest(context) {
                 * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
                 * **Phần I:** Chia thành 3 tiểu mục (Số lượng tùy thời gian ${time} phút):
                     * **Phần 1 (MCQ):** 12 câu (>=60p) hoặc 6 câu (<=45p).
-                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (>=60p) hoặc 1 câu chùm (<=45p). (Kẻ bảng 2 cột: Nội dung | Đúng/Sai).
+                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (>=60p) hoặc 1 câu chùm (<=45p). **Kẻ bảng 2 cột: Nội dung | Đúng/Sai.
                     * **Phần 3 (Trả lời ngắn):** 4 câu.
                 * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
                 * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
@@ -396,4 +396,5 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
