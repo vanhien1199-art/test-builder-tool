@@ -130,7 +130,7 @@ export async function onRequest(context) {
 **II. YÊU CẦU VỀ ĐỊNH DẠNG VÀ CẤU TRÚC BẢNG (BẮT BUỘC):**
 
 **A. PHẦN I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
-*Tạo bảng HTML có đúng 19 cột. Cấu trúc cụ thể:*
+*Tạo bảng HTML có đúng 19 cột. Cấu trúc cụ thể:* 
 
 * **HEADER (Dòng 1-4):**
     * **Dòng 1:**
@@ -153,35 +153,55 @@ export async function onRequest(context) {
         * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
 B. PHẦN II – HƯỚNG DẪN ĐIỀN VÀ TÍNH TOÁN DỮ LIỆU TRONG BẢNG MA TRẬN
-                *QUY TẮC TÍNH TOÁN BẮT BUỘC (áp dụng cho footer của bảng)
-                    1. Tổng số câu hỏi (Total Questions)
-                     = tổng của tất cả số câu ở từng mức độ
-                    = Tổng M1 + M2 + M3 + M4
-                    Tuyệt đối không được làm tròn sai.
-                    2. Tổng điểm (Total Points)
-                    Tổng điểm của bài = tôi sẽ cung cấp (ví dụ: 10 điểm hoặc 100 điểm).
-                    Điểm mỗi câu = Tổng điểm / Tổng số câu.
-                    Mỗi câu phải có điểm bằng nhau.
-                    Ví dụ:
-                    Tổng điểm = 10
-          Tổng số câu = 25
-                    Điểm mỗi câu = 10 / 25 = 0.4
-                    3. Điểm theo từng mức độ (Row Points)
-                    = (Số câu mức độ đó) × (Điểm mỗi câu)
-                    Không làm tròn số khi nhân.
-                    Chỉ làm tròn đến 2 hoặc 3 chữ số thập phân (tôi sẽ chỉ định).
-                    4. Phần trăm (%) theo từng mức độ
-                     Công thức chuẩn:
-                    % mức độ = (Điểm mức độ / Tổng điểm) × 100
-                    Kết quả cuối phải khớp 100% trừ sai số làm tròn (tối đa ±0.01%).
-                    5. Kiểm tra toàn vẹn dữ liệu trước khi trả kết quả (Validation)
-                    Gemini phải tự kiểm tra:
-                    ✔ Tổng điểm mức độ = đúng Tổng điểm bài
-                    ✔ Tổng % = 100%
-                    ✔ Số câu khớp cấu trúc bảng
-                    ✔ Không tự ý thay đổi cấu trúc bảng hoặc vị trí footer
-                    ✔ Không viết thừa hoặc thiếu cột
-                     Nếu phát hiện sai → tự sửa trước khi xuất kết quả.
+                *QUY TẮC TÍNH TOÁN BẮT BUỘC (áp dụng cho footer của bảng) — **PHẢI LÀM THEO TUẦN TỰ SAU** (1 → 2 → 3 → 4 → 5):
+                    
+                    **Chú ý trước khi bắt đầu:** Gemini phải kiểm tra kiểu dữ liệu và tính hợp lệ:
+                    - Mọi ô số lượng câu trong BODY phải là số nguyên không âm (0,1,2,...). Nếu có ô không phải số nguyên, coi là lỗi và tự sửa (làm tròn xuống nếu cần, nhưng chỉ khi có bằng chứng rõ ràng từ body; ưu tiên thông báo trong phần log nội bộ).
+                    - Tổng số câu toàn bài (TotalQuestions) phải > 0.
+                    
+                    **Bước 1 — Tổng số câu (Total Questions):**
+                    - TotalQuestions = tổng của tất cả số câu ở từng mức độ, tính theo dạng câu:
+                      TotalQuestions = (Tổng MCQ across all rows) + (Tổng Đ-S across all rows) + (Tổng TLN across all rows) + (Tổng TL_count across all rows)
+                    - Ghi rõ phép cộng theo ô: cộng dọc từng ô nhỏ ở footer (ô D-O) để ra 12 giá trị con, rồi tổng lại theo nhóm để ra 4 nhóm chính (MCQ, Đ-S, TLN, TL).
+                    - **Không làm tròn số** khi cộng số lượng câu (vì là số nguyên).
+                    
+                    **Bước 2 — Tổng điểm & Điểm mỗi câu:**
+                    - Tổng điểm của bài = 10.0 (hoặc giá trị khác nếu tôi cung cấp — dùng giá trị đó).
+                    - *Quy tắc TL đặc biệt:* Các câu Tự luận (TL) có thể có điểm không cân bằng giữa các câu (ví dụ 1.5 + 1.0 + 0.5). Trong footer, cần 2 đại lượng liên quan tới TL:
+                      - TL_count = tổng số câu tự luận (số nguyên).
+                      - TL_points_total = tổng điểm tất cả câu tự luận (số thực), do Gemini tính dựa trên việc phân bổ điểm từng câu TL khi đã phân bổ trong BODY.
+                    - Điểm mỗi câu tiêu chuẩn (PointPerItem) **chỉ áp dụng cho các câu trắc nghiệm và câu ngắn có cùng chuẩn điểm** (MCQ = 0.25, Đ-S = 1.0, TLN = 0.5). Công thức chung:
+                      - PointPerMCQ = 0.25 (cố định)
+                      - PointPerDS = 1.0 (cố định) — ghi chú: 1 "câu" Đ-S = 1 chùm 4 ý.
+                      - PointPerTLN = 0.5 (cố định)
+                      - PointPerTL: các giá trị điểm cho từng câu TL phải được xác định rõ trong BODY; Gemini sẽ dùng các giá trị đó để tính TL_points_total.
+                    - **Tính toán bắt buộc:** TotalPointsComputed = (TotalMCQ * 0.25) + (TotalDS * 1.0) + (TotalTLN * 0.5) + (TL_points_total)
+                      - TotalPointsComputed phải bằng Tổng điểm của bài (ví dụ 10.0) trong giới hạn sai số do làm tròn (xem Bước 4).
+                    
+                    **Bước 3 — Điểm theo từng mức độ (Row Points cho mỗi mức độ Biết/Hiểu/Vận dụng):**
+                    - Với mỗi hàng (một đơn vị kiến thức), RowPoints_Mức = (Số câu ở mức đó trong hàng) × (Điểm tương ứng của từng loại câu).
+                      - Ví dụ: RowPoints_Biết = (MCQ-Biết × 0.25) + (Đ-S-Biết × 1.0) + (TLN-Biết × 0.5) + (TL-Biết_points)
+                      - **Không làm tròn** khi nhân; chỉ làm tròn kết quả hiển thị theo quy tắc làm tròn (Bước 4).
+                    - Tổng các RowPoints_Biết của tất cả hàng = TotalPoints_Biết (tương tự cho Hiểu, Vận dụng).
+                    
+                    **Bước 4 — Quy tắc làm tròn và phần trăm:**
+                    - Khi cần hiển thị số thập phân:
+                      - Điểm của mỗi câu (nếu không là số nguyên) và RowPoints: làm tròn **tối đa 3 chữ số thập phân** (ví dụ 0.400).
+                      - Tỉ lệ phần trăm (%): làm tròn **tối đa 2 chữ số thập phân** (ví dụ 30.00%).
+                    - Tolerances:
+                      - Tổng % (cộng P,Q,R,S...) phải bằng **100.00% ± 0.01%**. Nếu sai lệch do làm tròn, Gemini phải điều chỉnh **ô S (Tỉ lệ % điểm)** hoặc một ô tỉ lệ có quyền điều chỉnh nhỏ nhất để bù tiếp, ghi rõ ô nào đã được điều chỉnh (nội bộ).
+                      - Tổng điểm (TotalPointsComputed) phải khớp với Tổng điểm bài trong sai số **±0.001** sau khi làm tròn hiển thị. Nếu không khớp, Gemini phải tìm và chỉnh sửa các giá trị TL_points_total (nếu TL chưa rõ) hoặc cảnh báo lỗi rõ ràng (và sửa trước khi xuất kết quả).
+                    
+                    **Bước 5 — Kiểm tra toàn vẹn dữ liệu trước khi xuất kết quả (Validation cuối cùng):**
+                    Gemini phải thực hiện các kiểm tra sau và **sửa tự động** nếu phát hiện vấn đề (và báo cáo các sửa đổi trong log nội bộ):
+                    ✔ TotalQuestions = tổng các câu theo từng nhóm và theo ô D-O. (kiểm tra integer equality)  
+                    ✔ TotalPointsComputed = Tổng điểm bài (ví dụ 10.0) ±0.001.  
+                    ✔ Tổng % = 100.00% ±0.01%.  
+                    ✔ Số câu khớp cấu trúc quy đổi ở phần "Quy đổi số lượng câu" ở trên (ví dụ MCQ phải ra 12 v.v.).  
+                    ✔ Không tự ý thay đổi cấu trúc bảng hoặc vị trí footer.  
+                    ✔ Không viết thừa hoặc thiếu cột.  
+                    Nếu phát hiện sai → Gemini phải tự sửa theo nguyên tắc: chỉ sửa các ô tính toán (footer hoặc ô tổng của từng hàng) — **không sửa nội dung mô tả trong cột Chủ đề/Chương/Nội dung**.
+                    
                     II. QUY TẮC VỀ CÁCH ĐIỀN NỘI DUNG
                     1. Không tự ý thay đổi cấu trúc bảng
                     Không thêm, không xóa ô
@@ -190,49 +210,52 @@ B. PHẦN II – HƯỚNG DẪN ĐIỀN VÀ TÍNH TOÁN DỮ LIỆU TRONG BẢNG
                     2. Chỉ được điền nội dung vào các ô tôi ký hiệu (…điền nội dung…)
                     3. Không sinh thêm HTML ngoài cấu trúc bảng đã cung cấp
                     4. Tuyệt đối không sáng tạo thêm logic khác
-BODY (Dữ liệu cho từng đơn vị kiến thức):
-Cột TT, Chủ đề, Nội dung: Điền thông tin đơn vị kiến thức.
-Cột Biết/Hiểu/Vận dụng cho từng dạng câu (MCQ, Đ-S, TLN, TL): Điền số lượng câu hỏi đã được phân bổ ở Bước 4.
-Cột Tổng số câu (P, Q, R): Hệ thống TỰ ĐỘNG TÍNH tổng số câu theo từng mức độ (Biết, Hiểu, Vận dụng) cho hàng đó.
-Cột Tỉ lệ % điểm (S): Ghi chính xác tỉ lệ phần trăm điểm đã tính ở Bước 1 cho đơn vị kiến thức đó.
-FOOTER (Dòng TỔNG KẾT - THỰC HIỆN TÍNH TOÁN SAU KHI ĐIỀN HẾT BODY):
-Dòng "Tổng số câu":
-Cột 4-15 (D-O): Cộng dọc tất cả số câu đã điền ở các hàng trong Body, để ra tổng số câu cho từng ô nhỏ (VD: MCQ-Biết, Đ-S-Hiểu...).
-Cột 16-18 (P-R): Cộng dọc các giá trị "Tổng số câu" của từng hàng, ra tổng số câu toàn bài theo mức độ.
-KIỂM TRA: Tổng số câu các phần (MCQ, Đ-S, TLN, TL) phải khớp với số lượng đã quy đổi ở Bước 3.
-Dòng "Tổng số điểm": Lưu ý: Các công thức dưới đây PHẢI được tính toán tự động dựa trên "Tổng số câu" vừa tính ở trên.
-Ô A-C (gộp): Ghi chữ "Tổng số điểm".
-Ô D-F (gộp, cho phần MCQ): Tính = (Tổng số câu MCQ) * 0.25. Kết quả PHẢI là 3.0.
-Ô G-I (gộp, cho phần Đúng-Sai): Tính = (Tổng số câu dạng Đ-S) * 1.0. Kết quả PHẢI là 2.0. (Lưu ý: 1 "câu" Đ-S là 1 chùm 4 ý, tính là 1 câu).
-Ô J-L (gộp, cho phần Trả lời ngắn): Tính = (Tổng số câu TLN) * 0.5. Kết quả PHẢI là 2.0.
-Ô M-O (gộp, cho phần Tự luận): Tính = Tổng điểm của tất cả câu Tự luận. Kết quả PHẢI là 3.0. (Điểm mỗi câu TL đã được xác định khi phân bổ ở Bước 4).
-Ô P (Tổng điểm mức Biết): Tính = (Tổng câu MCQ-Biết * 0.25) + (Tổng câu Đ-S-Biết * 1.0) + (Tổng câu TLN-Biết * 0.5) + (Tổng điểm TL-Biết).
-Ô Q (Tổng điểm mức Hiểu): Tính tương tự như ô P, cho các câu ở mức Hiểu.
-Ô R (Tổng điểm mức Vận dụng): Tính tương tự như ô P, cho các câu ở mức Vận dụng.
-Ô S: Ghi 10.0.
-Dòng "Tỉ lệ %":
-Cấu trúc gộp ô giống hệt dòng "Tổng số điểm".
-Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm so với tổng điểm 10.
-Ô D-F (gộp): (Điểm MCQ / 10) * 100% = 30%.
-Ô G-I (gộp): 20%.
-Ô J-L (gộp): 20%.
-Ô M-O (gộp): 30%.
-Ô P: (Điểm mức Biết / 10) * 100% (VD: ~40%).
-Ô Q: (Điểm mức Hiểu / 10) * 100% (VD: ~30%).
-Ô R: (Điểm mức Vận dụng / 10) * 100% (VD: ~30%).
-Ô S: 100%.
+
+BODY (Dữ liệu cho từng đơn vị kiến thức) — **QUY TẮC RÕ RÀNG VỀ NHẬP LIỆU**:
+- Cột TT, Chủ đề, Nội dung: Điền chính xác nội dung đơn vị kiến thức (chuỗi văn bản).
+- Ở các cột con của mỗi dạng câu (MCQ-Biết, MCQ-Hiểu, MCQ-Vận dụng, Đ-S-Biết,... TL-Vận dụng,...):
+  - **Chỉ điền số lượng câu** (số nguyên ≥ 0). **Không** điền phần trăm hay điểm ở đây.
+  - Nếu là ô thuộc phần Tự luận (TL), và nếu câu tự luận có điểm khác nhau, phải **điền thêm ô phụ trong hàng đó** (cùng hàng, định dạng nội bộ) chỉ định điểm từng câu TL của hàng này (ví dụ: TL_câu1:1.5; TL_câu2:1.0). Nếu không có nhiều ô phụ, Gemini phải ghi chú điểm từng câu TL ở dạng `TL_points=[1.5,1.0]` trong một ô được phép (theo định dạng HTML cell tôi đã chỉ định).
+- Cột Tổng số câu (P, Q, R cho hàng): **KHÔNG** nhập tay — hệ thống **TỰ ĐỘNG TÍNH** tổng số câu theo từng mức độ cho hàng đó.
+- Cột Tỉ lệ % điểm (S hàng): Ghi chính xác tỉ lệ phần trăm điểm của **đơn vị kiến thức đó** theo công thức tỉ lệ điểm ở trên (đã đề cập trong phần I). Gemini phải định dạng số phần trăm theo 2 chữ số thập phân.
+
+FOOTER (Dòng TỔNG KẾT - THỰC HIỆN TÍNH TOÁN SAU KHI ĐIỀN HẾT BODY) — **CÁC BƯỚC THỰC THI RÕ RÀNG**:
+1. Dòng "Tổng số câu":
+   - Cột 4-15 (D-O): Cộng dọc tất cả số câu đã điền ở các hàng trong Body, để ra tổng số câu cho từng ô nhỏ (VD: MCQ-Biết, Đ-S-Hiểu...). (Kết quả là 12 ô con tương ứng từng ô nhỏ).
+   - Cột 16-18 (P-R): Tự động cộng dọc các giá trị "Tổng số câu" của từng hàng, ra tổng số câu toàn bài theo mức độ (Biết, Hiểu, Vận dụng). (Kết quả là 3 ô P,Q,R).
+   - **KIỂM TRA**: Tổng số câu theo phần (MCQ total, Đ-S total, TLN total, TL_count) phải khớp với số lượng đã quy đổi ở phần "Quy đổi số lượng câu" (mục I.4). Nếu không khớp, Gemini phải điều chỉnh phân bổ trong BODY (nếu khả thi) ưu tiên thay đổi các ô có thể điều chỉnh (ví dụ các ô MCQ-Vận dụng nếu vượt/thiếu) và ghi log sửa.
+2. Dòng "Tổng số điểm":
+   - Ô A-C (gộp): Ghi chữ "Tổng số điểm".
+   - Ô D-F (gộp, cho phần MCQ): Tính = (Tổng số câu MCQ) * 0.25. Kết quả PHẢI là 3.0 (sai lệch do làm tròn không quá ±0.001).
+   - Ô G-I (gộp, cho phần Đúng-Sai): Tính = (Tổng số câu dạng Đ-S) * 1.0. Kết quả PHẢI là 2.0.
+   - Ô J-L (gộp, cho phần Trả lời ngắn): Tính = (Tổng số câu TLN) * 0.5. Kết quả PHẢI là 2.0.
+   - Ô M-O (gộp, cho phần Tự luận): Tính = TL_points_total (tổng điểm các câu TL). Kết quả PHẢI là 3.0.
+   - Ô P (Tổng điểm mức Biết): Tính = (Tổng câu MCQ-Biết * 0.25) + (Tổng câu Đ-S-Biết * 1.0) + (Tổng câu TLN-Biết * 0.5) + (Tổng điểm TL-Biết).
+   - Ô Q (Tổng điểm mức Hiểu): Tương tự cho Hiểu.
+   - Ô R (Tổng điểm mức Vận dụng): Tương tự cho Vận dụng.
+   - Ô S: Ghi Tổng điểm bài (ví dụ 10.0).
+   - **Tất cả ô điểm phải được tính tự động**; Gemini không được nhập thủ công ô điểm tổng nếu có mâu thuẫn.
+3. Dòng "Tỉ lệ %":
+   - Cấu trúc gộp ô giống hệt dòng "Tổng số điểm".
+   - Giá trị ô = (Điểm ô tương ứng / Tổng điểm bài) * 100.
+   - Làm tròn % hiển thị theo quy tắc Bước 4 ở trên. Tổng các % phải bằng 100.00% ±0.01%.
+4. **Báo cáo SAI & SỬA TỰ ĐỘNG:** Nếu bất kỳ kiểm tra nào (số câu, tổng điểm, tổng %) thất bại, Gemini phải:
+   - (a) Ghi rõ nguyên nhân lỗi (ví dụ: "MCQ tổng 11 != yêu cầu 12") trong phần log nội bộ;
+   - (b) Nếu có thể, tự sửa bằng cách điều chỉnh các ô câu có thể thay đổi nhỏ (ví dụ chuyển 1 câu từ mức Hiểu sang Vận dụng trong cùng đơn vị nếu chưa vi phạm ràng buộc tối thiểu 20% Vận dụng), rồi chạy lại toàn bộ kiểm tra. Mọi thay đổi tự động phải được tối thiểu hóa và ghi lại.
+   - (c) Nếu không thể sửa tự động mà vẫn đảm bảo tất cả ràng buộc, phải trả về lỗi rõ ràng (kèm log) và không xuất kết quả cuối cùng.
+
 **B. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
 *Tạo bảng HTML có 16 cột:*
 * Cột 1-3: Giống phần Ma trận.
-* Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>').
-* Cột 5-16: Số câu hỏi ở các mức độ (tương ứng với các cột D-O ở ma trận).
+* Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>'). 
+* Cột 5-16: Số câu hỏi ở các mức độ (tương ứng với các cột D-O ở ma trận). (Các ô số lượng câu ở đây phải là số nguyên và khớp với ma trận.)
 
 **C. PHẦN III – ĐỀ KIỂM TRA & ĐÁP ÁN**
 * **Đề bài:**
     * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
     * **Phần I:** Chia thành 3 tiểu mục: 
         * **Phần 1 (MCQ):** 12 câu.
-        * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung | Đúng | Sai cho học sinh tích).
+        * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung, Đúng ,Sai cho học sinh tích).
         * **Phần 3 (Trả lời ngắn):** 4 câu.
     * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
     * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '(M1-B)' cho Mức 1 - Biết).
@@ -240,7 +263,7 @@ Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm
     * **Phần 1 (MCQ):** Kẻ bảng 2 dòng (Dòng 1: Số câu 1-12, Dòng 2: Đáp án A/B/C/D).
     * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (4 ý a,b,c,d -> Đ/S).
     * **Phần 3 (Trả lời ngắn):** Liệt kê đáp án đúng.
-    * **Tự luận:** Kẻ bảng 3 cột (Câu | Nội dung/Đáp án chi tiết | Điểm thành phần).
+    * **Tự luận:** Kẻ bảng 3 cột (Câu , Nội dung/Đáp án chi tiết , Điểm thành phần).
 
 **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
 1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
@@ -345,6 +368,7 @@ Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm
         }
     }
 }
+
 
 
 
