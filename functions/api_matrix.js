@@ -309,27 +309,3 @@ Chuyển đổi giá trị điểm ở dòng trên thành tỉ lệ phần trăm
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
