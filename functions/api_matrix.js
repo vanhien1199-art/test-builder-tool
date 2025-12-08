@@ -121,12 +121,18 @@ export async function onRequest(context) {
                   Câu hỏi MCQ phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Đúng/Sai phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Trả lời ngắn phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Tự luận phải có cả câu Biết, câu Hiểu và câu Vận dụng
 
             4. **Quy đổi số lượng câu hỏi (Dựa trên thời lượng ${time} phút):**
+                4.1. Nếu thời gian là 90 phút (${time} =90 phút)
                - **MCQ (0.25đ/câu):** Cần 3.0 điểm => **12 câu**.
                - **Đúng-Sai:** Cần 2.0 điểm => **2 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d; tính điểm theo số ý đúng).
                - **Trả lời ngắn (0.5đ/câu):** Cần 2.0 điểm => **4 câu**.
                - **Tự luận:** Cần 3.0 điểm => **2-3 câu** (phân phối điểm linh hoạt, ví dụ: 1.5đ + 1.0đ + 0.5đ).
                - *Tổng số câu:* Phải khớp với cấu trúc trên.
-
+                4.2. Nếu thời gian là 45 phút (${time} =45 phút)
+               - **MCQ (0.5đ/câu):** Cần 3.0 điểm => **6 câu**.
+               - **Đúng-Sai:** Cần 2.0 điểm => **1 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d; tính điểm theo số ý đúng).
+               - **Trả lời ngắn (0.5đ/câu):** Cần 2.0 điểm => **4 câu**.
+               - **Tự luận:** Cần 3.0 điểm => **2-3 câu** (phân phối điểm linh hoạt, ví dụ: 1.5đ + 1.0đ + 0.5đ).
+               - *Tổng số câu:* Phải khớp với cấu trúc trên.
             **II. YÊU CẦU VỀ ĐỊNH DẠNG VÀ CẤU TRÚC BẢNG (BẮT BUỘC):**
 
             **A. PHẦN I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
@@ -162,7 +168,7 @@ export async function onRequest(context) {
                 - **QUAN TRỌNG:** Đảm bảo mỗi dạng câu hỏi đều rải rác ở cả 3 mức độ (Biết, Hiểu, Vận dụng) nếu nội dung cho phép. Không để trống hoàn toàn mức độ Vận dụng ở phần trắc nghiệm.
             * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
-                - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (MCQ=0.25đ, TLN=0.5đ, v.v..).
+                - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (MCQ=0.25đ hoặc 0.5đ, TLN=0.5đ, v.v..).
             * **Bước 4 (Tổng kết):** (3 dòng: tổng số câu, tổng điểm, tỉ lệ)
                 - Cộng dọc tất cả các cột để ra tổng số câu theo từng loại và từng mức độ.
                 - Kiểm tra lại tổng điểm toàn bài phải là 10.0.
@@ -179,8 +185,8 @@ export async function onRequest(context) {
             * **Đề bài:**
                 * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
                 * **Phần I:** Chia thành 3 tiểu mục:
-                    * **Phần 1 (MCQ):** 12 câu.
-                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 2 cột: Nội dung, Đúng/Sai).
+                    * **Phần 1 (MCQ):** 12 câu hoặc 6 câu
+                    * **Phần 2 (Đúng-Sai):** 2 câu chùm hoặc 1 câu chùm (kẻ bảng 2 cột: Nội dung, Đúng/Sai).
                     * **Phần 3 (Trả lời ngắn):** 4 câu.
                 * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
                 * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
@@ -292,6 +298,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
