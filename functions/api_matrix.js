@@ -72,7 +72,7 @@ export async function onRequest(context) {
             // --- 4. LOGIC PHÂN BỐ ĐIỂM ---
             let scoreLogic = "";
             if (exam_type === 'hk') {
-                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ thuận với thời lượng.`;
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ Hãy tính tỉ lệ điểm dựa trên trọng số này: Nửa đầu ~25%, Nửa sau ~75%.`;
             } else {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm dựa trên số tiết từng bài.`;
             }
@@ -80,7 +80,7 @@ export async function onRequest(context) {
             // --- PROMPT FINAL ---
             const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
-            Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tham khảo tại địa chỉ "https://taphuan.nxbgd.vn/#/".
+            Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12 tại địa chỉ "https://taphuan.nxbgd.vn/#/".
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
            
             ## THÔNG TIN
@@ -93,8 +93,14 @@ export async function onRequest(context) {
 
             ## NỘI DUNG & THỜI LƯỢNG:
             ${topicsDescription}
-            
-            ${scoreLogic}
+            ${scoreLogic
+              ## YÊU CẦU ĐẶC BIỆT VỀ NGUỒN KIẾN THỨC (TUÂN THỦ TUYỆT ĐỐI):
+            1. **Đúng Bộ Sách & Chương Trình:** Dựa vào tên môn học "${subject}" và nội dung chi tiết được cung cấp, hãy xác định chính xác bộ sách giáo khoa (Kết nối tri thức, Chân trời sáng tạo, hoặc Cánh diều) để ra câu hỏi phù hợp với thuật ngữ và kiến thức của bộ sách đó.
+            2. **Đúng Lớp:** Bạn đang ra đề cho **LỚP ${grade}**.
+               - Tuyệt đối **KHÔNG** lấy nhầm kiến thức của lớp khác (Ví dụ: Nếu là Lớp 9 thì không được dùng kiến thức Lớp 8).
+               - Kiểm tra kỹ các đơn vị kiến thức, công thức, định nghĩa phải thuộc đúng phạm vi chương trình Lớp ${grade}.
+            3. **Bám sát nội dung:** Chỉ ra câu hỏi xoay quanh các chủ đề/nội dung đã liệt kê ở mục "NỘI DUNG & THỜI LƯỢNG" bên trên.
+
           ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
 
  **I. QUY ĐỊNH VỀ ĐIỂM SỐ VÀ CẤU TRÚC ĐỀ (QUAN TRỌNG - BẮT BUỘC):**
@@ -310,6 +316,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
