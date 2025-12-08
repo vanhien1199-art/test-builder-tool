@@ -206,13 +206,13 @@ export async function onRequest(context) {
                - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ `<br>`.
             4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
             5. **Định dạng Trắc nghiệm (MCQ):**
-               - Cấu trúc bắt buộc: Nội dung câu hỏi <br> A. ... <br> B. ... <br> C. ... <br> D. ...
+               - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... '<br>' B. ... '<br>' C. ... '<br>' D. ...
                - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
             6. **Định dạng Câu chùm (Đúng/Sai):**
-               - Nội dung lệnh hỏi <br>
-               - a) Nội dung ý a... <br>
-               - b) Nội dung ý b... <br>
-               - c) Nội dung ý c... <br>
+               - Nội dung lệnh hỏi '<br>'
+               - a) Nội dung ý a... '<br>'
+               - b) Nội dung ý b... '<br>'
+               - c) Nội dung ý c... '<br>'
                - d) Nội dung ý d...
             7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ `<br>` hoặc dùng thẻ `<p>` bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
               `;
@@ -310,6 +310,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
