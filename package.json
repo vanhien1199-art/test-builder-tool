@@ -1,20 +1,8 @@
 {
-  "name": "exam-matrix-ai",
-  "version": "2.0.0",
-  "description": "AI Test Builder powered by Gemini 1.5 Pro & Cloudflare Pages",
-  "main": "functions/api_matrix.js",
-  "scripts": {
-    "dev": "wrangler pages dev public",
-    "deploy": "wrangler pages deploy public",
-    "build": "echo 'No build step required for static assets'"
-  },
+  "name": "exam-matrix-ai-pro",
+  "version": "3.5.0",
+  "description": "Engine for Gemini 2.5 Flash (Stable)",
   "dependencies": {
     "@google/generative-ai": "^0.21.0"
-  },
-  "devDependencies": {
-    "wrangler": "^3.101.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
