@@ -117,7 +117,8 @@ export async function onRequest(context) {
                - **Biết:** ~40% (4.0 điểm).
                - **Hiểu:** ~30% (3.0 điểm).
                - **Vận dụng:** ~30% (3.0 điểm).
-               - **QUY TẮC PHÂN BỔ QUAN TRỌNG:** Mỗi loại câu hỏi (MCQ, Đúng/Sai, Trả lời ngắn, Tự luận) **PHẢI ĐƯỢC PHÂN BỔ SAO CHO CÓ ĐỦ CẢ 3 MỨC ĐỘ** (Biết, Hiểu, Vận dụng). Không được dồn hết mức độ Vận dụng vào một loại câu hỏi duy nhất. Ví dụ: Câu hỏi MCQ phải có cả câu Biết, câu Hiểu và câu Vận dụng.
+               - **QUY TẮC PHÂN BỔ QUAN TRỌNG:** Mỗi loại câu hỏi (MCQ, Đúng/Sai, Trả lời ngắn, Tự luận) **PHẢI ĐƯỢC PHÂN BỔ SAO CHO CÓ ĐỦ CẢ 3 MỨC ĐỘ** (Biết, Hiểu, Vận dụng). Không được dồn hết mức độ Vận dụng vào một loại câu hỏi duy nhất. 
+                  Câu hỏi MCQ phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Đúng/Sai phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Trả lời ngắn phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Tự luận phải có cả câu Biết, câu Hiểu và câu Vận dụng
 
             4. **Quy đổi số lượng câu hỏi (Dựa trên thời lượng ${time} phút):**
                - **MCQ (0.25đ/câu):** Cần 3.0 điểm => **12 câu**.
@@ -165,6 +166,9 @@ export async function onRequest(context) {
             * **Bước 4 (Dòng Tổng kết):**
                 - Cộng dọc tất cả các cột để ra tổng số câu theo từng loại và từng mức độ.
                 - Kiểm tra lại tổng điểm toàn bài phải là 10.0.
+            * **Bước 5 (Dòng tỉ lệ%):**
+                - Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ.
+                - Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
             **C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
             *Tạo bảng HTML có 16 cột:*
@@ -288,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
