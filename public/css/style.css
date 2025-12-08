@@ -170,3 +170,101 @@ textarea { resize: vertical; min-height: 80px; }
     .license-card { flex-direction: column; text-align: center; }
     .container { padding: 20px 15px; }
 }
+/* === FOOTER STYLES === */
+.app-footer {
+    background-color: #1e293b; /* Màu nền tối sang trọng */
+    color: #f8fafc;
+    padding-top: 40px;
+    margin-top: 50px;
+}
+
+.footer-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* Chia 3 cột đều nhau */
+    gap: 30px;
+    padding: 0 20px 40px;
+}
+
+.footer-section h3 {
+    color: #38bdf8; /* Màu xanh sáng cho tiêu đề */
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.footer-section p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+/* Social Links */
+.social-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f8fafc;
+    text-decoration: none;
+    margin-bottom: 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+}
+
+.social-link:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateX(5px);
+}
+
+.social-link.facebook i { color: #1877f2; font-size: 1.2rem; }
+.social-link.messenger i { color: #0084ff; font-size: 1.2rem; }
+
+/* Zalo QR */
+.qr-box {
+    text-align: center;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.qr-box img {
+    width: 120px;
+    height: 120px;
+    display: block;
+}
+
+.qr-box p {
+    color: #0f172a;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 5px 0 0;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    background: #0f172a;
+    text-align: center;
+    padding: 15px;
+    font-size: 0.85rem;
+    color: #64748b;
+    border-top: 1px solid #334155;
+}
+
+/* Responsive cho Mobile */
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr; /* Về 1 cột trên điện thoại */
+        text-align: center;
+    }
+    
+    .social-link {
+        justify-content: center;
+    }
+}
