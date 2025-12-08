@@ -97,7 +97,7 @@ export async function onRequest(context) {
             ${scoreLogic}
           ## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
 
-**I. QUY ĐỊNH VỀ ĐIỂM SỐ VÀ CẤU TRÚC ĐỀ (QUAN TRỌNG - BẮT BUỘC):**
+ **I. QUY ĐỊNH VỀ ĐIỂM SỐ VÀ CẤU TRÚC ĐỀ (QUAN TRỌNG - BẮT BUỘC):**
             *Mục tiêu: Đảm bảo TỔNG ĐIỂM TOÀN BÀI LUÔN LÀ 10.0.*
 
             1. **Phân bổ tỉ lệ điểm theo nội dung kiến thức:**
@@ -109,7 +109,7 @@ export async function onRequest(context) {
 
             2. **Cấu trúc điểm theo dạng câu hỏi (Cố định theo Công văn 7991):**
                - **Phần I (Trắc nghiệm nhiều lựa chọn - MCQ):** 3.0 điểm (30%).
-               - **Phần II (Trắc nghiệm Đúng-Sai):** 4.0 điểm (40%).
+               - **Phần II (Trắc nghiệm Đúng-Sai):** 4.0 điểm (40%). (Lưu ý: Điểm phần này tính theo thang điểm đặc biệt của câu chùm, nhưng trong bảng ma trận quy ước ghi số lượng câu chùm).
                - **Phần III (Trắc nghiệm Trả lời ngắn):** 3.0 điểm (30%) hoặc **Tự luận** tùy theo đặc thù môn học (nếu đề bài yêu cầu cả tự luận thì phân bổ lại: MCQ 3.0đ, Đúng-Sai 2.0đ, Trả lời ngắn 2.0đ, Tự luận 3.0đ).
                - *Mặc định cấu trúc chung:* TNKQ (7.0 điểm) + Tự luận (3.0 điểm) = 10.0 điểm. (Nếu có sử dụng Tự luận).
 
@@ -117,22 +117,25 @@ export async function onRequest(context) {
                - **Biết:** ~40% (4.0 điểm).
                - **Hiểu:** ~30% (3.0 điểm).
                - **Vận dụng:** ~30% (3.0 điểm).
-               - **QUY TẮC PHÂN BỔ QUAN TRỌNG:** Mỗi loại câu hỏi (MCQ, Đúng/Sai, Trả lời ngắn, Tự luận) **PHẢI ĐƯỢC PHÂN BỔ SAO CHO CÓ ĐỦ CẢ 3 MỨC ĐỘ** (Biết, Hiểu, Vận dụng). Không được dồn hết mức độ Vận dụng vào một loại câu hỏi duy nhất. 
-                  Câu hỏi MCQ phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Đúng/Sai phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Trả lời ngắn phải có cả câu Biết, câu Hiểu và câu Vận dụng. Câu hỏi Tự luận phải có cả câu Biết, câu Hiểu và câu Vận dụng
+               - **QUY TẮC PHÂN BỔ QUAN TRỌNG:** Mỗi loại câu hỏi (MCQ, Đúng/Sai, Trả lời ngắn, Tự luận) **PHẢI ĐƯỢC PHÂN BỔ SAO CHO CÓ ĐỦ CẢ 3 MỨC ĐỘ** (Biết, Hiểu, Vận dụng). Không được dồn hết mức độ Vận dụng vào một loại câu hỏi duy nhất. Ví dụ: Câu hỏi MCQ phải có cả câu Biết, câu Hiểu và câu Vận dụng.
 
-            4. **Quy đổi số lượng câu hỏi (Dựa trên thời lượng ${time} phút):**
-                4.1. Nếu thời gian là 90 phút (${time} =90 phút)
+            4. **Quy đổi số lượng câu hỏi và Hệ số điểm (Dựa trên thời lượng ${time} phút):**
+               *Hệ thống tự động chọn 1 trong 2 trường hợp sau dựa vào thời gian làm bài:*
+
+               **Trường hợp 4.1: Nếu thời gian là 90 phút hoặc 60 phút (${time} >= 60 phút):**
                - **MCQ (0.25đ/câu):** Cần 3.0 điểm => **12 câu**.
                - **Đúng-Sai:** Cần 2.0 điểm => **2 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d; tính điểm theo số ý đúng).
                - **Trả lời ngắn (0.5đ/câu):** Cần 2.0 điểm => **4 câu**.
                - **Tự luận:** Cần 3.0 điểm => **2-3 câu** (phân phối điểm linh hoạt, ví dụ: 1.5đ + 1.0đ + 0.5đ).
                - *Tổng số câu:* Phải khớp với cấu trúc trên.
-                4.2. Nếu thời gian là 45 phút (${time} =45 phút)
-               - **MCQ (0.5đ/câu):** Cần 3.0 điểm => **6 câu**.
-               - **Đúng-Sai:** Cần 2.0 điểm => **1 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d; tính điểm theo số ý đúng).
+
+               **Trường hợp 4.2: Nếu thời gian là 45 phút (${time} <= 45 phút):**
+               - **MCQ (0.5đ/câu):** Cần 3.0 điểm => **6 câu**. (Lưu ý hệ số điểm thay đổi thành 0.5đ).
+               - **Đúng-Sai:** Cần 2.0 điểm => **1 câu chùm** (mỗi câu chùm có 4 ý a,b,c,d).
                - **Trả lời ngắn (0.5đ/câu):** Cần 2.0 điểm => **4 câu**.
                - **Tự luận:** Cần 3.0 điểm => **2-3 câu** (phân phối điểm linh hoạt, ví dụ: 1.5đ + 1.0đ + 0.5đ).
                - *Tổng số câu:* Phải khớp với cấu trúc trên.
+
             **II. YÊU CẦU VỀ ĐỊNH DẠNG VÀ CẤU TRÚC BẢNG (BẮT BUỘC):**
 
             **A. PHẦN I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
@@ -160,20 +163,19 @@ export async function onRequest(context) {
 
             **B. HƯỚNG DẪN ĐIỀN DỮ LIỆU (LOGIC TỰ SINH):**
             * **Bước 1:** Điền tên Chủ đề và Nội dung vào cột 2 và 3.
-            * **Bước 2 (Điền số lượng câu):** Phân bổ số câu hỏi vào các ô mức độ (Cột 4-15) sao cho:
-                - Tổng số câu MCQ dọc xuống phải bằng 12.
-                - Tổng số câu Đúng-Sai dọc xuống phải bằng 2 (số câu chùm). Lưu ý: Ở bảng ma trận, cột Đúng-Sai thường ghi số ý hoặc số lệnh hỏi, nhưng theo form này hãy ghi số câu chùm.
-                - Tổng số câu Trả lời ngắn dọc xuống phải bằng 4.
-                - Tổng số câu Tự luận dọc xuống phải bằng 2-3.
+            * **Bước 2 (Điền số lượng câu):** Phân bổ số câu hỏi vào các ô mức độ (Cột 4-15) dựa trên thời gian làm bài (${time} phút):
+                - Tổng số câu MCQ dọc xuống phải bằng **12** (nếu >= 60p) hoặc **6** (nếu <= 45p).
+                - Tổng số câu Đúng-Sai dọc xuống phải bằng **2** (nếu >= 60p) hoặc **1** (nếu <= 45p).
+                - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
+                - Tổng số câu Tự luận dọc xuống phải bằng **2-3**.
                 - **QUAN TRỌNG:** Đảm bảo mỗi dạng câu hỏi đều rải rác ở cả 3 mức độ (Biết, Hiểu, Vận dụng) nếu nội dung cho phép. Không để trống hoàn toàn mức độ Vận dụng ở phần trắc nghiệm.
             * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
-                - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (MCQ=0.25đ hoặc 0.5đ, TLN=0.5đ, v.v..).
-            * **Bước 4 (Tổng kết):** (3 dòng: tổng số câu, tổng điểm, tỉ lệ)
-                - Cộng dọc tất cả các cột để ra tổng số câu theo từng loại và từng mức độ.
-                - Kiểm tra lại tổng điểm toàn bài phải là 10.0.
-                - Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ.
-                - Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
+                - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (Lưu ý hệ số điểm: MCQ=0.25đ hoặc 0.5đ tùy thời gian, TLN=0.5đ, v.v..).
+            * **Bước 4 (Tổng kết - Footer 3 dòng):**
+                - Dòng "Tổng số câu": Cộng dọc tất cả các cột.
+                - Dòng "Tổng điểm": Kiểm tra lại tổng điểm toàn bài phải là 10.0.
+                - Dòng "Tỉ lệ %": Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
             **C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
             *Tạo bảng HTML có 16 cột:*
@@ -184,9 +186,9 @@ export async function onRequest(context) {
             **D. PHẦN III – ĐỀ KIỂM TRA & ĐÁP ÁN**
             * **Đề bài:**
                 * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
-                * **Phần I:** Chia thành 3 tiểu mục:
-                    * **Phần 1 (MCQ):** 12 câu hoặc 6 câu
-                    * **Phần 2 (Đúng-Sai):** 2 câu chùm hoặc 1 câu chùm (kẻ bảng 2 cột: Nội dung, Đúng/Sai).
+                * **Phần I:** Chia thành 3 tiểu mục (Số lượng tùy thời gian ${time} phút):
+                    * **Phần 1 (MCQ):** 12 câu (>=60p) hoặc 6 câu (<=45p).
+                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (>=60p) hoặc 1 câu chùm (<=45p). (Kẻ bảng 2 cột: Nội dung | Đúng/Sai).
                     * **Phần 3 (Trả lời ngắn):** 4 câu.
                 * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
                 * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
@@ -194,15 +196,14 @@ export async function onRequest(context) {
                 * **Phần 1 (MCQ):** Kẻ bảng đáp án (1-A, 2-B...).
                 * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (a-Đ, b-S...).
                 * **Phần 3 (Trả lời ngắn):** Liệt kê đáp án đúng.
-                * **Tự luận:** Kẻ bảng 3 cột (Câu, Nội dung/Đáp án chi tiết, Điểm ).
+                * **Tự luận:** Kẻ bảng 3 cột (Câu | Nội dung/Đáp án chi tiết | Điểm).
 
             **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
-            1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
-            2.  **Không dùng Markdown:** Tuyệt đối không dùng \html \ hoặc\|---|\.
-            3.  **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng '\n'.
-            4.  **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
-            5.  **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>).
-            * Ví dụ: A. Đáp án A <br> B. Đáp án B.
+            1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
+            2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
+            3. **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng.
+            4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
+            5. **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>). Ví dụ: A. Đáp án A <br> B. Đáp án B...
               `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -298,6 +299,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
