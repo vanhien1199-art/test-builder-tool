@@ -201,9 +201,20 @@ export async function onRequest(context) {
             **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
             1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
             2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
-            3. **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng.
+            3. **Xuống dòng (QUAN TRỌNG):**
+               - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
+               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ `<br>`.
             4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
-            5. **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>). Ví dụ: A. Đáp án A <br> B. Đáp án B...
+            5. **Định dạng Trắc nghiệm (MCQ):**
+               - Cấu trúc bắt buộc: Nội dung câu hỏi <br> A. ... <br> B. ... <br> C. ... <br> D. ...
+               - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
+            6. **Định dạng Câu chùm (Đúng/Sai):**
+               - Nội dung lệnh hỏi <br>
+               - a) Nội dung ý a... <br>
+               - b) Nội dung ý b... <br>
+               - c) Nội dung ý c... <br>
+               - d) Nội dung ý d...
+            7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ `<br>` hoặc dùng thẻ `<p>` bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
               `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -299,6 +310,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
