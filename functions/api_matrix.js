@@ -163,10 +163,9 @@ export async function onRequest(context) {
             * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
                 - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (MCQ=0.25đ, TLN=0.5đ, v.v..).
-            * **Bước 4 (Dòng Tổng kết):**
+            * **Bước 4 (Tổng kết):** (3 dòng: tổng số câu, tổng điểm, tỉ lệ)
                 - Cộng dọc tất cả các cột để ra tổng số câu theo từng loại và từng mức độ.
                 - Kiểm tra lại tổng điểm toàn bài phải là 10.0.
-            * **Bước 5 (Dòng tỉ lệ%):**
                 - Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ.
                 - Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
@@ -181,7 +180,7 @@ export async function onRequest(context) {
                 * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
                 * **Phần I:** Chia thành 3 tiểu mục:
                     * **Phần 1 (MCQ):** 12 câu.
-                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung | Đúng | Sai).
+                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung , Đúng/Sai).
                     * **Phần 3 (Trả lời ngắn):** 4 câu.
                 * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
                 * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
@@ -189,14 +188,15 @@ export async function onRequest(context) {
                 * **Phần 1 (MCQ):** Kẻ bảng đáp án (1-A, 2-B...).
                 * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (a-Đ, b-S...).
                 * **Phần 3 (Trả lời ngắn):** Liệt kê đáp án đúng.
-                * **Tự luận:** Kẻ bảng 3 cột (Câu | Nội dung/Đáp án chi tiết | Điểm thành phần).
+                * **Tự luận:** Kẻ bảng 3 cột (Câu , Nội dung/Đáp án chi tiết , Điểm ).
 
             **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
-            1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
-            2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
-            3. **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng.
-            4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
-            5. **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>). Ví dụ: A. Đáp án A <br> B. Đáp án B...
+            1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
+            2.  **Không dùng Markdown:** Tuyệt đối không dùng \html \ hoặc\|---|\.
+            3.  **Xuống dòng:** Sử dụng thẻ '<br>' thay cho dấu xuống dòng '\n'.
+            4.  **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
+            5.  **Trắc nghiệm:** Các đáp án A, B, C, D phải nằm trên các dòng riêng biệt (dùng <br>).
+            * Ví dụ: A. Đáp án A <br> B. Đáp án B.
               `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -292,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
