@@ -180,7 +180,7 @@ export async function onRequest(context) {
                 * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
                 * **Phần I:** Chia thành 3 tiểu mục:
                     * **Phần 1 (MCQ):** 12 câu.
-                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 3 cột: Nội dung , Đúng/Sai).
+                    * **Phần 2 (Đúng-Sai):** 2 câu chùm (kẻ bảng 2 cột: Nội dung, Đúng/Sai).
                     * **Phần 3 (Trả lời ngắn):** 4 câu.
                 * **Phần II:** 2-3 câu tự luận, ghi rõ điểm số từng câu.
                 * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
@@ -188,7 +188,7 @@ export async function onRequest(context) {
                 * **Phần 1 (MCQ):** Kẻ bảng đáp án (1-A, 2-B...).
                 * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (a-Đ, b-S...).
                 * **Phần 3 (Trả lời ngắn):** Liệt kê đáp án đúng.
-                * **Tự luận:** Kẻ bảng 3 cột (Câu , Nội dung/Đáp án chi tiết , Điểm ).
+                * **Tự luận:** Kẻ bảng 3 cột (Câu, Nội dung/Đáp án chi tiết, Điểm ).
 
             **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
             1.  **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>').
@@ -292,6 +292,7 @@ export async function onRequest(context) {
         }
     }
 }
+
 
 
 
