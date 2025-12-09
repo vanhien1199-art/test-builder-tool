@@ -210,16 +210,24 @@
         </div>
 
         <div id="previewSection" class="card preview-card hidden">
-            <div class="card-header success-header">
-                <i class="fas fa-check-circle"></i> Kết quả xử lý
+            <div class="card-header header-flex">
+                <div class="header-title">
+                    <i class="fas fa-check-circle"></i> Kết quả xử lý
+                </div>
+                <div class="header-actions">
+                    <button class="btn-copy" id="btnCopy" title="Sao chép toàn bộ bảng">
+                        <i class="fas fa-copy"></i> <span>Sao chép</span>
+                    </button>
+                </div>
             </div>
+            
             <div class="card-body">
                 <div class="preview-scroll-area">
                     <div id="previewContent" class="preview-content"></div>
                 </div>
                 <div class="preview-footer">
                     <button class="btn btn-success btn-lg" id="btnDownloadWord">
-                        <i class="fas fa-file-word"></i> TẢI VỀ WORD (NATIVE EQUATION)
+                        <i class="fas fa-file-word"></i> TẢI VỀ MÁY (.DOCX)
                     </button>
                 </div>
             </div>
@@ -312,6 +320,7 @@
     <script src="js/app.js"></script>
 </body>
 </html>
+
 
 
 
