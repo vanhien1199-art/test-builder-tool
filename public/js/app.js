@@ -328,3 +328,64 @@ async function handleDownloadWord() {
     } catch(e) { alert("Lỗi xuất file: " + e.message); console.error(e); } 
     finally { btn.innerText = oldText; btn.disabled = false; }
 }
+// GÁN SỰ KIỆN CHO NÚT COPY MỚI
+    const btnCopy = document.getElementById('btnCopy');
+    if (btnCopy) {
+        btnCopy.addEventListener('click', handleCopyContent);
+    }
+});
+
+// ... (Các hàm cũ giữ nguyên) ...
+
+// --- HÀM XỬ LÝ COPY CHUYÊN NGHIỆP ---
+async function handleCopyContent() {
+    const content = document.getElementById('previewContent');
+    const btn = document.getElementById('btnCopy');
+    const originalHtml = btn.innerHTML; // Lưu lại icon cũ
+
+    if (!content || !content.innerHTML.trim()) {
+        alert("Chưa có nội dung để sao chép!");
+        return;
+    }
+
+    try {
+        // Cách 1: Sử dụng Clipboard API hiện đại (Hỗ trợ tốt HTML)
+        const type = "text/html";
+        const blob = new Blob([windowGeneratedHTML], { type });
+        const data = [new ClipboardItem({ [type]: blob })];
+        await navigator.clipboard.write(data);
+
+        // Hiệu ứng thành công
+        showCopySuccess(btn);
+
+    } catch (err) {
+        // Cách 2: Fallback (Dự phòng) nếu trình duyệt chặn API trên (ví dụ Firefox cũ)
+        try {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(content);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+            
+            showCopySuccess(btn);
+        } catch (e) {
+            console.error("Copy failed", e);
+            alert("Lỗi: Không thể sao chép tự động. Vui lòng bôi đen và nhấn Ctrl+C.");
+        }
+    }
+}
+
+// Hàm hiệu ứng nút bấm
+function showCopySuccess(btn) {
+    // Đổi giao diện nút sang màu xanh
+    btn.classList.add('copied');
+    btn.innerHTML = `<i class="fas fa-check"></i> <span>Đã chép!</span>`;
+
+    // Sau 2 giây trả về như cũ
+    setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<i class="fas fa-copy"></i> <span>Sao chép</span>`;
+    }, 2000);
+}
