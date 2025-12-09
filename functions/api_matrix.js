@@ -1,4 +1,7 @@
 // File: functions/api_matrix.js
+export const config = {
+  regions: ["iad", "ewr", "lhr", "fra"] // US-East, US-Newark, London, Frankfurt
+};
 export async function onRequest(context) {
     const { request, env } = context;
     const corsHeaders = {
@@ -403,6 +406,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
