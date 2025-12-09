@@ -268,3 +268,63 @@ textarea { resize: vertical; min-height: 80px; }
         justify-content: center;
     }
 }
+/* File: public/css/style.css */
+
+/* ... (CSS cũ giữ nguyên) ... */
+
+/* === HEADER FLEX & COPY BUTTON === */
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f0fdf4 !important; /* Màu nền xanh nhẹ */
+    border-bottom: 1px solid #bbf7d0 !important;
+}
+
+.header-title {
+    color: #166534;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Nút Copy Chuyên nghiệp */
+.btn-copy {
+    background-color: white;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-copy:hover {
+    background-color: #f1f5f9;
+    color: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.btn-copy:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.btn-copy i {
+    font-size: 1rem;
+}
+
+/* Trạng thái sau khi copy thành công (dùng JS để toggle class này) */
+.btn-copy.copied {
+    background-color: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
