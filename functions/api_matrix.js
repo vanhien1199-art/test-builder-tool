@@ -1,132 +1,89 @@
 // File: functions/api_matrix.js
-
-// Ép Worker chạy tại các region US/EU để tránh bị GEO-BLOCK
 export const config = {
   regions: ["iad", "ewr", "lhr", "fra"] // US-East, US-Newark, London, Frankfurt
 };
-
 export async function onRequest(context) {
-  const { request, env } = context;
+    const { request, env } = context;
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+    };
 
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
+    if (request.method === "POST") {
+        try {
+            const apiKey = env.GOOGLE_API_KEY;
+            if (!apiKey) throw new Error("Thiếu API Key");
 
-  if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), { status: 405, headers: corsHeaders });
-  }
+            const MODEL_NAME = "gemini-2.5-pro";
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
-  // helper: timeout fetch wrapper with retry
-  async function fetchWithRetry(url, init = {}, attempts = 3, timeoutMs = 15000) {
-    let attempt = 0;
-    let lastErr = null;
-    while (attempt < attempts) {
-      attempt++;
-      const controller = new AbortController();
-      const signal = controller.signal;
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+            const body = await request.json();
+            const { 
+                license_key, topics, subject, grade, semester, 
+                exam_type, time, use_short_answer, 
+                totalPeriodsHalf1, totalPeriodsHalf2,
+                book_series 
+            } = body;
+            
+            // --- 1. CHECK LICENSE ---
+            if (env.TEST_TOOL && license_key) { 
+                const creditStr = await env.TEST_TOOL.get(license_key); 
+                if (!creditStr || parseInt(creditStr) <= 0) {
+                    return new Response(JSON.stringify({ error: "License không hợp lệ hoặc hết hạn!" }), { status: 403, headers: corsHeaders });
+                }
+            }
 
-      try {
-        const resp = await fetch(url, { ...init, signal });
-        clearTimeout(timer);
-        // If 5xx -> retry (server error). If 429 (rate limit) -> retry after delay.
-        if (resp.ok) return resp;
-        if (resp.status >= 500 || resp.status === 429) {
-          lastErr = new Error(`HTTP ${resp.status} ${resp.statusText}`);
-          // exponential backoff
-          const backoff = 500 * Math.pow(2, attempt - 1) + Math.random() * 200;
-          await new Promise(r => setTimeout(r, backoff));
-          continue;
-        }
-        // For 403 (forbidden) or 4xx client errors, don't retry — return response to be handled.
-        return resp;
-      } catch (err) {
-        clearTimeout(timer);
-        lastErr = err;
-        // aborted or network error -> retry with backoff
-        const backoff = 500 * Math.pow(2, attempt - 1) + Math.random() * 200;
-        await new Promise(r => setTimeout(r, backoff));
-        continue;
-      }
-    }
-    throw lastErr || new Error("fetchWithRetry: unknown error");
-  }
-
-  try {
-    const apiKey = env.GOOGLE_API_KEY;
-    if (!apiKey) throw new Error("Thiếu API Key");
-
-    const MODEL_NAME = "gemini-2.5-pro";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-    const body = await request.json();
-    const {
-      license_key, topics, subject, grade, semester,
-      exam_type, time, use_short_answer,
-      totalPeriodsHalf1, totalPeriodsHalf2,
-      book_series
-    } = body;
-
-    // --- 1. CHECK LICENSE (ngắn gọn, trả về sớm nếu sai) ---
-    // Kiểm tra kỹ: nếu không có env.TEST_TOOL thì bỏ qua bước KV
-    if (env.TEST_TOOL && license_key) {
-      const creditStr = await env.TEST_TOOL.get(license_key);
-      if (!creditStr || parseInt(creditStr) <= 0) {
-        return new Response(JSON.stringify({ error: "License không hợp lệ hoặc hết hạn!" }), { status: 403, headers: corsHeaders });
-      }
-    }
-
-    // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ (giữ nguyên logic) ---
-    let topicsDescription = "";
-    (topics || []).forEach((topic, index) => {
-      topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
-      (topic.units || []).forEach((unit, uIndex) => {
-        let periodInfo = "";
-        if (exam_type === 'hk') {
-          periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
-        } else {
-          periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
-        }
-        topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
-      });
-    });
-
-    // --- 3. XÂY DỰNG CẤU TRÚC ĐỀ THI DỰA TRÊN LỰA CHỌN (giữ nguyên logic) ---
-    let structurePrompt = "";
-    if (use_short_answer) {
-      structurePrompt = `
+            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ ---
+            let topicsDescription = "";
+            topics.forEach((topic, index) => {
+                topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
+                topic.units.forEach((unit, uIndex) => {
+                    let periodInfo = "";
+                    if (exam_type === 'hk') {
+                        periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+                    } else {
+                        periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
+                    }
+                    topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
+                });
+            });
+           
+            // --- 3. XÂY DỰNG CẤU TRÚC ĐỀ THI DỰA TRÊN LỰA CHỌN (FIX LỖI) ---
+            let structurePrompt = "";
+            
+            if (use_short_answer) {
+                // Cấu trúc mới 2025 (Có trả lời ngắn)
+                structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
                 - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
                 - Phần III: Câu hỏi Trả lời ngắn (Điền đáp số/kết quả).
                 `;
-    } else {
-      structurePrompt = `
+            } else {
+                // Cấu trúc truyền thống (Không có trả lời ngắn)
+                structurePrompt = `
                 CẤU TRÚC ĐỀ THI (2 PHẦN):
                 - Phần I: Trắc nghiệm khách quan (4 lựa chọn).
                 - Phần II: Tự luận (Giải chi tiết).
                 *** YÊU CẦU ĐẶC BIỆT: TUYỆT ĐỐI KHÔNG SOẠN CÂU HỎI DẠNG "TRẢ LỜI NGẮN" HAY "ĐIỀN ĐÁP SỐ". CHỈ DÙNG TRẮC NGHIỆM VÀ TỰ LUẬN. ***
                 `;
-    }
+            }
 
-    // --- 4. LOGIC PHÂN BỐ ĐIỂM (giữ nguyên) ---
-    let scoreLogic = "";
-    if (exam_type === 'hk') {
-      scoreLogic = `*LƯU Ý PHÂN BỔ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ Hãy tính tỉ lệ điểm dựa trên trọng số này: Nửa đầu ~25%, Nửa sau ~75%.`;
-    } else {
-      scoreLogic = `*LƯU Ý PHÂN BỔ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm dựa trên số tiết từng bài.`;
-    }
+            // --- 4. LOGIC PHÂN BỐ ĐIỂM ---
+            let scoreLogic = "";
+            if (exam_type === 'hk') {
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ Hãy tính tỉ lệ điểm dựa trên trọng số này: Nửa đầu ~25%, Nửa sau ~75%.`;
+            } else {
+                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm dựa trên số tiết từng bài.`;
+            }
 
-    // --- PROMPT FINAL (giữ nguyên nội dung gốc của bạn) ---
-    const prompt = `
+            // --- PROMPT FINAL ---
+            const prompt = `
             Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
-           Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12.
+            Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12.
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
            ### TÀI LIỆU THAM KHẢO (QUAN TRỌNG):
             ${DOCUMENT_CONTENT_7991}
@@ -275,233 +232,103 @@ export async function onRequest(context) {
                - c) Nội dung ý c... <br>
                - d) Nội dung ý d...
             7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ '<br>' hoặc dùng thẻ '<p>' bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
-    `;
+              `;
 
-    // --- 5. GỌI GOOGLE API (fetch với retry + timeout) ---
-    const fetchInit = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        // generationConfig có thể thêm nếu cần (giữ mặc định của bạn để không thay logic)
-      })
-    };
+           // --- 3. GỌI GOOGLE API (FETCH) ---
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-    let response;
-    try {
-      response = await fetchWithRetry(API_URL, fetchInit, 3, 20000); // 20s timeout cho connect
-    } catch (err) {
-      // Nếu retry đều thất bại -> trả lỗi rõ ràng
-      return new Response(JSON.stringify({ error: `Không thể kết nối Google API: ${err.message}` }), { status: 502, headers: corsHeaders });
-    }
-
-    // Nếu Google trả về 4xx (ví dụ 403 region block), đọc nội dung và trả lỗi có ý nghĩa
-    if (!response.ok) {
-      let txt = await response.text().catch(() => "");
-      // Cố gắng parse JSON nếu có
-      try {
-        const j = JSON.parse(txt);
-        // Giải mã các lỗi Google phổ biến
-        if (j.error && j.error.message) {
-          return new Response(JSON.stringify({ error: `Google API lỗi: ${j.error.message}` }), { status: response.status, headers: corsHeaders });
-        }
-      } catch (e) {
-        // not JSON
-      }
-      return new Response(JSON.stringify({ error: `Google API trả về HTTP ${response.status}: ${txt}` }), { status: response.status, headers: corsHeaders });
-    }
-
-    // --- 6. XỬ LÝ SSE STREAM TỪ GOOGLE (TỐI ƯU: buffer + debounce flush) ---
-    // Tạo ReadableStream trả về client
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    // Buffer nội bộ và debounce flush để gom chunk nhỏ -> giảm số lần gửi, mượt hơn
-    let outBuffer = "";
-    let flushTimer = null;
-    const FLUSH_INTERVAL_MS = 120; // gửi tối đa mỗi 120ms nếu không đủ kích thước
-    const FLUSH_MIN_BYTES = 512; // nếu buffer >= 512 bytes thì flush ngay
-
-    function scheduleFlush() {
-      if (flushTimer) return;
-      flushTimer = setTimeout(async () => {
-        flushTimer = null;
-        if (outBuffer.length > 0) {
-          try {
-            await writer.write(encoder.encode(outBuffer));
-          } catch (e) {
-            // ignore write errors
-          }
-          outBuffer = "";
-        }
-      }, FLUSH_INTERVAL_MS);
-    }
-
-    function immediateFlushSync() {
-      if (flushTimer) {
-        clearTimeout(flushTimer);
-        flushTimer = null;
-      }
-      if (outBuffer.length > 0) {
-        // use microtask to ensure writer available
-        const payload = outBuffer;
-        outBuffer = "";
-        return writer.write(encoder.encode(payload)).catch(() => { /* ignore */ });
-      }
-      return Promise.resolve();
-    }
-
-    // Reader xử lý SSE từ response.body
-    (async () => {
-      const reader = response.body.getReader();
-      let partial = ""; // giữ phần chưa hoàn chỉnh
-      let doneStream = false;
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) { doneStream = true; break; }
-
-          const chunk = decoder.decode(value, { stream: true });
-          partial += chunk;
-
-          // Tách theo line
-          const lines = partial.split(/\r?\n/);
-          partial = lines.pop(); // phần cuối chưa hoàn chỉnh giữ lại
-
-          for (const rawLine of lines) {
-            const line = rawLine.trim();
-            if (!line) continue;
-
-            // SSE lines may be "data: {...}" or other fields. Chúng ta chỉ xử lý "data: "
-            if (line.startsWith("data: ")) {
-              const jsonStr = line.substring(6).trim();
-              if (jsonStr === "[DONE]") {
-                // kết thúc luồng
-                // flush buffer ngay
-                await immediateFlushSync();
-                // close writer
-                try { await writer.close(); } catch (e) { /* ignore */ }
-                // trừ license khi hoàn tất (đặt sau)
-                doneStream = true;
-                break;
-              }
-              // Có thể xuất hiện message lỗi trong SSE payload
-              try {
-                const parsed = JSON.parse(jsonStr);
-                // Nếu response chứa error detail (tùy cấu trúc), lọc và trả lỗi
-                if (parsed.error) {
-                  const errMsg = parsed.error.message || JSON.stringify(parsed.error);
-                  // Gửi lỗi cho client (một thông điệp có tiền tố [GOOGLE_ERROR])
-                  outBuffer += `\n\n[GOOGLE_ERROR]: ${errMsg}\n`;
-                  // flush ngay
-                  await immediateFlushSync();
-                  // close writer và thoát
-                  try { await writer.close(); } catch (e) { /* ignore */ }
-                  doneStream = true;
-                  break;
-                }
-
-                // Lấy text
-                const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (textPart) {
-                  // Gom vào outBuffer, flush khi đủ kích thước hoặc theo debounce
-                  outBuffer += textPart;
-                  if (outBuffer.length >= FLUSH_MIN_BYTES) {
-                    await immediateFlushSync();
-                  } else {
-                    scheduleFlush();
-                  }
-                }
-              } catch (e) {
-                // Không phải JSON -> bỏ qua hoặc log
-                // (Một số dòng SSE có thể là bình thường)
-              }
-            } else {
-              // Nếu dòng không bắt đầu data: — bỏ qua
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Google API Error (${response.status}): ${errText}`);
             }
-          }
 
-          if (doneStream) break;
-        }
+            // --- 4. XỬ LÝ STREAM & TRẢ VỀ CLIENT ---
+            // Chúng ta tạo một TransformStream để đọc dữ liệu SSE từ Google,
+            // lọc lấy phần text và gửi về cho Client ngay lập tức.
+            
+            const { readable, writable } = new TransformStream();
+            const writer = writable.getWriter();
+            const encoder = new TextEncoder();
+            const decoder = new TextDecoder();
 
-        // Nếu còn partial dữ liệu (không kết thúc bằng newline), cố parse
-        if (!doneStream && partial) {
-          const p = partial.trim();
-          if (p.startsWith("data: ")) {
-            const jsonStr = p.substring(6).trim();
-            if (jsonStr !== "[DONE]") {
-              try {
-                const parsed = JSON.parse(jsonStr);
-                const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (textPart) {
-                  outBuffer += textPart;
-                  await immediateFlushSync();
+            // Xử lý bất đồng bộ ở nền (Background processing)
+            (async () => {
+                const reader = response.body.getReader();
+                let buffer = "";
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        // Giải mã chunk và cộng vào buffer
+                        const chunk = decoder.decode(value, { stream: true });
+                        buffer += chunk;
+
+                        // Tách các dòng dữ liệu (SSE format: "data: {...}")
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop(); // Giữ lại phần cuối chưa trọn vẹn
+
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                const jsonStr = line.substring(6).trim();
+                                if (jsonStr === "[DONE]") continue; // Kết thúc stream
+
+                                try {
+                                    const parsed = JSON.parse(jsonStr);
+                                    // Trích xuất văn bản từ JSON của Google
+                                    const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                                    if (textPart) {
+                                        // Gửi văn bản sạch về cho Client
+                                        await writer.write(encoder.encode(textPart));
+                                    }
+                                } catch (e) {
+                                    // Bỏ qua các dòng không phải JSON (nếu có)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // --- TRỪ TIỀN SAU KHI HOÀN TẤT ---
+                    if (env.TEST_TOOL && license_key) {
+                        const creditStr = await env.TEST_TOOL.get(license_key);
+                        if (creditStr) {
+                            let current = parseInt(creditStr);
+                            if (current > 0) await env.TEST_TOOL.put(license_key, (current - 1).toString());
+                        }
+                    }
+
+                } catch (err) {
+                    // Gửi lỗi về Client nếu bị ngắt giữa chừng
+                    await writer.write(encoder.encode(`\n\n[LỖI STREAM]: ${err.message}`));
+                } finally {
+                    await writer.close();
                 }
-              } catch (e) {
-                // ignore
-              }
-            }
-          }
+            })();
+
+            // Trả về Stream ngay lập tức
+            return new Response(readable, {
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive"
+                }
+            });
+
+        } catch (error) {
+            return new Response(JSON.stringify({ error: `Lỗi Server: ${error.message}` }), { status: 500, headers: corsHeaders });
         }
-
-        // Khi kết thúc luồng, flush buffer và đóng writer
-        if (outBuffer.length > 0) {
-          try { await writer.write(encoder.encode(outBuffer)); } catch (e) { /* ignore */ }
-          outBuffer = "";
-        }
-
-        // TRỪ TIỀN SAU KHI HOÀN TẤT: chỉ khi có env.TEST_TOOL và license_key
-        if (env.TEST_TOOL && license_key) {
-          try {
-            const creditStr = await env.TEST_TOOL.get(license_key);
-            if (creditStr) {
-              let current = parseInt(creditStr);
-              if (current > 0) {
-                await env.TEST_TOOL.put(license_key, (current - 1).toString());
-              }
-            }
-          } catch (e) {
-            // Nếu KV bị lỗi, không block luồng - chỉ log (không có console.log trong Worker này)
-          }
-        }
-
-      } catch (err) {
-        // Nếu lỗi khi đọc stream -> gửi thông báo lỗi cho client
-        try {
-          await writer.write(encoder.encode(`\n\n[LỖI STREAM]: ${err.message}\n`));
-        } catch (e) { /* ignore */ }
-        try { await writer.close(); } catch (e) { /* ignore */ }
-      } finally {
-        // Đảm bảo timer flush được clear
-        if (flushTimer) {
-          clearTimeout(flushTimer);
-          flushTimer = null;
-        }
-        // Đóng writer nếu chưa đóng
-        try { await writer.close(); } catch (e) { /* ignore */ }
-      }
-    })();
-
-    // Trả về stream ngay lập tức cho client
-    return new Response(readable, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive"
-      }
-    });
-
-  } catch (error) {
-    // Nếu lỗi nội bộ -> trả về JSON error rõ ràng
-    return new Response(JSON.stringify({ error: `Lỗi Server: ${error.message}` }), { status: 500, headers: corsHeaders });
-  }
+    }
 }
 
 // --- ĐẶT NỘI DUNG VĂN BẢN Ở CUỐI FILE ĐỂ CODE GỌN GÀNG ---
-// (KHÔNG THAY ĐỔI — GIỮ NGUYÊN NHƯ FILE GỐC)
 const DOCUMENT_CONTENT_7991 = `
 BỘ GIÁO DỤC VÀ ĐÀO TẠO
 CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
@@ -579,6 +406,16 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
+
+
+
+
+
+
+
+
+
 
 
 
