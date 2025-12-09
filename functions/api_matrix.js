@@ -63,7 +63,7 @@ export async function onRequest(context) {
     if (!apiKey) throw new Error("Thiếu API Key");
 
     const MODEL_NAME = "gemini-2.5-pro";
-    const API_URL = `https://testtoolproxy.vanhien1199.workers.dev/`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
     const body = await request.json();
     const {
@@ -579,5 +579,6 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
