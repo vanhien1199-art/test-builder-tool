@@ -4,42 +4,39 @@
 window.generatedHTML = "";
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Khởi tạo
     addTopic();
 
-    // Helper gán sự kiện an toàn
-    const bindBtn = (id, handler) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('click', handler);
-    };
-
-    bindBtn('btnAddTopic', addTopic);
-    bindBtn('btnGenerate', handleGenerate);
-    bindBtn('btnDownloadWord', handleDownloadWord);
-    bindBtn('btnCopy', handleCopyContent);
-
+    // 2. Gán sự kiện
+    const btnGen = document.getElementById('btnGenerate');
+    const btnDown = document.getElementById('btnDownloadWord');
+    const btnAddTopic = document.getElementById('btnAddTopic');
     const examTypeSelect = document.getElementById('exam_type');
+    
+    if (btnAddTopic) btnAddTopic.addEventListener('click', addTopic);
+    if (btnGen) btnGen.addEventListener('click', handleGenerate);
+    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
+
+    // 3. Logic ẩn hiện ô nhập tiết
     if (examTypeSelect) {
         examTypeSelect.addEventListener('change', updatePeriodInputs);
         setTimeout(updatePeriodInputs, 100); 
     }
 
-    // Event Delegation
-    const topicContainer = document.getElementById('topics-container');
-    if (topicContainer) {
-        topicContainer.addEventListener('click', function(e) {
-            const target = e.target;
-            if (target.closest('.remove-topic-btn')) {
-                if(confirm("Xóa chương này?")) target.closest('.topic-wrapper').remove();
-            } else if (target.closest('.btn-add-unit')) {
-                addUnit(target.closest('.topic-wrapper').querySelector('.units-container'));
-            } else if (target.closest('.remove-unit-btn')) {
-                target.closest('.unit-item').remove();
-            }
-        });
-    }
+    // 4. Sự kiện ủy quyền (Event Delegation)
+    document.getElementById('topics-container').addEventListener('click', function(e) {
+        const target = e.target;
+        if (target.closest('.remove-topic-btn')) {
+            if(confirm("Xóa chương này?")) target.closest('.topic-wrapper').remove();
+        } else if (target.closest('.btn-add-unit')) {
+            addUnit(target.closest('.topic-wrapper').querySelector('.units-container'));
+        } else if (target.closest('.remove-unit-btn')) {
+            target.closest('.unit-item').remove();
+        }
+    });
 });
 
-// --- UI HELPERS ---
+// --- CÁC HÀM GIAO DIỆN (UI) ---
 function updatePeriodInputs() {
     const type = document.getElementById('exam_type').value; 
     document.querySelectorAll('.unit-item').forEach(item => {
@@ -75,7 +72,7 @@ function addUnit(container) {
     updatePeriodInputs();
 }
 
-// --- HANDLE GENERATE ---
+// --- HÀM TẠO DỮ LIỆU ---
 async function handleGenerate() {
     const btn = document.getElementById('btnGenerate');
     const loading = document.getElementById('loadingMsg');
@@ -83,8 +80,7 @@ async function handleGenerate() {
     const sec = document.getElementById('previewSection');
     const prev = document.getElementById('previewContent');
 
-    loading.classList.remove('hidden'); 
-    error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
+    loading.classList.remove('hidden'); error.innerText = ""; sec.classList.add('hidden'); prev.innerHTML = ""; btn.disabled = true;
 
     try {
         const get = id => document.getElementById(id).value.trim();
@@ -136,10 +132,10 @@ async function handleGenerate() {
             fullHTML += decoder.decode(value, {stream:true});
         }
         
-        // Clean & Fix HTML
+        // Clean HTML cơ bản
         let cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
-        // Format trắc nghiệm: Giữ nguyên văn bản, chỉ in đậm A. B. C. D.
-        cleanHTML = cleanHTML.replace(/(<br>|\n|^)\s*([A-D]\.)/g, '$1<b>$2</b>');
+        // Fix hiển thị Web
+        cleanHTML = cleanHTML.replace(/(\s+)(B\.|C\.|D\.)/g, '<br><b>$2</b>').replace(/(A\.)/g, '<b>$1</b>');
 
         prev.innerHTML = cleanHTML;
         window.generatedHTML = cleanHTML;
@@ -152,319 +148,183 @@ async function handleGenerate() {
     }
 }
 
-async function handleCopyContent() {
-    if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-    const btn = document.getElementById('btnCopy');
-    const oldHtml = btn.innerHTML;
-    try {
-        const type = "text/html";
-        const blob = new Blob([window.generatedHTML], { type });
-        const data = [new ClipboardItem({ [type]: blob })];
-        await navigator.clipboard.write(data);
-        btn.classList.add('copied'); btn.innerHTML = `<i class="fas fa-check"></i> Đã chép!`;
-        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = oldHtml; }, 2000);
-    } catch (e) { alert("Lỗi sao chép tự động."); }
-}
-
-// =========================================================================
-// --- BỘ XỬ LÝ DOCX: STATE MACHINE + DEEP RECURSION + FULL MATH ---
-// =========================================================================
+// ============================================================
+// --- LOGIC XUẤT WORD CAO CẤP (XỬ LÝ MỌI LOẠI THẺ HTML) ---
+// ============================================================
 async function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-    if (typeof docx === 'undefined') { alert("Thư viện Word chưa tải xong. F5 lại trang!"); return; }
+    if (typeof docx === 'undefined') { alert("Thư viện lỗi. F5 lại trang!"); return; }
 
     const btn = document.getElementById('btnDownloadWord');
     const oldText = btn.innerText;
-    btn.innerText = "Đang xử lý..."; btn.disabled = true;
+    btn.innerText = "Đang tạo file..."; btn.disabled = true;
 
     try {
-        const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, HeadingLevel, AlignmentType, BorderStyle, Math: DocxMath, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical } = window.docx;
+        const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, Math: MathObj, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical, BorderStyle, HeadingLevel, AlignmentType } = window.docx;
 
-        // --- 1. LATEX PARSER ĐẦY ĐỦ (Phiên bản Ultimate) ---
-        function parseLatexToDocx(latex) {
-            const children = [];
-            let i = 0;
-
-            const symbolMap = {
-                // Hy Lạp
-                '\\alpha': 'α', '\\beta': 'β', '\\gamma': 'γ', '\\delta': 'δ', '\\epsilon': 'ε', '\\zeta': 'ζ',
-                '\\eta': 'η', '\\theta': 'θ', '\\iota': 'ι', '\\kappa': 'κ', '\\lambda': 'λ', '\\mu': 'μ',
-                '\\nu': 'ν', '\\xi': 'ξ', '\\pi': 'π', '\\rho': 'ρ', '\\sigma': 'σ', '\\tau': 'τ',
-                '\\upsilon': 'υ', '\\phi': 'φ', '\\chi': 'χ', '\\psi': 'ψ', '\\omega': 'ω',
-                '\\Delta': 'Δ', '\\Gamma': 'Γ', '\\Lambda': 'Λ', '\\Omega': 'Ω', '\\Phi': 'Φ', '\\Pi': 'Π', '\\Sigma': 'Σ',
-                // Quan hệ
-                '\\approx': '≈', '\\neq': '≠', '\\ne': '≠', '\\leq': '≤', '\\le': '≤', '\\geq': '≥', '\\ge': '≥',
-                '\\pm': '±', '\\mp': '∓', '\\equiv': '≡', '\\sim': '∼', '\\simeq': '≃',
-                // Phép toán
-                '\\times': '×', '\\div': '÷', '\\cdot': '·', '\\ast': '*', '\\star': '⋆', '\\oplus': '⊕', '\\otimes': '⊗',
-                // Tập hợp
-                '\\in': '∈', '\\notin': '∉', '\\subset': '⊂', '\\supset': '⊃', '\\subseteq': '⊆', '\\supseteq': '⊇',
-                '\\cup': '∪', '\\cap': '∩', '\\emptyset': '∅', '\\infty': '∞', '\\forall': '∀', '\\exists': '∃',
-                '\\mathbb{R}': 'ℝ', '\\mathbb{N}': 'ℕ', '\\mathbb{Z}': 'ℤ', '\\mathbb{Q}': 'ℚ',
-                // Mũi tên & Khác
-                '\\rightarrow': '→', '\\to': '→', '\\leftarrow': '←', '\\leftrightarrow': '↔', '\\Rightarrow': '⇒', '\\Leftrightarrow': '⇔',
-                '\\angle': '∠', '\\triangle': '△', '\\perp': '⊥', '\\parallel': '∥', '\\degree': '°', '^\\circ': '°', 
-                '\\%': '%', '\\$': '$', '\\{': '{', '\\}': '}'
-            };
-
-            while (i < latex.length) {
-                const char = latex[i];
-                if (char === '\\') {
-                    let end = i + 1;
-                    while (end < latex.length && /[a-zA-Z]/.test(latex[end])) end++;
-                    if (end === i + 1 && end < latex.length) end++; // Ký tự đặc biệt
-
-                    const command = latex.substring(i, end);
-                    let nextIdx = end;
-                    while (nextIdx < latex.length && latex[nextIdx] === ' ') nextIdx++;
-
-                    if (command === '\\frac') {
-                        const num = extractGroup(latex, nextIdx);
-                        const den = extractGroup(latex, num.nextIndex);
-                        children.push(new MathFraction({ numerator: parseLatexToDocx(num.content), denominator: parseLatexToDocx(den.content) }));
-                        i = den.nextIndex;
-                    } 
-                    else if (command === '\\sqrt') {
-                        if (latex[nextIdx] === '[') {
-                            const degree = extractGroup(latex, nextIdx, '[', ']');
-                            const arg = extractGroup(latex, degree.nextIndex);
-                            children.push(new MathRadical({ degree: parseLatexToDocx(degree.content), children: parseLatexToDocx(arg.content) }));
-                            i = arg.nextIndex;
-                        } else {
-                            const arg = extractGroup(latex, nextIdx);
-                            children.push(new MathRadical({ degree: [], children: parseLatexToDocx(arg.content) }));
-                            i = arg.nextIndex;
-                        }
-                    }
-                    else if (command === '\\text') {
-                        const txt = extractGroup(latex, nextIdx);
-                        children.push(new MathRun(txt.content));
-                        i = txt.nextIndex;
-                    }
-                    else if (command === '\\mathbb') {
-                        const grp = extractGroup(latex, nextIdx);
-                        const key = `\\mathbb{${grp.content}}`;
-                        children.push(new MathRun(symbolMap[key] || grp.content));
-                        i = grp.nextIndex;
-                    }
-                    else if (['\\left', '\\right'].includes(command)) {
-                        let bracket = latex[nextIdx];
-                        children.push(new MathRun(bracket)); i = nextIdx + 1;
-                    }
-                    else if (symbolMap[command]) {
-                        children.push(new MathRun(symbolMap[command])); i = nextIdx;
-                    } 
-                    else { i = nextIdx; }
-                } 
-                else if (char === '^') {
-                    const prev = children.pop();
-                    let content = "", nextIdx = i + 1;
-                    if (latex[nextIdx] === '{') {
-                        const grp = extractGroup(latex, nextIdx);
-                        content = grp.content; nextIdx = grp.nextIndex;
-                    } else { content = latex[nextIdx]; nextIdx++; }
-                    if (prev) children.push(new MathSuperScript({ children: [prev], superScript: parseLatexToDocx(content) }));
-                    else children.push(new MathSuperScript({ children: [new MathRun("")], superScript: parseLatexToDocx(content) }));
-                    i = nextIdx;
-                } 
-                else if (char === '_') {
-                    const prev = children.pop();
-                    let content = "", nextIdx = i + 1;
-                    if (latex[nextIdx] === '{') {
-                        const grp = extractGroup(latex, nextIdx);
-                        content = grp.content; nextIdx = grp.nextIndex;
-                    } else { content = latex[nextIdx]; nextIdx++; }
-                    if (prev) children.push(new MathSubScript({ children: [prev], subScript: parseLatexToDocx(content) }));
-                    else children.push(new MathSubScript({ children: [new MathRun("")], subScript: parseLatexToDocx(content) }));
-                    i = nextIdx;
-                } 
-                else if (char !== '{' && char !== '}') {
-                    children.push(new MathRun(char)); i++;
-                } 
-                else { i++; }
-            }
-            return children;
-        }
-
-        function extractGroup(str, idx, open='{', close='}') {
-            if (idx >= str.length) return {content:"", nextIndex:idx};
-            if (str[idx] !== open) return {content:str[idx], nextIndex:idx+1};
-            let depth=1, i=idx+1;
-            while(i<str.length && depth>0) {
-                if(str[i]===open) depth++; else if(str[i]===close) depth--;
-                i++;
-            }
-            return {content:str.substring(idx+1, i-1), nextIndex:i};
-        }
-
-        // --- 2. HÀM QUÉT NỘI DUNG (Recursive Text Scanner) ---
-        // Trả về mảng các Runs (TextRun hoặc Math)
-        function getRunsFromNode(node, style = {}) {
-            let runs = [];
-            
+        // 1. Convert MathML XML -> Docx Math
+        function convertXmlNode(node) {
+            if (!node) return [];
+            const results = [];
             node.childNodes.forEach(child => {
-                if (child.nodeType === 3) { // Text Node
-                    const text = child.nodeValue;
-                    if (!text) return;
-                    
-                    const parts = text.split(/(\$\$[\s\S]*?\$\$)/g);
-                    parts.forEach(part => {
-                        if (part.startsWith('$$') && part.endsWith('$$')) {
-                            const latex = part.slice(2, -2).trim();
-                            runs.push(new DocxMath({ children: parseLatexToDocx(latex) }));
-                        } else {
-                            // Giữ nguyên text bao gồm khoảng trắng và xuống dòng
-                            // replace \n bằng space nếu là inline, hoặc giữ nếu cần. Ở đây ta giữ nguyên text raw
-                            // Nhưng docx không tự xuống dòng bằng \n trong textrun, ta phải split
-                            const subParts = part.split('\n');
-                            subParts.forEach((sp, idx) => {
-                                if(sp) runs.push(new TextRun({ text: sp, ...style }));
-                                // Nếu có xuống dòng gốc, thêm break
-                                // if (idx < subParts.length - 1) runs.push(new TextRun({ text: "", break: 1 }));
-                            });
-                        }
-                    });
-                } else if (child.nodeType === 1) { // Element Node
-                    const tag = child.tagName.toLowerCase();
-                    if (tag === 'br') {
-                        runs.push(new TextRun({ text: "", break: 1 }));
-                    } else {
-                        const newStyle = { 
-                            ...style, 
-                            bold: style.bold || tag==='b' || tag==='strong', 
-                            italics: style.italics || tag==='i' || tag==='em'
-                        };
-                        runs.push(...getRunsFromNode(child, newStyle));
-                    }
+                if (child.nodeType === 3) { if (child.nodeValue.trim()) results.push(new MathRun(child.nodeValue)); return; }
+                const tag = child.tagName.toLowerCase();
+                const children = convertXmlNode(child);
+                switch (tag) {
+                    case 'mn': case 'mi': case 'mo': case 'mtext': results.push(new MathRun(child.textContent)); break;
+                    case 'mfrac': if (children.length >= 2) results.push(new MathFraction({ numerator: [children[0]], denominator: [children[1]] })); break;
+                    case 'msup': if (children.length >= 2) results.push(new MathSuperScript({ children: [children[0]], superScript: [children[1]] })); break;
+                    case 'msub': if (children.length >= 2) results.push(new MathSubScript({ children: [children[0]], subScript: [children[1]] })); break;
+                    case 'msqrt': results.push(new MathRadical({ children: children })); break;
+                    case 'mrow': case 'mstyle': results.push(...children); break;
+                    default: results.push(...children); break;
                 }
             });
+            return results;
+        }
+
+        // 2. HÀM QUAN TRỌNG: Phân tích Node Text & Style (In đậm, nghiêng, Toán)
+        function getRunsFromNode(node, style = {}) {
+            let runs = [];
+            if (node.nodeType === 3) { // TEXT NODE
+                const text = node.nodeValue;
+                if (!text) return [];
+                // Tách LaTeX $$..$$
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/g);
+                parts.forEach(part => {
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        const latex = part.slice(2, -2);
+                        try {
+                            if (typeof temml !== 'undefined') {
+                                const xml = temml.renderToString(latex, { xml: true });
+                                const mathRoot = new DOMParser().parseFromString(xml, "text/xml").documentElement;
+                                runs.push(new MathObj({ children: convertXmlNode(mathRoot) }));
+                            } else { runs.push(new TextRun({ text: part, color: "2E75B6" })); }
+                        } catch(e) { runs.push(new TextRun({ text: part, color: "FF0000" })); }
+                    } else {
+                        if (part) {
+                            let cleanPart = part.replace(/\n/g, " "); // Xóa xuống dòng thừa của HTML
+                            runs.push(new TextRun({ text: cleanPart, bold: style.bold, italics: style.italic, break: style.break ? 1 : 0 }));
+                            style.break = false;
+                        }
+                    }
+                });
+            } else if (node.nodeType === 1) { // ELEMENT NODE
+                const tag = node.tagName.toLowerCase();
+                const newStyle = { ...style };
+                if (tag === 'b' || tag === 'strong') newStyle.bold = true;
+                if (tag === 'i' || tag === 'em') newStyle.italic = true;
+                if (tag === 'br') runs.push(new TextRun({ text: "", break: 1 })); // Xuống dòng cứng
+                
+                node.childNodes.forEach(child => {
+                    runs = runs.concat(getRunsFromNode(child, newStyle));
+                });
+            }
             return runs;
         }
 
-        // --- 3. STATE MACHINE CONVERTER (Logic Phẳng Hóa) ---
-        const parser = new DOMParser();
-        const docDOM = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
-        const root = docDOM.body.firstElementChild;
-        
-        const docChildren = []; // Danh sách các phần tử cấp 1 (Table hoặc Paragraph)
-        let currentParaRuns = []; // Bộ đệm cho Paragraph hiện tại
+        // 3. HÀM QUAN TRỌNG NHẤT: Chuyển đổi khối HTML bất kỳ thành mảng Docx Element (Paragraph/Table)
+        function processHtmlToDocx(childNodes) {
+            const docElements = [];
+            let currentRuns = [];
 
-        // Hàm: Đóng gói đoạn văn hiện tại và đẩy vào docChildren
-        function flushParagraph(opts = {}) {
-            if (currentParaRuns.length > 0) {
-                docChildren.push(new Paragraph({ 
-                    children: [...currentParaRuns], 
-                    ...opts,
-                    spacing: { after: 100 }
-                }));
-                currentParaRuns = [];
-            }
-        }
-
-        // Hàm tạo bảng (Trả về đối tượng Table)
-        function createTableBlock(tableNode) {
-            const rows = Array.from(tableNode.querySelectorAll('tr')).map(tr => {
-                const cells = Array.from(tr.querySelectorAll('td, th')).map(td => {
-                    const isHeader = td.tagName.toLowerCase() === 'th';
-                    // Quét sâu nội dung trong ô
-                    const cellRuns = getRunsFromNode(td, { bold: isHeader });
-                    
-                    return new TableCell({
-                        children: [new Paragraph({ 
-                            children: cellRuns,
-                            alignment: isHeader ? AlignmentType.CENTER : AlignmentType.LEFT
-                        })],
-                        columnSpan: parseInt(td.getAttribute('colspan') || 1),
-                        rowSpan: parseInt(td.getAttribute('rowspan') || 1),
-                        borders: {
-                            top: {style: BorderStyle.SINGLE, size: 1},
-                            bottom: {style: BorderStyle.SINGLE, size: 1},
-                            left: {style: BorderStyle.SINGLE, size: 1},
-                            right: {style: BorderStyle.SINGLE, size: 1},
-                        },
-                        width: { size: 100, type: WidthType.PERCENTAGE }
-                    });
-                });
-                return new TableRow({ children: cells });
-            });
-            return new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } });
-        }
-
-        // Header Tiêu đề
-        docChildren.push(new Paragraph({
-            text: "ĐỀ KIỂM TRA & MA TRẬN",
-            heading: HeadingLevel.HEADING_1,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 300 }
-        }));
-
-        // Hàm duyệt cây DOM (Phẳng hóa)
-        function traverseAndFlatten(node) {
-            if (node.nodeType === 1) { // Element
-                const tag = node.tagName.toLowerCase();
-
-                if (tag === 'table') {
-                    flushParagraph(); // Ngắt đoạn văn hiện tại
-                    docChildren.push(createTableBlock(node)); // Thêm bảng
-                    docChildren.push(new Paragraph("")); // Khoảng cách
-                } 
-                else if (tag.match(/^h[1-6]$/)) {
-                    flushParagraph();
-                    const runs = getRunsFromNode(node, { bold: true });
-                    docChildren.push(new Paragraph({
-                        children: runs,
-                        heading: HeadingLevel.HEADING_2,
-                        spacing: { before: 200, after: 100 }
-                    }));
+            function flushRuns(opts = {}) {
+                if (currentRuns.length > 0) {
+                    docElements.push(new Paragraph({ children: [...currentRuns], ...opts }));
+                    currentRuns = [];
                 }
-                else if (['p', 'div', 'li'].includes(tag)) {
-                    // Đối với thẻ Block, ta coi như bắt đầu dòng mới, nhưng cần kiểm tra
-                    // nếu nó chứa text trực tiếp -> đóng gói.
-                    // nếu nó chứa div con -> duyệt tiếp.
-                    // Cách đơn giản nhất: Xử lý nó như một đoạn văn độc lập nếu nó chứa text
-                    flushParagraph();
-                    
-                    // Nếu thẻ này chứa các thẻ block con (như div lồng div), ta duyệt tiếp
-                    // Nếu chỉ chứa text/inline, ta lấy runs
-                    const hasBlockChild = Array.from(node.children).some(c => ['div','p','table','h1','h2','h3'].includes(c.tagName.toLowerCase()));
-                    
-                    if (hasBlockChild) {
-                        Array.from(node.childNodes).forEach(traverseAndFlatten);
-                    } else {
+            }
+
+            Array.from(childNodes).forEach(node => {
+                if (node.nodeType === 1) { // Element Node
+                    const tag = node.tagName.toLowerCase();
+
+                    // --- XỬ LÝ BẢNG ---
+                    if (tag === 'table') {
+                        flushRuns(); // Kết thúc đoạn văn trước đó nếu có
+                        const rows = Array.from(node.querySelectorAll('tr')).map(tr => 
+                            new TableRow({ children: Array.from(tr.querySelectorAll('td, th')).map(td => {
+                                const colSpan = td.getAttribute('colspan');
+                                const rowSpan = td.getAttribute('rowspan');
+                                // Đệ quy: Parse nội dung trong ô bảng
+                                const cellElements = processHtmlToDocx(td.childNodes);
+                                // TableCell chỉ nhận Paragraph, không nhận Table lồng nhau ở level này (đơn giản hóa)
+                                // Lọc chỉ lấy Paragraphs từ kết quả đệ quy
+                                const cellParas = cellElements.filter(el => el instanceof Paragraph);
+                                if(cellParas.length === 0) cellParas.push(new Paragraph(""));
+
+                                return new TableCell({ 
+                                    children: cellParas,
+                                    columnSpan: colSpan ? parseInt(colSpan) : 1,
+                                    rowSpan: rowSpan ? parseInt(rowSpan) : 1,
+                                    width: { size: 100, type: WidthType.PERCENTAGE }, 
+                                    borders: {top:{style:BorderStyle.SINGLE, size:1}, bottom:{style:BorderStyle.SINGLE, size:1}, left:{style:BorderStyle.SINGLE, size:1}, right:{style:BorderStyle.SINGLE, size:1}} 
+                                }); 
+                            })})
+                        );
+                        docElements.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                        docElements.push(new Paragraph("")); // Cách dòng sau bảng
+                    } 
+                    // --- XỬ LÝ TIÊU ĐỀ ---
+                    else if (tag.match(/^h[1-6]$/)) {
+                        flushRuns();
+                        const runs = getRunsFromNode(node);
+                        docElements.push(new Paragraph({
+                            children: runs,
+                            heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 100 }
+                        }));
+                    }
+                    // --- XỬ LÝ ĐOẠN VĂN (P, DIV, LI) ---
+                    else if (['p', 'div', 'li', 'ul', 'ol'].includes(tag)) {
+                        flushRuns();
+                        // Nếu là div/p chứa text trực tiếp -> Tạo paragraph
+                        // Nếu div chứa div khác -> Đệ quy tiếp
+                        // Ở đây ta dùng getRunsFromNode để "làm phẳng" nội dung bên trong thành 1 đoạn văn
+                        // Đây là cách an toàn nhất để lấy A. B. C. D.
                         const runs = getRunsFromNode(node);
                         if (runs.length > 0) {
-                            docChildren.push(new Paragraph({ children: runs, spacing: { after: 50 } }));
+                            docElements.push(new Paragraph({ children: runs, spacing: { after: 50 } }));
                         }
                     }
+                    // --- CÁC THẺ KHÁC (SPAN, B, I...) ---
+                    else {
+                        // Gom vào đoạn văn hiện tại
+                        const runs = getRunsFromNode(node);
+                        currentRuns.push(...runs);
+                    }
+                } 
+                else if (node.nodeType === 3) { // Text Node trôi nổi
+                    const runs = getRunsFromNode(node);
+                    currentRuns.push(...runs);
                 }
-                else {
-                    // Thẻ Inline (b, i, span...) -> Thêm vào buffer hiện tại
-                    const runs = getRunsFromNode(node); 
-                    // Lưu ý: getRunsFromNode sẽ duyệt sâu vào con của thẻ inline này
-                    // Nhưng ở đây ta đang ở traverseAndFlatten (cấp cao). 
-                    // Thực tế getRunsFromNode được thiết kế để gọi từ cấp Paragraph.
-                    // Nếu gặp thẻ inline ở cấp root, ta đẩy vào buffer.
-                    currentParaRuns.push(...runs);
-                }
-            } 
-            else if (node.nodeType === 3) { // Text Node ở cấp root
-                const runs = getRunsFromNode(node); // convert text node to runs
-                currentParaRuns.push(...runs);
-            }
+            });
+
+            flushRuns(); // Đẩy nốt đoạn văn cuối
+            return docElements;
         }
 
-        // Bắt đầu duyệt
-        Array.from(root.childNodes).forEach(traverseAndFlatten);
-        flushParagraph(); // Đẩy nốt những gì còn sót lại
+        // 4. Xây dựng Document
+        const parser = new DOMParser();
+        // Bọc trong div để đảm bảo parse được hết
+        const docHTML = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
+        
+        // Header
+        const headerPara = new Paragraph({ 
+            text: "ĐỀ KIỂM TRA & MA TRẬN", 
+            heading: HeadingLevel.HEADING_1, 
+            alignment: AlignmentType.CENTER, 
+            spacing: { after: 300 },
+            run: { font: "Times New Roman", size: 28, bold: true }
+        });
 
-        // 4. TẠO FILE
-        const doc = new Document({ sections: [{ children: docChildren }] });
+        // Xử lý toàn bộ nội dung
+        const rootDiv = docHTML.body.firstElementChild || docHTML.body;
+        const generatedElements = processHtmlToDocx(rootDiv.childNodes);
+
+        const doc = new Document({ sections: [{ children: [headerPara, ...generatedElements] }] });
         const blob = await Packer.toBlob(doc);
-        saveAs(blob, `De_Kiem_Tra_${Date.now()}.docx`);
+        saveAs(blob, `De_Thi_Final_${Date.now()}.docx`);
 
-    } catch(e) { 
-        alert("Lỗi xuất file: " + e.message); console.error(e); 
-    } finally { 
-        btn.innerText = oldText; btn.disabled = false; 
-    }
+    } catch(e) { alert("Lỗi xuất file: " + e.message); console.error(e); } 
+    finally { btn.innerText = oldText; btn.disabled = false; }
 }
