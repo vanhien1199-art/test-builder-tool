@@ -185,7 +185,7 @@ export async function onRequest(context) {
                 - Tổng số câu Đúng-Sai dọc xuống phải bằng **2** (nếu >= 60p) hoặc **1** (nếu <= 45p).
                 - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
                 - Tổng số câu Tự luận dọc xuống phải bằng **2-3**.
-                - **QUAN TRỌNG:** Đảm bảo mỗi dạng câu hỏi đều rải rác ở cả 3 mức độ (Biết, Hiểu, Vận dụng) nếu nội dung cho phép. Không để trống hoàn toàn mức độ Vận dụng ở phần trắc nghiệm.
+                - **QUAN TRỌNG:** Đảm bảo mỗi dạng câu hỏi đều rải rác ở cả 3 mức độ (Biết, Hiểu, Vận dụng). ví dụ: Câu hỏi tự luận phải có ít nhất một câu mức ở độ "Biết", một câu "Hiểu", một câu 'Vận dụng". Không để trống hoàn toàn mức độ Vận dụng ở phần trắc nghiệm.
 		- **BẮT BUỘC:** phải có đầy đủ cả câu hỏi MCQ, Đúng-Sai và Tự Luận. **Tuyệt đối không** để trống hoàn toàn các cột 4 đến cột 15 nếu tích đầu vào chọn sử dụng câu trả lời ngắn.	
             * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
@@ -407,6 +407,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
