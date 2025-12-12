@@ -82,7 +82,7 @@ export async function onRequest(context) {
 
             // --- PROMPT FINAL ---
             const prompt = `
-            Bạn là một chuyên gia khảo thí hàng đầu Việt Nam. Bạn am hiểu sâu sắc Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
+            Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
             Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12.
             Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
            ### TÀI LIỆU THAM KHẢO (QUAN TRỌNG):
@@ -179,61 +179,18 @@ export async function onRequest(context) {
                     * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
             **B. HƯỚNG DẪN ĐIỀN DỮ LIỆU (LOGIC TỰ SINH):**
-           QUY ĐỊNH CỰC QUAN TRỌNG – BẮT BUỘC – KIỂM TRA TRƯỚC KHI TRẢ VỀ KẾT QUẢ
-					Bạn phải tuân thủ tuyệt đối các quy tắc sau:
-					1. Mỗi LOẠI CÂU HỎI bắt buộc phải có ĐỦ 3 mức độ nhận thức
-					Các loại câu hỏi gồm:
-					Trắc nghiệm nhiều lựa chọn (MCQ – cột 4–6)
-					Đúng/Sai (cột 7–9)
-					Trả lời ngắn (cột 10–12)
-					Tự luận (cột 13–15)
-					➡️ BẮT BUỘC: mỗi loại phải có ít nhất 1 Biết – 1 Hiểu – 1 Vận dụng.
-					➡️ Không được để mức độ Vận dụng = 0 trong bất kỳ nhóm nào.
-					➡️ Không được để MCQ chỉ có Biết/Hiểu mà thiếu Vận dụng.
-					➡️ Không được để Tự luận chỉ toàn Vận dụng.
-					Nếu số câu ít (ví dụ 1 câu Đúng/Sai trong đề 45 phút):
-					→ phân bổ mức độ theo từng ý:
-					Ý a → Biết
-					Ý b → Hiểu
-					Ý c → Vận dụng
-					Ý d → mức độ tùy nội dung
-					2. Mỗi CHỦ ĐỀ phải có đủ 3 mức độ
-					Trong một chủ đề:
-					phải có ít nhất 1 câu Biết
-					phải có ít nhất 1 câu Hiểu
-					phải có ít nhất 1 câu Vận dụng
-					➡️ Không được có chủ đề chỉ toàn Biết hoặc toàn Hiểu.
-					3. Quy tắc phân bổ theo số lượng câu (đã nêu nhưng phải tuân thủ chặt hơn)
-					Nếu ≥ 60 phút:
-					MCQ = 12 câu → chứa cả 3 mức độ
-					Đúng/Sai = 2 câu chùm → tổng 8 ý → phải gán mức độ cho từng ý
-					Trả lời ngắn = 4 câu → đủ 3 mức độ
-					Tự luận = 2–3 câu → phải đủ 3 mức độ
-					Nếu ≤ 45 phút:
-					MCQ = 6 câu → phải có Biết – Hiểu – Vận dụng
-					Đúng/Sai = 1 câu chùm → gán mức độ cho 4 ý a–d
-					Trả lời ngắn = 4 câu
-					Tự luận = 2–3 câu
-					4. Kiểm tra TỰ ĐỘNG trước khi xuất bảng
-					AI phải tự động thực hiện ba bước kiểm tra sau:
-					Bước 1 – Kiểm tra theo từng loại câu hỏi
-					Nếu loại nào còn thiếu mức độ → tự động bổ sung lại cho đúng.
-					Bước 2 – Kiểm tra theo từng chủ đề
-					Nếu chủ đề thiếu mức độ → lấy từ chủ đề khác hoặc điều chỉnh câu hỏi trong cùng chủ đề để bổ sung.
-					Bước 3 – Kiểm tra tỷ lệ Mức độ (P–Q–R)
-					Tổng toàn bài phải đạt:
-					Biết ≈ 40%
-					Hiểu ≈ 30%
-					Vận dụng ≈ 30%
-					Nếu lệch quá 1 câu → tự động điều chỉnh trước khi trả kết quả.
-					5. Quy tắc khi điền vào bảng 19 cột
-					Cột 4–6 = MCQ (Biết – Hiểu – Vận dụng)
-					Cột 7–9 = Đúng/Sai (Biết – Hiểu – Vận dụng)
-					Cột 10–12 = TLN (Biết – Hiểu – Vận dụng)
-					Cột 13–15 = Tự luận (Biết – Hiểu – Vận dụng)
-					➡️ Mỗi nhóm 3 cột con phải có giá trị > 0.
-            * **Tổng kết - Footer 3 dòng:**
-                - Dòng "Tổng số câu": Cộng dọc tất cả các cột.
+            * **Bước 1:** Điền tên Chủ đề và Nội dung vào cột 2 và 3.
+            * **Bước 2 (Điền số lượng câu):** Phân bổ số câu hỏi vào các ô mức độ (Cột 4-15) dựa trên thời gian làm bài (${time} phút):
+                - Tổng số câu MCQ dọc xuống phải bằng **12** (nếu >= 60p) hoặc **6** (nếu <= 45p).
+                - Tổng số câu Đúng-Sai dọc xuống phải bằng **2** (nếu >= 60p) hoặc **1** (nếu <= 45p).
+                - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
+                - Tổng số câu Tự luận dọc xuống phải bằng **2-3**.
+		- **QUAN TRỌNG:** Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 phải > 0.
+                            * **Bước 3 (Tính tổng):**
+                - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
+                - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (Lưu ý hệ số điểm: MCQ=0.25đ hoặc 0.5đ tùy thời gian, TLN=0.5đ, v.v..).
+            * **Bước 4 (Tổng kết - Footer 3 dòng):**
+                - Dòng "Tổng số câu": Cộng dọc tất cả các cột. (Kết quả phải >0)
                 - Dòng "Tổng điểm": Kiểm tra lại tổng điểm toàn bài phải là 10.0.
                 - Dòng "Tỉ lệ %": Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
@@ -449,20 +406,4 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
