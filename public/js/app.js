@@ -6,7 +6,7 @@ window.generatedHTML = "";
 document.addEventListener('DOMContentLoaded', () => {
     addTopic();
 
-    // Helper gán sự kiện
+    // Helper gán sự kiện an toàn
     const bindBtn = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', handler);
@@ -138,7 +138,8 @@ async function handleGenerate() {
         
         // Clean & Fix HTML
         let cleanHTML = fullHTML.replace(/```html/g, '').replace(/```/g, '').trim();
-        cleanHTML = cleanHTML.replace(/(\s+)(B\.|C\.|D\.)/g, '<br><b>$2</b>').replace(/(A\.)/g, '<b>$1</b>');
+        // Format trắc nghiệm: Thêm thẻ b cho A. B. C. D. nhưng giữ nguyên cấu trúc
+        cleanHTML = cleanHTML.replace(/(<br>|\n|^)\s*([A-D]\.)/g, '$1<b>$2</b>');
 
         prev.innerHTML = cleanHTML;
         window.generatedHTML = cleanHTML;
@@ -166,7 +167,7 @@ async function handleCopyContent() {
 }
 
 // =========================================================================
-// --- BỘ XỬ LÝ TOÁN HỌC & DOCX CAO CẤP ---
+// --- BỘ XỬ LÝ DOCX: RECURSIVE TEXT SCANNER + FULL MATH MAP ---
 // =========================================================================
 async function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
@@ -179,14 +180,14 @@ async function handleDownloadWord() {
     try {
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, HeadingLevel, AlignmentType, BorderStyle, Math: DocxMath, MathRun, MathFraction, MathSuperScript, MathSubScript, MathRadical } = window.docx;
 
-        // --- 1. LATEX PARSER ĐẦY ĐỦ (Full Symbol Map) ---
+        // --- 1. LATEX PARSER ĐẦY ĐỦ (Phiên bản Ultimate) ---
         function parseLatexToDocx(latex) {
             const children = [];
             let i = 0;
 
-            // Map ký tự Toán học đầy đủ
+            // KHO TỪ ĐIỂN KÝ TỰ KHỔNG LỒ
             const symbolMap = {
-                // Hy Lạp
+                // Hy Lạp (Thường & Hoa)
                 '\\alpha': 'α', '\\beta': 'β', '\\gamma': 'γ', '\\delta': 'δ', '\\epsilon': 'ε', '\\zeta': 'ζ',
                 '\\eta': 'η', '\\theta': 'θ', '\\iota': 'ι', '\\kappa': 'κ', '\\lambda': 'λ', '\\mu': 'μ',
                 '\\nu': 'ν', '\\xi': 'ξ', '\\pi': 'π', '\\rho': 'ρ', '\\sigma': 'σ', '\\tau': 'τ',
@@ -213,7 +214,8 @@ async function handleDownloadWord() {
                 
                 // Hình học & Khác
                 '\\angle': '∠', '\\triangle': '△', '\\perp': '⊥', '\\parallel': '∥',
-                '\\degree': '°', '^\\circ': '°', '\\partial': '∂', '\\nabla': '∇'
+                '\\degree': '°', '^\\circ': '°', '\\partial': '∂', '\\nabla': '∇',
+                '\\%': '%', '\\$': '$', '\\{': '{', '\\}': '}'
             };
 
             while (i < latex.length) {
@@ -222,16 +224,11 @@ async function handleDownloadWord() {
                 if (char === '\\') {
                     // Xử lý lệnh
                     let end = i + 1;
-                    // Tìm tên lệnh (ký tự chữ cái)
-                    while (end < latex.length && /[a-zA-Z]/.test(latex[end])) {
-                        end++;
-                    }
-                    // Nếu không có chữ cái nào, kiểm tra ký tự đặc biệt (VD: \{, \%)
+                    while (end < latex.length && /[a-zA-Z]/.test(latex[end])) end++;
+                    // Xử lý các lệnh ký tự đặc biệt như \{
                     if (end === i + 1 && end < latex.length) end++;
 
                     const command = latex.substring(i, end);
-                    
-                    // Bỏ qua khoảng trắng sau lệnh
                     let nextIdx = end;
                     while (nextIdx < latex.length && latex[nextIdx] === ' ') nextIdx++;
 
@@ -245,8 +242,7 @@ async function handleDownloadWord() {
                         i = den.nextIndex;
                     } 
                     else if (command === '\\sqrt') {
-                        // Kiểm tra căn bậc n: \sqrt[3]{x}
-                        if (latex[nextIdx] === '[') {
+                        if (latex[nextIdx] === '[') { // Căn bậc n
                             const degree = extractGroup(latex, nextIdx, '[', ']');
                             const arg = extractGroup(latex, degree.nextIndex);
                             children.push(new MathRadical({
@@ -254,7 +250,7 @@ async function handleDownloadWord() {
                                 children: parseLatexToDocx(arg.content)
                             }));
                             i = arg.nextIndex;
-                        } else {
+                        } else { // Căn bậc 2
                             const arg = extractGroup(latex, nextIdx);
                             children.push(new MathRadical({
                                 degree: [], 
@@ -265,12 +261,17 @@ async function handleDownloadWord() {
                     }
                     else if (command === '\\text') {
                         const txt = extractGroup(latex, nextIdx);
-                        children.push(new MathRun(txt.content)); // Giữ nguyên văn bản
+                        children.push(new MathRun(txt.content));
                         i = txt.nextIndex;
                     }
+                    else if (command === '\\mathbb') { // Tập hợp số
+                        const grp = extractGroup(latex, nextIdx);
+                        const key = `\\mathbb{${grp.content}}`;
+                        children.push(new MathRun(symbolMap[key] || grp.content));
+                        i = grp.nextIndex;
+                    }
                     else if (command === '\\left' || command === '\\right') {
-                        // Bỏ qua lệnh left/right, chỉ lấy ký tự tiếp theo (ví dụ (, ), [, ])
-                        // Trong Docx đơn giản, ta coi như ký tự thường
+                        // Bỏ qua lệnh left/right, lấy ký tự ngoặc kế tiếp
                         let bracket = latex[nextIdx];
                         children.push(new MathRun(bracket));
                         i = nextIdx + 1;
@@ -279,158 +280,115 @@ async function handleDownloadWord() {
                         children.push(new MathRun(symbolMap[command]));
                         i = nextIdx;
                     } 
-                    else if (['\\%', '\\{', '\\}', '\\$'].includes(command)) {
-                        children.push(new MathRun(command.charAt(1)));
-                        i = nextIdx;
-                    }
                     else {
-                        // Lệnh lạ -> Bỏ qua hoặc in ra text để debug
+                        // Lệnh lạ, bỏ qua dấu \
                         i = nextIdx; 
                     }
                 } 
                 else if (char === '^') {
-                    // Mũ
                     const prev = children.pop();
-                    let supContent = "";
-                    let nextIdx = i + 1;
+                    let content = "", nextIdx = i + 1;
                     if (latex[nextIdx] === '{') {
                         const grp = extractGroup(latex, nextIdx);
-                        supContent = grp.content;
-                        nextIdx = grp.nextIndex;
-                    } else {
-                        supContent = latex[nextIdx];
-                        nextIdx++;
-                    }
+                        content = grp.content; nextIdx = grp.nextIndex;
+                    } else { content = latex[nextIdx]; nextIdx++; }
+                    
+                    const subNodes = parseLatexToDocx(content);
                     if (prev) {
-                        children.push(new MathSuperScript({ children: [prev], superScript: parseLatexToDocx(supContent) }));
+                        children.push(new MathSuperScript({ children: [prev], superScript: subNodes }));
+                    } else {
+                        // Trường hợp ^2 ở đầu (hiếm gặp, nhưng xử lý an toàn)
+                        children.push(new MathSuperScript({ children: [new MathRun("")], superScript: subNodes }));
                     }
                     i = nextIdx;
                 } 
                 else if (char === '_') {
-                    // Chỉ số dưới
                     const prev = children.pop();
-                    let subContent = "";
-                    let nextIdx = i + 1;
+                    let content = "", nextIdx = i + 1;
                     if (latex[nextIdx] === '{') {
                         const grp = extractGroup(latex, nextIdx);
-                        subContent = grp.content;
-                        nextIdx = grp.nextIndex;
-                    } else {
-                        subContent = latex[nextIdx];
-                        nextIdx++;
-                    }
+                        content = grp.content; nextIdx = grp.nextIndex;
+                    } else { content = latex[nextIdx]; nextIdx++; }
+                    
+                    const subNodes = parseLatexToDocx(content);
                     if (prev) {
-                        children.push(new MathSubScript({ children: [prev], subScript: parseLatexToDocx(subContent) }));
+                        children.push(new MathSubScript({ children: [prev], subScript: subNodes }));
+                    } else {
+                        children.push(new MathSubScript({ children: [new MathRun("")], subScript: subNodes }));
                     }
                     i = nextIdx;
                 } 
-                else if (char === '{' || char === '}') {
-                    i++; // Bỏ qua ngoặc đơn lẻ dùng để gom nhóm
-                } 
-                else {
-                    // Ký tự thường
+                else if (char !== '{' && char !== '}') {
                     children.push(new MathRun(char));
                     i++;
-                }
+                } 
+                else { i++; }
             }
             return children;
         }
 
-        // Helper: Lấy nội dung trong ngoặc {} hoặc []
-        function extractGroup(str, startIndex, openChar = '{', closeChar = '}') {
-            let depth = 0;
-            let i = startIndex;
-            
-            // Tìm ký tự mở đầu tiên
-            while(i < str.length && str[i] !== openChar) {
-                // Nếu gặp ký tự khác (không phải khoảng trắng) trước khi gặp mở ngoặc -> coi là nhóm 1 ký tự
-                if (str[i] !== ' ') return { content: str[i], nextIndex: i + 1 }; 
+        function extractGroup(str, idx, open='{', close='}') {
+            if (idx >= str.length) return {content:"", nextIndex:idx};
+            if (str[idx] !== open) return {content:str[idx], nextIndex:idx+1};
+            let depth=1, i=idx+1;
+            while(i<str.length && depth>0) {
+                if(str[i]===open) depth++; else if(str[i]===close) depth--;
                 i++;
             }
-            
-            if (i >= str.length) return { content: "", nextIndex: startIndex };
-            
-            i++; // Qua dấu mở
-            depth = 1;
-            let startContent = i;
-            
-            while (i < str.length && depth > 0) {
-                if (str[i] === openChar) depth++;
-                else if (str[i] === closeChar) depth--;
-                i++;
-            }
-            
-            return {
-                content: str.substring(startContent, i - 1),
-                nextIndex: i
-            };
+            return {content:str.substring(idx+1, i-1), nextIndex:i};
         }
 
-        // --- 2. HÀM TẠO ĐOẠN VĂN (Hỗ trợ Text lẫn Math) ---
-        function createPara(text, options = {}) {
-            const children = [];
-            // Tách các đoạn Math ($$...$$) và Text thường
-            const parts = text.split(/(\$\$[\s\S]*?\$\$)/g);
-
-            parts.forEach(part => {
-                if (part.startsWith('$$') && part.endsWith('$$')) {
-                    // Xử lý Toán
-                    const latex = part.slice(2, -2).trim(); 
-                    const mathRuns = parseLatexToDocx(latex);
-                    children.push(new DocxMath({ children: mathRuns }));
-                } else {
-                    // Xử lý Text thường
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = part.replace(/\n/g, ' '); 
-                    
-                    function traverse(node, style) {
-                        if (node.nodeType === 3) {
-                            if(node.nodeValue) children.push(new TextRun({ text: node.nodeValue, ...style }));
-                        } else if (node.nodeType === 1) {
-                            const tag = node.tagName.toLowerCase();
-                            if(tag === 'br') children.push(new TextRun({ text: "\n", break: 1 }));
-                            else {
-                                const newStyle = { ...style, bold: style.bold || tag==='b'||tag==='strong', italics: style.italics || tag==='i'||tag==='em' };
-                                Array.from(node.childNodes).forEach(c => traverse(c, newStyle));
-                            }
-                        }
+        // --- 2. HÀM QUÉT NỘI DUNG ĐỆ QUY (FIX LỖI MẤT CHỮ) ---
+        function getParagraphChildren(node, currentStyle = {}) {
+            let runs = [];
+            
+            // Hàm xử lý chuỗi văn bản thuần (bao gồm cả LaTeX)
+            function processTextContent(rawText, style) {
+                if (!rawText) return;
+                
+                // Tách các đoạn Math ($$...$$) và Text thường
+                const parts = rawText.split(/(\$\$[\s\S]*?\$\$)/g);
+                parts.forEach(part => {
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        const latex = part.slice(2, -2).trim();
+                        runs.push(new DocxMath({ children: parseLatexToDocx(latex) }));
+                    } else {
+                        // Xử lý xuống dòng trong text
+                        const lines = part.split('\n');
+                        lines.forEach((line, index) => {
+                            if (line) runs.push(new TextRun({ text: line, ...style }));
+                            if (index < lines.length - 1) runs.push(new TextRun({ text: "", break: 1 }));
+                        });
                     }
-                    traverse(tempDiv, { bold: options.bold, italics: options.italics });
+                });
+            }
+
+            // Duyệt qua các node con
+            node.childNodes.forEach(child => {
+                if (child.nodeType === 3) { // TEXT NODE
+                    processTextContent(child.nodeValue, currentStyle);
+                } else if (child.nodeType === 1) { // ELEMENT NODE
+                    const tag = child.tagName.toLowerCase();
+                    
+                    if (tag === 'br') {
+                        runs.push(new TextRun({ text: "", break: 1 }));
+                    } else {
+                        // Kế thừa style
+                        const newStyle = { 
+                            ...currentStyle, 
+                            bold: currentStyle.bold || tag==='b' || tag==='strong', 
+                            italics: currentStyle.italics || tag==='i' || tag==='em',
+                            underline: currentStyle.underline || tag==='u'
+                        };
+                        // ĐỆ QUY
+                        runs.push(...getParagraphChildren(child, newStyle));
+                    }
                 }
             });
-
-            return new Paragraph({
-                children: children,
-                alignment: options.alignment || AlignmentType.LEFT,
-                heading: options.heading,
-                spacing: { after: 100 }
-            });
+            return runs;
         }
 
-        // --- 3. HÀM TẠO BẢNG ---
-        function createTable(tableNode) {
-            const rows = Array.from(tableNode.querySelectorAll('tr')).map(tr => {
-                const cells = Array.from(tr.querySelectorAll('td, th')).map(td => {
-                    const isHeader = td.tagName.toLowerCase() === 'th';
-                    return new TableCell({
-                        children: [createPara(td.innerHTML, { bold: isHeader, alignment: isHeader ? AlignmentType.CENTER : AlignmentType.LEFT })],
-                        columnSpan: parseInt(td.getAttribute('colspan') || 1),
-                        rowSpan: parseInt(td.getAttribute('rowspan') || 1),
-                        borders: {
-                            top: {style: BorderStyle.SINGLE, size: 1},
-                            bottom: {style: BorderStyle.SINGLE, size: 1},
-                            left: {style: BorderStyle.SINGLE, size: 1},
-                            right: {style: BorderStyle.SINGLE, size: 1},
-                        },
-                        width: { size: 100, type: WidthType.PERCENTAGE }
-                    });
-                });
-                return new TableRow({ children: cells });
-            });
-            return new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } });
-        }
-
-        // --- 4. MAIN PROCESS ---
+        // --- 3. MAIN CONVERTER ---
         const parser = new DOMParser();
         const docDOM = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
         const root = docDOM.body.firstElementChild;
@@ -446,18 +404,54 @@ async function handleDownloadWord() {
         Array.from(root.childNodes).forEach(node => {
             if (node.nodeType === 1) {
                 const tag = node.tagName.toLowerCase();
+
                 if (tag === 'table') {
-                    docChildren.push(createTable(node));
-                    docChildren.push(new Paragraph(""));
+                    // XỬ LÝ BẢNG
+                    const rows = Array.from(node.querySelectorAll('tr')).map(tr => {
+                        const cells = Array.from(tr.querySelectorAll('td, th')).map(td => {
+                            const isHeader = td.tagName.toLowerCase() === 'th';
+                            // Dùng hàm đệ quy để lấy toàn bộ nội dung trong ô
+                            const paraChildren = getParagraphChildren(td, { bold: isHeader });
+                            
+                            return new TableCell({
+                                children: [new Paragraph({ 
+                                    children: paraChildren,
+                                    alignment: isHeader ? AlignmentType.CENTER : AlignmentType.LEFT
+                                })],
+                                columnSpan: parseInt(td.getAttribute('colspan') || 1),
+                                rowSpan: parseInt(td.getAttribute('rowspan') || 1),
+                                borders: {
+                                    top: {style: BorderStyle.SINGLE, size: 1},
+                                    bottom: {style: BorderStyle.SINGLE, size: 1},
+                                    left: {style: BorderStyle.SINGLE, size: 1},
+                                    right: {style: BorderStyle.SINGLE, size: 1},
+                                },
+                                width: { size: 100, type: WidthType.PERCENTAGE }
+                            });
+                        });
+                        return new TableRow({ children: cells });
+                    });
+                    docChildren.push(new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                    docChildren.push(new Paragraph("")); 
                 } 
                 else if (tag.match(/^h[1-6]$/)) {
-                    docChildren.push(createPara(node.innerHTML, { heading: HeadingLevel.HEADING_2, bold: true }));
-                }
-                else if (['p', 'div', 'li'].includes(tag)) {
-                    docChildren.push(createPara(node.innerHTML));
+                    // XỬ LÝ TIÊU ĐỀ
+                    const runs = getParagraphChildren(node, { bold: true });
+                    docChildren.push(new Paragraph({
+                        children: runs,
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 200, after: 100 }
+                    }));
                 }
                 else {
-                    docChildren.push(createPara(node.innerText));
+                    // XỬ LÝ ĐOẠN VĂN
+                    const runs = getParagraphChildren(node);
+                    if (runs.length > 0) {
+                        docChildren.push(new Paragraph({
+                            children: runs,
+                            spacing: { after: 100 }
+                        }));
+                    }
                 }
             }
         });
