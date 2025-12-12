@@ -37,7 +37,6 @@ export async function onRequest(context) {
             }
 
             // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ ---
-            // Thêm chỉ dẫn rõ ràng về trọng số thời gian cho AI
             let topicsDescription = "";
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
@@ -45,8 +44,7 @@ export async function onRequest(context) {
                     let periodInfo = "";
                     let weightNote = "";
                     if (exam_type === 'hk') {
-                        // Logic phân bổ 25/75 cho Cuối kỳ
-                        if (unit.p2 > 0) { // Giả định bài có tiết ở HK2 là kiến thức mới
+                        if (unit.p2 > 0) {
                              periodInfo = ` [Thời lượng: ${unit.p2} tiết (Nửa sau HK - TRỌNG TÂM 75%)]`;
                              weightNote = " (Ưu tiên ra nhiều câu hỏi)";
                         } else {
@@ -62,13 +60,19 @@ export async function onRequest(context) {
            
             // --- 3. XÂY DỰNG CẤU TRÚC ĐỀ THI ---
             let structurePrompt = "";
-            
+            let scoreDistributionPrompt = ""; // Logic điểm số cho Footer
+
             if (use_short_answer) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
                 - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
                 - Phần III: Câu hỏi Trả lời ngắn (Điền đáp số/kết quả).
+                `;
+                scoreDistributionPrompt = `
+                - Phần MCQ: 3.0 điểm (30%).
+                - Phần Đúng/Sai: 4.0 điểm (40%).
+                - Phần Trả lời ngắn: 3.0 điểm (30%).
                 `;
             } else {
                 structurePrompt = `
@@ -77,9 +81,13 @@ export async function onRequest(context) {
                 - Phần II: Tự luận (Giải chi tiết).
                 *** YÊU CẦU ĐẶC BIỆT: TUYỆT ĐỐI KHÔNG SOẠN CÂU HỎI DẠNG "TRẢ LỜI NGẮN" HAY "ĐIỀN ĐÁP SỐ". CHỈ DÙNG TRẮC NGHIỆM VÀ TỰ LUẬN. ***
                 `;
+                scoreDistributionPrompt = `
+                - Phần MCQ: 3.0 điểm (30%).
+                - Phần Tự luận: 7.0 điểm (70%).
+                `;
             }
 
-            // --- 4. LOGIC PHÂN BỐ ĐIỂM ---
+            // --- 4. LOGIC PHÂN BỐ ĐIỂM HỌC KỲ ---
             let scoreLogic = "";
             if (exam_type === 'hk') {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. BẮT BUỘC phân bổ điểm: Kiến thức Nửa đầu ~20-30%, Kiến thức Nửa sau ~70-80%.`;
@@ -87,7 +95,7 @@ export async function onRequest(context) {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm tỷ lệ thuận với số tiết từng bài.`;
             }
 
-            // --- PROMPT FINAL (ĐÃ CƯỜNG HÓA LOGIC TƯ DUY) ---
+            // --- PROMPT FINAL (BỔ SUNG LOGIC FOOTER) ---
             const prompt = `
             Bạn là một trợ lý chuyên gia khảo thí hàng đầu. Nhiệm vụ của bạn là xây dựng Ma trận, Đặc tả và Đề kiểm tra chính xác tuyệt đối theo Công văn 7991/BGDĐT-GDTrH.
 
@@ -131,6 +139,11 @@ export async function onRequest(context) {
             *Yêu cầu:* Chỉ trả về mã HTML. Sử dụng thẻ <table> chuẩn.
 
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
+            *Logic tính toán Footer (BẮT BUỘC):*
+            - **Dòng Tổng số câu:** Bạn phải cộng dọc chính xác các con số trong từng cột (Biết, Hiểu, Vận dụng) từ trên xuống dưới.
+            - **Dòng Tổng điểm:** Ghi cố định theo cấu trúc điểm: ${scoreDistributionPrompt} -> Tổng 10.0 điểm.
+            - **Dòng Tỉ lệ %:** Cộng % điểm tương ứng (Ví dụ: MCQ 30% + Đ/S 40% + Khác 30% = 100%).
+
             *Copy chính xác cấu trúc Header này và điền dữ liệu vào Body:*
             \`\`\`html
             <table border="1" style="border-collapse:collapse; width:100%; text-align:center;">
@@ -170,19 +183,32 @@ export async function onRequest(context) {
                 <tfoot>
                     <tr>
                         <th colspan="3">TỔNG SỐ CÂU</th>
-                        <th>...</th><th>...</th><th>...</th>
-                        <th>...</th><th>...</th><th>...</th>
-                        <th>...</th><th>...</th><th>...</th>
-                        <th>...</th><th>...</th><th>...</th>
+                        <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
+                        <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
+                        <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
+                        <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
                         <th>12 (hoặc 6)</th>
                         <th>2 (hoặc 1)</th>
-                        <th>...</th>
-                        <th>100%</th>
+                        <th>(Sum)</th>
+                        <th></th>
                     </tr>
                      <tr>
                         <th colspan="3">TỔNG ĐIỂM</th>
-                        <th colspan="15">10.0 ĐIỂM</th>
-                        <th></th>
+                        <th colspan="3">3.0</th>
+                        <th colspan="3">4.0</th>
+                        <th colspan="3">2.0 (hoặc 0)</th>
+                        <th colspan="3">1.0 (hoặc 3.0)</th>
+                        <th colspan="3"></th>
+                        <th>10.0</th>
+                    </tr>
+                    <tr>
+                        <th colspan="3">TỈ LỆ %</th>
+                        <th colspan="3">30%</th>
+                        <th colspan="3">40%</th>
+                        <th colspan="3">20%</th>
+                        <th colspan="3">10%</th>
+                        <th colspan="3"></th>
+                        <th>100%</th>
                     </tr>
                 </tfoot>
             </table>
