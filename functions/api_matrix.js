@@ -60,19 +60,13 @@ export async function onRequest(context) {
            
             // --- 3. XÂY DỰNG CẤU TRÚC ĐỀ THI ---
             let structurePrompt = "";
-            let scoreDistributionPrompt = ""; // Logic điểm số cho Footer
-
+            
             if (use_short_answer) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
                 - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
-                - Phần III: Câu hỏi Trả lời ngắn (Điền đáp số/kết quả).
-                `;
-                scoreDistributionPrompt = `
-                - Phần MCQ: 3.0 điểm (30%).
-                - Phần Đúng/Sai: 4.0 điểm (40%).
-                - Phần Trả lời ngắn: 3.0 điểm (30%).
+                - Phần III: Trắc nghiệm Trả lời ngắn (Điền đáp số/kết quả).
                 `;
             } else {
                 structurePrompt = `
@@ -81,13 +75,9 @@ export async function onRequest(context) {
                 - Phần II: Tự luận (Giải chi tiết).
                 *** YÊU CẦU ĐẶC BIỆT: TUYỆT ĐỐI KHÔNG SOẠN CÂU HỎI DẠNG "TRẢ LỜI NGẮN" HAY "ĐIỀN ĐÁP SỐ". CHỈ DÙNG TRẮC NGHIỆM VÀ TỰ LUẬN. ***
                 `;
-                scoreDistributionPrompt = `
-                - Phần MCQ: 3.0 điểm (30%).
-                - Phần Tự luận: 7.0 điểm (70%).
-                `;
             }
 
-            // --- 4. LOGIC PHÂN BỐ ĐIỂM HỌC KỲ ---
+            // --- 4. LOGIC PHÂN BỐ ĐIỂM ---
             let scoreLogic = "";
             if (exam_type === 'hk') {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. BẮT BUỘC phân bổ điểm: Kiến thức Nửa đầu ~20-30%, Kiến thức Nửa sau ~70-80%.`;
@@ -95,7 +85,7 @@ export async function onRequest(context) {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm tỷ lệ thuận với số tiết từng bài.`;
             }
 
-            // --- PROMPT FINAL (BỔ SUNG LOGIC FOOTER) ---
+            // --- PROMPT FINAL (ĐÃ CẬP NHẬT TABLE CHUẨN) ---
             const prompt = `
             Bạn là một trợ lý chuyên gia khảo thí hàng đầu. Nhiệm vụ của bạn là xây dựng Ma trận, Đặc tả và Đề kiểm tra chính xác tuyệt đối theo Công văn 7991/BGDĐT-GDTrH.
 
@@ -117,7 +107,7 @@ export async function onRequest(context) {
               - Tổng số câu MCQ (Phần I): **12 câu** (0.25đ/câu).
               - Tổng số câu Đúng/Sai (Phần II): **2 câu** (4.0đ).
               - Tổng số câu Trả lời ngắn/Tự luận (Phần III/IV):
-                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ) + **1-2 câu Tự luận** (1.0đ).
+                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ) + **1 câu Tự luận** (1.0đ).
                 + Nếu KHÔNG có Trả lời ngắn: **2-3 câu Tự luận** (3.0đ).
 
             * **TRƯỜNG HỢP B: Nếu thời gian <= 45 phút**
@@ -141,10 +131,10 @@ export async function onRequest(context) {
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
             *Logic tính toán Footer (BẮT BUỘC):*
             - **Dòng Tổng số câu:** Bạn phải cộng dọc chính xác các con số trong từng cột (Biết, Hiểu, Vận dụng) từ trên xuống dưới.
-            - **Dòng Tổng điểm:** Ghi cố định theo cấu trúc điểm: ${scoreDistributionPrompt} -> Tổng 10.0 điểm.
-            - **Dòng Tỉ lệ %:** Cộng % điểm tương ứng (Ví dụ: MCQ 30% + Đ/S 40% + Khác 30% = 100%).
+            - **Dòng Tổng điểm:** Điền theo cấu trúc mẫu bên dưới.
+            - **Dòng Tỉ lệ %:** Điền theo cấu trúc mẫu bên dưới.
 
-            *Copy chính xác cấu trúc Header này và điền dữ liệu vào Body:*
+            *Copy chính xác cấu trúc Bảng này và điền dữ liệu vào phần Body:*
             \`\`\`html
             <table border="1" style="border-collapse:collapse; width:100%; text-align:center;">
                 <thead>
