@@ -185,14 +185,14 @@ export async function onRequest(context) {
                 - Tổng số câu Đúng-Sai dọc xuống phải bằng **2** (nếu >= 60p) hoặc **1** (nếu <= 45p).
                 - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
                 - Tổng số câu Tự luận dọc xuống phải bằng **2-3**.
-		- **QUAN TRỌNG:** Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 phải > 0.
-                            * **Bước 3 (Tính tổng):**
+				- **QUAN TRỌNG:** Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 phải > 0. 
+            * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
                 - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (Lưu ý hệ số điểm: MCQ=0.25đ hoặc 0.5đ tùy thời gian, TLN=0.5đ, v.v..).
-            * **Bước 4 (Tổng kết - Footer 3 dòng):**
-                - Dòng "Tổng số câu": Cộng dọc tất cả các cột. (Kết quả phải >0)
-                - Dòng "Tổng điểm": Kiểm tra lại tổng điểm toàn bài phải là 10.0.
-                - Dòng "Tỉ lệ %": Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
+            * **Bước 4 **Tổng kết - ***Footer 3 dòng:**
+                - Dòng **Tổng số câu*: * Cột 1-3 (A-C): 'colspan="3"':  Cộng dọc tất cả các cột. (Kết quả mỗi ô phải >0)
+                - Dòng **Tổng điểm*: * Cột 1-3 (A-C): 'colspan="3"': Kiểm tra lại tổng điểm toàn bài phải là 10.0.
+                - Dòng **Tỉ lệ %*: * Cột 1-3 (A-C): 'colspan="3"': Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
             **C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
             *Tạo bảng HTML có 16 cột:*
@@ -406,4 +406,5 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
