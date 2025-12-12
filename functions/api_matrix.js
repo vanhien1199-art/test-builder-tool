@@ -143,36 +143,35 @@ export async function onRequest(context) {
                         <th rowspan="4">Chủ đề/Chương</th>
                         <th rowspan="4">Nội dung/Đơn vị kiến thức</th>
                         <th colspan="12">Mức độ đánh giá</th>
-                        <th colspan="3">Tổng số câu</th>
+                        <th colspan="3">Tổng</th>
                         <th rowspan="4">Tỉ lệ % điểm</th>
                     </tr>
                     <tr>
-                        <th colspan="3">TNKQ (MCQ)</th>
-                        <th colspan="3">Đúng/Sai (T/F)</th>
-                        <th colspan="3">Trả lời ngắn (SA)</th>
+                        <th colspan="9">TNKQ</th>
                         <th colspan="3">Tự luận (TL)</th>
-                        <th rowspan="3">MCQ</th>
-                        <th rowspan="3">Đ/S</th>
-                        <th rowspan="3">Khác</th>
+                        <th colspan="3"></th>
+                        
                     </tr>
                     <tr>
-                        <th colspan="3">Số câu</th>
-                        <th colspan="3">Số câu</th>
-                        <th colspan="3">Số câu</th>
-                        <th colspan="3">Số câu</th>
+                        <th colspan="3">Nhiều lựa chọn</th>
+                        <th colspan="3">Đúng-Sai</th>
+                        <th colspan="3">Trả lời ngắn</th>
+                        <th colspan="3">Tự luận</th>
+						<th colspan="3"></th>
                     </tr>
                     <tr>
-                        <th>B</th><th>H</th><th>VD</th>
-                        <th>B</th><th>H</th><th>VD</th>
-                        <th>B</th><th>H</th><th>VD</th>
-                        <th>B</th><th>H</th><th>VD</th>
+                        <th>Biết</th><th>Hiểu</th><th>VD</th>
+                        <th>Biết</th><th>Hiểu</th><th>VD</th>
+                        <th>Biết</th><th>Hiểu</th><th>VD</th>
+                        <th>Biết</th><th>Hiểu</th><th>VD</th>
+						<th>Biết</th><th>Hiểu</th><th>VD</th>
                     </tr>
                 </thead>
                 <tbody>
                     </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="3">TỔNG SỐ CÂU</th>
+                        <th colspan="3">Tổng số câu</th>
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
@@ -509,3 +508,4 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
