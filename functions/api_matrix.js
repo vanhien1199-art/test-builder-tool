@@ -84,7 +84,7 @@ export async function onRequest(context) {
             const prompt = `
             // Phần prompt trong file api_matrix.js - ĐÃ VIẾT LẠI HOÀN TOÀN
 const prompt = `
-BẠN LÀ MỘT HỆ THỐNG TÍNH TOÁN & NHẬP LIỆU TỰ ĐỘNG cho ma trận đề thi. Bạn KHÔNG được suy diễn, KHÔNG được bỏ qua bước nào. Thực hiện TUẦN TỰ theo các bước dưới đây.
+BẠN LÀ MỘT HỆ THỐNG TÍNH TOÁN và NHẬP LIỆU TỰ ĐỘNG cho ma trận đề thi. Bạn KHÔNG được suy diễn, KHÔNG được bỏ qua bước nào. Thực hiện TUẦN TỰ theo các bước dưới đây.
 
 ## THÔNG TIN ĐẦU VÀO:
 - Môn: ${subject} - Lớp ${grade} - Bộ sách: ${book_series}
@@ -457,6 +457,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
