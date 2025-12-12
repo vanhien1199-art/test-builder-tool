@@ -81,192 +81,227 @@ export async function onRequest(context) {
             }
 
             // --- PROMPT FINAL ---
-           // PHẦN PROMPT CẦN THAY THẾ TRONG api_matrix.js
+           // PHẦN PROMPT HOÀN CHỈNH (giữ nguyên tất cả + bổ sung hướng dẫn chi tiết)
+
 const prompt = `
-Bạn là một hệ thống chuyên xây dựng ma trận đề kiểm tra theo Công văn 7991/BGDĐT-GDTrH. Nhiệm vụ của bạn là TÍNH TOÁN CHÍNH XÁC và ĐIỀN ĐÚNG SỐ LIỆU vào các bảng HTML dưới đây.
+Bạn là một trợ lý chuyên về xây dựng ma trận đề kiểm tra và đề kiểm tra theo quy định của Bộ Giáo dục và Đào tạo Việt Nam. Dựa trên Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 và các hướng dẫn trong Phụ lục kèm theo. Bạn am hiểu sâu sắc chương trình giáo dục phổ thông 2018 (Ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT ngày 26 tháng 12 năm 2018 của Bộ trưởng Bộ Giáo dục và Đào tạo).
+Bạn hiểu biết chuyên sâu về sách giáo khoa ${book_series} lớp 6, lớp 7, lớp 8, lớp 9, lớp 10, lớp 11, lớp 12.
+Nhiệm vụ của bạn là xây dựng ma trận đề kiểm tra, bản đặc tả đề kiểm tra, đề kiểm tra và hướng dẫn chấm theo các yêu cầu dưới đây. KHÔNG thêm bất kỳ lời giải thích nào.
+### TÀI LIỆU THAM KHẢO (QUAN TRỌNG):
+${DOCUMENT_CONTENT_7991}
+## THÔNG TIN
+1. Môn: ${subject} - Lớp ${grade}
+2. Bộ sách: **${book_series}** (Dùng đúng thuật ngữ sách này).
+3. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester}.
+4. Thời gian: ${time} phút.
 
-## THÔNG TIN ĐẦU VÀO:
-- Môn: ${subject} - Lớp ${grade} - Bộ sách: ${book_series}
-- Kỳ thi: ${exam_type === 'hk' ? 'HỌC KỲ' : 'GIỮA KỲ'} ${semester}
-- Thời gian: ${time} phút
-- ${use_short_answer ? 'CÓ dùng câu Trả lời ngắn' : 'KHÔNG dùng câu Trả lời ngắn'}
+${(() => {
+  if (use_short_answer) {
+    return `CẤU TRÚC ĐỀ THI (3 PHẦN):
+    - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
+    - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
+    - Phần III: Câu hỏi Trả lời ngắn (Điền đáp số/kết quả).`;
+  } else {
+    return `CẤU TRÚC ĐỀ THI (2 PHẦN):
+    - Phần I: Trắc nghiệm khách quan (4 lựa chọn).
+    - Phần II: Tự luận (Giải chi tiết).
+    *** YÊU CẦU ĐẶC BIỆT: TUYỆT ĐỐI KHÔNG SOẠN CÂU HỎI DẠNG "TRẢ LỜI NGẮN" HAY "ĐIỀN ĐÁP SỐ". CHỈ DÙNG TRẮC NGHIỆM VÀ TỰ LUẬN. ***`;
+  }
+})()}
 
-## CÁC BƯỚC BẠN PHẢI LÀM:
+## NỘI DUNG & THỜI LƯỢNG:
+${(() => {
+  let topicsDescription = "";
+  topics.forEach((topic, index) => {
+    topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
+    topic.units.forEach((unit, uIndex) => {
+      let periodInfo = "";
+      if (exam_type === 'hk') {
+        periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu), ${unit.p2} tiết (Nửa sau)]`;
+      } else {
+        periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
+      }
+      topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}\n`;
+    });
+  });
+  return topicsDescription;
+})()}
 
-### BƯỚC 1: XÁC ĐỊNH THÔNG SỐ CỐ ĐỊNH
-${
-  time >= 60 
-  ? `THỜI GIAN ${time} PHÚT (>=60p):
-     • MCQ: 12 câu × 0.25đ = 3.0 điểm
-     • Đúng-Sai: 2 câu × 1.0đ/câu = 2.0 điểm
-     • Trả lời ngắn: 4 câu × 0.5đ = 2.0 điểm
-     • Tự luận: 3.0 điểm (3 câu: 1.0 + 1.0 + 1.0)`
-  : `THỜI GIAN ${time} PHÚT (45p):
-     • MCQ: 6 câu × 0.5đ = 3.0 điểm
-     • Đúng-Sai: 1 câu × 2.0đ/câu = 2.0 điểm
-     • Trả lời ngắn: 4 câu × 0.5đ = 2.0 điểm
-     • Tự luận: 3.0 điểm (2 câu: 2.0 + 1.0)`
-}
+${(() => {
+  if (exam_type === 'hk') {
+    return `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Tổng tiết Nửa đầu HK: ${totalPeriodsHalf1}, Nửa sau HK: ${totalPeriodsHalf2}. Phân bổ điểm tỷ lệ Hãy tính tỉ lệ điểm dựa trên trọng số này: Nửa đầu ~25%, Nửa sau ~75%.`;
+  } else {
+    return `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tổng số tiết: ${totalPeriodsHalf1}. Tính % điểm dựa trên số tiết từng bài.`;
+  }
+})()}
 
-### BƯỚC 2: TÍNH % ĐIỂM CHO TỪNG BÀI
-${
-  exam_type === 'gk'
-  ? `CÔNG THỨC GIỮA KỲ:
-     Tỉ lệ % = (Số tiết của bài / ${totalPeriodsHalf1}) × 100%
-     Làm tròn 1 chữ số thập phân, tổng = 100%`
-  : `CÔNG THỨC HỌC KỲ:
-     1. % nửa đầu = (Số tiết p1 / ${totalPeriodsHalf1}) × 25%
-     2. % nửa sau = (Số tiết p2 / ${totalPeriodsHalf2}) × 75%
-     3. % tổng = % nửa đầu + % nửa sau
-     Làm tròn 1 chữ số thập phân, tổng = 100%`
-}
+## YÊU CẦU ĐẶC BIỆT VỀ NGUỒN KIẾN THỨC (TUÂN THỦ TUYỆT ĐỐI):
+1. **Đúng Bộ Sách & Chương Trình:** Dựa vào tên môn học ${subject} và nội dung chi tiết được cung cấp, hãy xác định chính xác bộ sách giáo khoa (Kết nối tri thức, Chân trời sáng tạo, hoặc Cánh diều) để ra câu hỏi phù hợp với thuật ngữ và kiến thức của bộ sách đó.
+2. **Đúng Lớp: Bạn đang ra đề cho LỚP ${grade}.
+   - Tuyệt đối KHÔNG lấy nhầm kiến thức của lớp khác (Ví dụ: Nếu là Lớp 9 thì không được dùng kiến thức Lớp 8).
+   - Kiểm tra kỹ các đơn vị kiến thức, công thức, định nghĩa phải thuộc đúng phạm vi chương trình Lớp ${grade}.
+3. **Nguyên tắc "Chỉ Dữ Liệu Được Cung Cấp" (Source-Only):**
+   - Tuyệt đối KHÔNG sử dụng kiến thức bên ngoài (Pre-trained knowledge) nếu nó mâu thuẫn hoặc không được nhắc đến trong phần "DỮ LIỆU NỘI DUNG" ở trên.
+   - Ví dụ: Nếu người dùng nhập "Tin học 9: Giải quyết vấn đề" mà không nhắc đến Python, bạn **KHÔNG ĐƯỢC PHÉP** ra câu hỏi về Python.
+   - Nếu người dùng nhập "Hóa học: Base" mà không liệt kê tên chất cụ thể, hãy chỉ ra câu hỏi về tính chất chung, không tự bịa ra các chất lạ không có trong chương trình phổ thông.
+4. **Đối với các môn đặc thù (Tin học, Ngoại ngữ):**
+   - "Tin học cấp THCS":Chỉ ra câu hỏi về ngôn ngữ lập trình Scratch, thuật toán liên quan đến Scratch hoặc phần mềm **được nêu tên cụ thể** trong phần nội dung đầu vào. Nếu người dùng không ghi tên ngôn ngữ (ví dụ chỉ ghi "Lập trình"), hãy ra câu hỏi tư duy thuật toán chung (Lưu đồ, giả mã) chứ không dùng code cụ thể (như Python/C++).
+   - "Tin học cấp THPT":Chỉ ra câu hỏi về ngôn ngữ lập trình Python, thuật toán liên quan đến Python hoặc phần mềm **được nêu tên cụ thể** trong phần nội dung đầu vào. 
+   - "Tiếng Anh": Chỉ sử dụng ngữ pháp/từ vựng phù hợp với trình độ lớp ${grade}.
 
-### BƯỚC 3: CHUYỂN % THÀNH SỐ CÂU HỎI
-CÔNG THỨC CHO TỪNG BÀI:
-1. Số câu MCQ = (Tổng câu MCQ) × (%/100)
-2. Số câu Đúng-Sai = (Tổng câu Đ-S) × (%/100) 
-3. Số câu Trả lời ngắn = (Tổng câu TLN) × (%/100)
-4. Số câu Tự luận = (Tổng câu TL) × (%/100)
+## KẾT QUẢ ĐẦU RA: TUÂN THỦ NGIÊM NGẶT CÁC YÊU CẦU SAU:
 
-QUY TẮC LÀM TRÒN:
-• Làm tròn lên/xuống để tổng số câu mỗi loại KHỚP với Bước 1
-• Ví dụ: nếu cần 12 câu MCQ, phân bổ sao cho tổng = 12
+**I. QUY ĐỊNH VỀ ĐIỂM SỐ VÀ CẤU TRÚC ĐỀ (QUAN TRỌNG - BẮT BUỘC):**
+*Mục tiêu: Đảm bảo TỔNG ĐIỂM TOÀN BÀI LUÔN LÀ 10.0.*
 
-### BƯỚC 4: PHÂN BỔ MỨC ĐỘ NHẬN THỨC
-QUY TẮC:
-1. Mỗi bài phải có cả 3 mức độ: Biết, Hiểu, Vận dụng
-2. Phân đều các mức độ cho các loại câu hỏi
-3. Tỉ lệ chung: Biết ~40%, Hiểu ~30%, Vận dụng ~30%
+**A. CÔNG THỨC TÍNH TOÁN CHI TIẾT (THỰC HIỆN TRƯỚC KHI ĐIỀN BẢNG):**
 
-### BƯỚC 5: ĐIỀN VÀO BẢNG MA TRẬN (19 CỘT)
-BẠN PHẢI TẠO BẢNG HTML VỚI CẤU TRÚC SAU:
+1. **Tính tỉ lệ % điểm cho từng đơn vị kiến thức (BÀI):**
+   ${(() => {
+     if (exam_type === 'gk') {
+       return `CÔNG THỨC GIỮA KỲ:
+       %Điểm_bài = (Số tiết của bài / ${totalPeriodsHalf1}) × 100%
+       Làm tròn đến 1 chữ số thập phân. Tổng tất cả % = 100%`;
+     } else {
+       return `CÔNG THỨC HỌC KỲ:
+       1. % nửa đầu = (Số tiết p1 của bài / ${totalPeriodsHalf1}) × 25%
+       2. % nửa sau = (Số tiết p2 của bài / ${totalPeriodsHalf2}) × 75%
+       3. %Điểm_bài = % nửa đầu + % nửa sau
+       Làm tròn đến 1 chữ số thập phân. Tổng tất cả % = 100%`;
+     }
+   })()}
 
-<table border="1">
-<tr>
-  <th rowspan="4">TT</th>
-  <th rowspan="4">Chủ đề/Chương</th>
-  <th rowspan="4">Nội dung/đơn vị kiến thức</th>
-  <th colspan="12">Mức độ đánh giá</th>
-  <th colspan="3">Tổng</th>
-  <th rowspan="4">Tỉ lệ % điểm</th>
-</tr>
-<tr>
-  <th colspan="9">TNKQ</th>
-  <th colspan="3">Tự luận</th>
-</tr>
-<tr>
-  <th colspan="3">Nhiều lựa chọn</th>
-  <th colspan="3">Đúng - Sai</th>
-  <th colspan="3">Trả lời ngắn</th>
-  <th colspan="3">Tự luận</th>
-</tr>
-<tr>
-  <th>Biết</th><th>Hiểu</th><th>Vận dụng</th>
-  <th>Biết</th><th>Hiểu</th><th>Vận dụng</th>
-  <th>Biết</th><th>Hiểu</th><th>Vận dụng</th>
-  <th>Biết</th><th>Hiểu</th><th>Vận dụng</th>
-  <th>Biết</th><th>Hiểu</th><th>Vận dụng</th>
-</tr>
+2. **Xác định số lượng câu hỏi mỗi loại:**
+   ${(() => {
+     if (time >= 60) {
+       return `THỜI GIAN ${time} PHÚT (>=60p):
+       - MCQ: 12 câu (0.25đ/câu) = 3.0 điểm
+       - Đúng-Sai: 2 câu chùm (1.0đ/câu chùm) = 2.0 điểm
+       - Trả lời ngắn: 4 câu (0.5đ/câu) = 2.0 điểm
+       - Tự luận: 3.0 điểm (3 câu: 1.0đ + 1.0đ + 1.0đ)`;
+     } else {
+       return `THỜI GIAN ${time} PHÚT (45p):
+       - MCQ: 6 câu (0.5đ/câu) = 3.0 điểm
+       - Đúng-Sai: 1 câu chùm (2.0đ/câu chùm) = 2.0 điểm
+       - Trả lời ngắn: 4 câu (0.5đ/câu) = 2.0 điểm
+       - Tự luận: 3.0 điểm (2 câu: 2.0đ + 1.0đ)`;
+     }
+   })()}
 
-<!-- ĐÂY LÀ NƠI BẠN ĐIỀN DỮ LIỆU -->
-<!-- Ví dụ 1 dòng (thay thế bằng tính toán thực tế) -->
-<tr>
-  <td>1</td>
-  <td>${topics[0]?.name || 'Chương 1'}</td>
-  <td>${topics[0]?.units[0]?.content || 'Bài 1'}</td>
-  <!-- MCQ: Biết/Hiểu/Vận dụng -->
-  <td>1</td><td>1</td><td>0</td>
-  <!-- Đúng-Sai: Biết/Hiểu/Vận dụng -->
-  <td>0</td><td>0</td><td>0</td>
-  <!-- Trả lời ngắn: Biết/Hiểu/Vận dụng -->
-  <td>0</td><td>0</td><td>1</td>
-  <!-- Tự luận: Biết/Hiểu/Vận dụng -->
-  <td>0</td><td>0</td><td>0</td>
-  <!-- Tổng câu theo mức độ (TỰ TÍNH) -->
-  <td>1</td><td>1</td><td>1</td>
-  <!-- % điểm (từ Bước 2) -->
-  <td>25%</td>
-</tr>
+3. **Chuyển % điểm thành số câu hỏi cho từng bài:**
+   CÔNG THỨC CHO MỖI BÀI:
+   - Số câu MCQ = (12 hoặc 6) × (%Điểm_bài / 100)
+   - Số câu Đúng-Sai = (2 hoặc 1) × (%Điểm_bài / 100)
+   - Số câu Trả lời ngắn = 4 × (%Điểm_bài / 100)
+   - Số câu Tự luận = (3 hoặc 2) × (%Điểm_bài / 100)
+   
+   **QUY TẮC LÀM TRÒN:** Làm tròn lên/xuống để tổng số câu mỗi loại KHỚP với con số quy định trên.
 
-<!-- Thêm các dòng khác tương ứng -->
+4. **Phân bổ mức độ nhận thức (Biết/Hiểu/Vận dụng):**
+   - Mỗi bài phải có đủ 3 mức độ
+   - Tỉ lệ toàn đề: Biết ~40%, Hiểu ~30%, Vận dụng ~30%
+   - Phân đều mức độ cho các loại câu hỏi trong mỗi bài
 
-<!-- DÒNG TỔNG KẾT -->
-<tr>
-  <td colspan="3"><strong>Tổng số câu</strong></td>
-  <!-- Cộng dọc tất cả các cột trên -->
-  <td>4</td><td>4</td><td>4</td> <!-- MCQ -->
-  <td>1</td><td>1</td><td>0</td> <!-- Đúng-Sai -->
-  <td>2</td><td>1</td><td>1</td> <!-- Trả lời ngắn -->
-  <td>1</td><td>1</td><td>1</td> <!-- Tự luận -->
-  <td>8</td><td>7</td><td>6</td> <!-- Tổng mức độ -->
-  <td>100%</td>
-</tr>
+**B. KIỂM TRA TRƯỚC KHI ĐIỀN BẢNG:**
+✅ Tổng câu MCQ = ${time >= 60 ? '12' : '6'}?
+✅ Tổng câu Đúng-Sai = ${time >= 60 ? '2' : '1'}?
+✅ Tổng câu Trả lời ngắn = 4?
+✅ Tổng câu Tự luận = ${time >= 60 ? '3' : '2'}?
+✅ Tổng điểm = 10.0?
 
-<tr>
-  <td colspan="3"><strong>Tổng số điểm</strong></td>
-  <!-- MCQ: số câu × điểm/câu -->
-  <td colspan="3">${time >= 60 ? '12 × 0.25 = 3.0' : '6 × 0.5 = 3.0'}</td>
-  <!-- Đúng-Sai -->
-  <td colspan="3">${time >= 60 ? '2 × 1.0 = 2.0' : '1 × 2.0 = 2.0'}</td>
-  <!-- Trả lời ngắn -->
-  <td colspan="3">4 × 0.5 = 2.0</td>
-  <!-- Tự luận -->
-  <td colspan="3">3.0</td>
-  <!-- Tổng điểm mức độ -->
-  <td>4.0</td><td>3.0</td><td>3.0</td>
-  <td><strong>10.0</strong></td>
-</tr>
+**II. YÊU CẦU VỀ ĐỊNH DẠNG VÀ CẤU TRÚC BẢNG (BẮT BUỘC):**
 
-<tr>
-  <td colspan="3"><strong>Tỉ lệ %</strong></td>
-  <td colspan="3">30%</td>
-  <td colspan="3">20%</td>
-  <td colspan="3">20%</td>
-  <td colspan="3">30%</td>
-  <td>40%</td><td>30%</td><td>30%</td>
-  <td>100%</td>
-</tr>
-</table>
+**A. PHẦN I – MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
+*Tạo bảng HTML (thẻ <table>) có đúng 19 cột. Cấu trúc cụ thể:*
 
-## YÊU CẦU QUAN TRỌNG KHI TÍNH TOÁN:
+* **HEADER (Dòng 1-4):**
+    * **Dòng 1:**
+        * Cột 1 (A): 'rowspan="4"': **TT**
+        * Cột 2 (B): 'rowspan="4"': **Chủ đề/Chương**
+        * Cột 3 (C): 'rowspan="4"': **Nội dung/đơn vị kiến thức**
+        * Cột 4-15 (D-O): 'colspan="12"': **Mức độ đánh giá**
+        * Cột 16-18 (P-R): 'colspan="3"': **Tổng**
+        * Cột 19 (S): 'rowspan="4"': **Tỉ lệ % điểm**
+    * **Dòng 2:**
+        * Cột 4-12 (D-L): 'colspan="9"': **TNKQ**
+        * Cột 13-15 (M-O): 'colspan="3"': **Tự luận**
+    * **Dòng 3:**
+        * Cột 4-6 (D-F): 'colspan="3"': **Nhiều lựa chọn**
+        * Cột 7-9 (G-I): 'colspan="3"': **Đúng - Sai**
+        * Cột 10-12 (J-L): 'colspan="3"': **Trả lời ngắn**
+        * Cột 13-15 (M-O): 'colspan="3"': **Tự luận**
+    * **Dòng 4:**
+        * Các cột con (Biết, Hiểu, Vận dụng) tương ứng cho từng nhóm ở dòng 3.
+        * Cột 16 (P): **Biết**, Cột 17 (Q): **Hiểu**, Cột 18 (R): **Vận dụng**.
 
-1. **TÍNH % TRƯỚC**: Dùng công thức ở Bước 2 để tính % điểm cho từng bài
-2. **CHUYỂN THÀNH CÂU**: Dùng công thức ở Bước 3 để chuyển % thành số câu
-3. **KIỂM TRA TỔNG**: Tổng câu MCQ = ${time >= 60 ? '12' : '6'}, Đúng-Sai = ${time >= 60 ? '2' : '1'}, TLN = 4, TL = ${time >= 60 ? '3' : '2'}
-4. **PHÂN MỨC ĐỘ**: Mỗi bài có ít nhất 1 câu mỗi mức độ
-5. **TỔNG ĐIỂM = 10.0**: Luôn kiểm tra
-## BẢNG ĐẶC TẢ (sau ma trận):
-Tạo bảng 16 cột với:
-- Cột 1-3: TT, Chủ đề, Nội dung (giống ma trận)
-- Cột 4: "Yêu cầu cần đạt" (mô tả kiến thức)
-- Cột 5-16: Copy số câu từ ma trận (cột D-O)
+**B. HƯỚNG DẪN ĐIỀN DỮ LIỆU (LOGIC TỰ SINH):**
+* **Bước 1:** Điền tên Chủ đề và Nội dung vào cột 2 và 3.
+* **Bước 2 (Điền số lượng câu):** Phân bổ số câu hỏi vào các ô mức độ (Cột 4-15) dựa trên thời gian làm bài (${time} phút):
+    - Tổng số câu MCQ dọc xuống phải bằng **${time >= 60 ? '12' : '6'}**.
+    - Tổng số câu Đúng-Sai dọc xuống phải bằng **${time >= 60 ? '2' : '1'}**.
+    - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
+    - Tổng số câu Tự luận dọc xuống phải bằng **${time >= 60 ? '3' : '2'}**.
+    - Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 **phải* > 0. 
+* **Bước 3 (Tính tổng):**
+    - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
+    - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (Lưu ý hệ số điểm: MCQ=${time >= 60 ? '0.25' : '0.5'}đ, Đúng-Sai=${time >= 60 ? '1.0' : '2.0'}đ/chùm, TLN=0.5đ, TL= điểm phân bổ).
+* **Bước 4 **Tổng kết - ***Footer 3 dòng:**
+    - Dòng **Tổng số câu*: * Cột 1-3 (A-C): 'colspan="3"':  Cộng dọc tất cả các cột. (Kết quả mỗi ô phải >0)
+    - Dòng **Tổng điểm*: * Cột 1-3 (A-C): 'colspan="3"': Kiểm tra lại tổng điểm toàn bài phải là 10.0.
+                                 * Cột 4-6 (D-F): 'colspan="3"': **Tự động Cộng điểm phần câu hỏi MQC**
+                                 * Cột 7-9 (G-I): 'colspan="3"': **Cộng tổng điểm phần số câu Đúng - Sai**
+                                 * Cột 10-12 (J-L): 'colspan="3"': **Cộng tổng điểm phần số câu Trả lời ngắn**
+                                 * Cột 13-15 (M-O): 'colspan="3"': **Cộng tổng điểm phần số câu Tự luận**
+                                 * Cột 16: Tự động cộng điểm phần "Biết"; * **Cột 17: Tự động cộng điểm phần "Hiểu"; * **Cột 18: Tự động cộng điểm phần "Vận dụng"; * Cột 19: Tự động cộng toàn bài; 
+    - Dòng **Tỉ lệ %*: * Cột 1-3 (A-C): 'colspan="3"': Tự động cộng Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
-## ĐỀ THI & ĐÁP ÁN:
-Tạo đề thi với:
-- Phần I: Trắc nghiệm (MCQ + Đúng-Sai + Trả lời ngắn)
-- Phần II: Tự luận
-- Mỗi câu có mã: [Mức độ-Mã]
+**C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
+*Tạo bảng HTML có 16 cột:*
+* Cột 1-3: Giống phần Ma trận.
+* Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>').
+* Cột 5-16: Số câu hỏi ở các mức độ (Copy chính xác số liệu từ các cột D-O ở ma trận xuống).
+
+**D. PHẦN III – ĐỀ KIỂM TRA & ĐÁP ÁN**
+* **Đề bài:**
+    * Phân chia rõ ràng 2 phần: **I. TRẮC NGHIỆM KHÁCH QUAN** (7.0đ) và **II. TỰ LUẬN** (3.0đ).
+    * **Phần I:** Chia thành 3 tiểu mục (Số lượng tùy thời gian ${time} phút):
+        * **Phần 1 (MCQ):** ${time >= 60 ? '12' : '6'} câu.
+        * **Phần 2 (Đúng-Sai):** ${time >= 60 ? '2' : '1'} câu chùm. **Kẻ bảng 2 cột: Nội dung | Đúng/Sai.**
+        * **Phần 3 (Trả lời ngắn):** 4 câu.
+    * **Phần II:** ${time >= 60 ? '3' : '2'} câu tự luận, ghi rõ điểm số từng câu.
+    * *Lưu ý:* Mỗi câu hỏi phải có mã ma trận (ví dụ: '[M1-B]' cho Mức 1 - Biết).
+* **Đáp án & Hướng dẫn chấm:**
+    * **Phần 1 (MCQ):** Kẻ bảng đáp án (1-A, 2-B...).
+    * **Phần 2 (Đúng-Sai):** Kẻ bảng chi tiết cho từng câu chùm (a-Đ, b-S...).
+    * **Phần 3 (Trả lời ngắn):** Liệt kê đáp án đúng.
+    * **Tự luận:** Kẻ bảng 3 cột (Câu | Nội dung/Đáp án chi tiết | Điểm).
 
 **III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
- 1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
-            2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
-            3. **Xuống dòng (QUAN TRỌNG):**
-               - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
-               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ '<br>'.
-            4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
-            5. **Định dạng Trắc nghiệm (MCQ):**
-               - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... <br> B. ... <br> C. ... <br> D. ...
-               - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
-            6. **Định dạng Câu chùm (Đúng/Sai):**
-               - Nội dung lệnh hỏi <br>
-               - a) Nội dung ý a... <br>
-               - b) Nội dung ý b... <br>
-               - c) Nội dung ý c... <br>
-               - d) Nội dung ý d...
-            7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ '<br>' hoặc dùng thẻ '<p>' bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
-              
+1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
+2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
+3. **Xuống dòng (QUAN TRỌNG):**
+   - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
+   - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ '<br>'.
+4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
+5. **Định dạng Trắc nghiệm (MCQ):**
+   - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... <br> B. ... <br> C. ... <br> D. ...
+   - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
+6. **Định dạng Câu chùm (Đúng/Sai):**
+   - Nội dung lệnh hỏi <br>
+   - a) Nội dung ý a... <br>
+   - b) Nội dung ý b... <br>
+   - c) Nội dung ý c... <br>
+   - d) Nội dung ý d...
+7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ '<br>' hoặc dùng thẻ '<p>' bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
+**TRÌNH TỰ THỰC HIỆN CỦA BẠN:**
+1. ĐỌC tất cả các yêu cầu trên
+2. TÍNH TOÁN theo công thức ở phần I.A
+3. TẠO MA TRẬN HTML với số liệu đã tính
+4. TẠO BẢNG ĐẶC TẢ
+5. TẠO ĐỀ THI & ĐÁP ÁN
+6. CHỈ TRẢ VỀ HTML, KHÔNG GIẢI THÍCH
+**BẮT ĐẦU NGAY BÂY GIỜ:**
 `;
-
            // --- 3. GỌI GOOGLE API (FETCH) ---
             const response = await fetch(API_URL, {
                 method: "POST",
@@ -439,6 +474,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
