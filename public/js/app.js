@@ -1,5 +1,4 @@
 // File: public/js/app.js
-
 // --- KHAI BÁO BIẾN TOÀN CỤC ---
 window.generatedHTML = "";
 
@@ -7,19 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Khởi tạo
     addTopic();
 
-    // 2. Gán sự kiện an toàn (Kiểm tra nút tồn tại mới gán)
-    const btnGen = document.getElementById('btnGenerate');
-    const btnDown = document.getElementById('btnDownloadWord');
-    const btnAddTopic = document.getElementById('btnAddTopic');
-    const btnCopy = document.getElementById('btnCopy');
-    const examTypeSelect = document.getElementById('exam_type');
-    
-    if (btnAddTopic) btnAddTopic.addEventListener('click', addTopic);
-    if (btnGen) btnGen.addEventListener('click', handleGenerate);
-    if (btnDown) btnDown.addEventListener('click', handleDownloadWord);
-    if (btnCopy) btnCopy.addEventListener('click', handleCopyContent);
+    // 2. Gán sự kiện
+    const bindBtn = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', handler);
+    };
+
+    bindBtn('btnAddTopic', addTopic);
+    bindBtn('btnGenerate', handleGenerate);
+    bindBtn('btnDownloadWord', handleDownloadWord);
+    bindBtn('btnCopy', handleCopyContent);
 
     // 3. Logic ẩn hiện ô nhập tiết
+    const examTypeSelect = document.getElementById('exam_type');
     if (examTypeSelect) {
         examTypeSelect.addEventListener('change', updatePeriodInputs);
         setTimeout(updatePeriodInputs, 100); 
@@ -165,10 +164,9 @@ async function handleGenerate() {
     }
 }
 
-// --- HÀM SAO CHÉP (COPY) ---
+// --- HÀM SAO CHÉP ---
 async function handleCopyContent() {
     if (!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
-    
     const btn = document.getElementById('btnCopy');
     const oldHtml = btn.innerHTML;
 
@@ -177,19 +175,17 @@ async function handleCopyContent() {
         const blob = new Blob([window.generatedHTML], { type });
         const data = [new ClipboardItem({ [type]: blob })];
         await navigator.clipboard.write(data);
-        
         btn.classList.add('copied');
         btn.innerHTML = `<i class="fas fa-check"></i> Đã chép!`;
-        setTimeout(() => {
-            btn.classList.remove('copied');
-            btn.innerHTML = oldHtml;
-        }, 2000);
+        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = oldHtml; }, 2000);
     } catch (e) {
         alert("Lỗi sao chép tự động. Hãy bôi đen và nhấn Ctrl+C.");
     }
 }
 
-// --- LOGIC XUẤT WORD (DOCX - PHIÊN BẢN SỬA LỖI FLAT STRUCTURE) ---
+// ============================================================
+// --- LOGIC XUẤT WORD (DOCX) - PHIÊN BẢN AN TOÀN NHẤT ---
+// ============================================================
 async function handleDownloadWord() {
     if(!window.generatedHTML) { alert("Chưa có nội dung!"); return; }
     if (typeof docx === 'undefined') { alert("Thư viện Word chưa tải xong. Vui lòng F5!"); return; }
@@ -199,103 +195,132 @@ async function handleDownloadWord() {
     btn.innerText = "Đang xử lý..."; btn.disabled = true;
 
     try {
+        // Import các thành phần từ thư viện docx (Phiên bản 7.1.0)
         const { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, HeadingLevel, AlignmentType, BorderStyle } = window.docx;
 
-        // 1. Hàm tạo đoạn văn (Paragraph) từ node HTML
-        function createParagraphFromNode(node, style = {}) {
+        // 1. Hàm tạo Paragraph từ Text (Xử lý đậm, nghiêng)
+        function createPara(text, options = {}) {
+            // Tách các thẻ HTML cơ bản
             const runs = [];
-            
-            function traverse(n, s) {
-                if (n.nodeType === 3) { // Text
-                    if(n.nodeValue.trim()) runs.push(new TextRun({ text: n.nodeValue, bold: s.bold, italics: s.italic }));
-                } else if (n.nodeType === 1) {
-                    const tag = n.tagName.toLowerCase();
-                    if (tag === 'br') runs.push(new TextRun({ text: "\n", break: 1 }));
+            // Giả lập DOM để parse text
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text.replace(/\n/g, '<br>'); // Giữ xuống dòng
+
+            function traverse(node, style) {
+                if (node.nodeType === 3) { // Text Node
+                    if(node.nodeValue) runs.push(new TextRun({ text: node.nodeValue, ...style }));
+                } else if (node.nodeType === 1) { // Element Node
+                    const tag = node.tagName.toLowerCase();
+                    if(tag === 'br') runs.push(new TextRun({ text: "\n", break: 1 }));
                     else {
-                        const newStyle = { ...s, bold: s.bold || tag==='b'||tag==='strong', italic: s.italic || tag==='i'||tag==='em' };
-                        Array.from(n.childNodes).forEach(child => traverse(child, newStyle));
+                        const newStyle = { ...style, bold: style.bold || tag==='b'||tag==='strong', italics: style.italics || tag==='i'||tag==='em' };
+                        Array.from(node.childNodes).forEach(c => traverse(c, newStyle));
                     }
                 }
             }
-            traverse(node, style);
-            return new Paragraph({ children: runs, spacing: { after: 100 } });
-        }
-
-        // 2. Hàm tạo bảng (Table) từ node Table HTML
-        function createTableFromNode(tableNode) {
-            const rows = Array.from(tableNode.querySelectorAll('tr')).map(tr => {
-                const cells = Array.from(tr.querySelectorAll('td, th')).map(td => {
-                    const cellText = td.innerText.trim();
-                    const isBold = td.tagName.toLowerCase() === 'th' || td.querySelector('b, strong');
-                    
-                    return new TableCell({
-                        children: [new Paragraph({
-                            children: [new TextRun({ text: cellText, bold: !!isBold })]
-                        })],
-                        columnSpan: parseInt(td.getAttribute('colspan') || 1),
-                        rowSpan: parseInt(td.getAttribute('rowspan') || 1),
-                        borders: {
-                            top: {style: BorderStyle.SINGLE, size: 1},
-                            bottom: {style: BorderStyle.SINGLE, size: 1},
-                            left: {style: BorderStyle.SINGLE, size: 1},
-                            right: {style: BorderStyle.SINGLE, size: 1},
-                        },
-                        width: { size: 100, type: WidthType.PERCENTAGE }
-                    });
-                });
-                return new TableRow({ children: cells });
+            traverse(tempDiv, { bold: options.bold, italics: options.italics });
+            
+            return new Paragraph({
+                children: runs,
+                alignment: options.alignment || AlignmentType.LEFT,
+                heading: options.heading,
+                spacing: { after: 100 }
             });
-            return new Table({ rows: rows, width: { size: 100, type: WidthType.PERCENTAGE } });
         }
 
-        // 3. QUÉT VÀ LÀM PHẲNG CẤU TRÚC (TRÁNH LỖI LỒNG GHÉP)
-        const parser = new DOMParser();
-        const docHTML = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
-        const root = docHTML.body.firstElementChild;
-        const children = [];
+        // 2. Hàm tạo Table Docx
+        function createTable(tableNode) {
+            const docxRows = [];
+            const trs = tableNode.querySelectorAll('tr');
+            
+            trs.forEach(tr => {
+                const docxCells = [];
+                tr.querySelectorAll('td, th').forEach(cell => {
+                    const cellText = cell.innerText.trim();
+                    const isHeader = cell.tagName.toLowerCase() === 'th';
+                    const colspan = parseInt(cell.getAttribute('colspan') || 1);
+                    const rowspan = parseInt(cell.getAttribute('rowspan') || 1);
 
-        // Tiêu đề
-        children.push(new Paragraph({
+                    docxCells.push(new TableCell({
+                        children: [
+                            new Paragraph({
+                                children: [new TextRun({ text: cellText, bold: isHeader })],
+                                alignment: isHeader ? AlignmentType.CENTER : AlignmentType.LEFT
+                            })
+                        ],
+                        columnSpan: colspan,
+                        rowSpan: rowspan,
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        borders: {
+                            top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                            bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                            left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                            right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                        }
+                    }));
+                });
+                docxRows.push(new TableRow({ children: docxCells }));
+            });
+
+            return new Table({
+                rows: docxRows,
+                width: { size: 100, type: WidthType.PERCENTAGE }
+            });
+        }
+
+        // 3. QUÉT VÀ CHUYỂN ĐỔI (LOGIC PHẲNG)
+        const docChildren = [];
+        const parser = new DOMParser();
+        const docDOM = parser.parseFromString(`<div>${window.generatedHTML}</div>`, 'text/html');
+        const root = docDOM.body.firstElementChild;
+
+        // Thêm Tiêu đề
+        docChildren.push(new Paragraph({
             text: "ĐỀ KIỂM TRA & MA TRẬN",
             heading: HeadingLevel.HEADING_1,
             alignment: AlignmentType.CENTER,
-            spacing: { after: 300 },
-            run: { font: "Times New Roman", size: 28, bold: true }
+            spacing: { after: 300 }
         }));
 
-        // Duyệt từng phần tử cấp 1 để chuyển đổi
-        function processBlock(node) {
-            if (node.nodeType === 1) {
+        // Duyệt qua các node con trực tiếp của root
+        Array.from(root.childNodes).forEach(node => {
+            if (node.nodeType === 1) { // Element
                 const tag = node.tagName.toLowerCase();
+                
                 if (tag === 'table') {
-                    children.push(createTableFromNode(node));
-                    children.push(new Paragraph("")); // Khoảng cách
-                } else if (['p', 'div', 'h1', 'h2', 'h3', 'li'].includes(tag)) {
-                    // Nếu là thẻ khối, tạo Paragraph mới
-                    const headingMap = {'h1': HeadingLevel.HEADING_1, 'h2': HeadingLevel.HEADING_2, 'h3': HeadingLevel.HEADING_3};
-                    const para = createParagraphFromNode(node);
-                    if (headingMap[tag]) para.heading = headingMap[tag];
-                    children.push(para);
-                } else {
-                    // Các thẻ khác, duyệt con tiếp
-                    Array.from(node.childNodes).forEach(processBlock);
+                    docChildren.push(createTable(node));
+                    docChildren.push(new Paragraph("")); // Khoảng cách sau bảng
+                } 
+                else if (tag.match(/^h[1-6]$/)) {
+                    docChildren.push(createPara(node.innerHTML, { heading: HeadingLevel.HEADING_2, bold: true }));
                 }
-            } else if (node.nodeType === 3 && node.nodeValue.trim()) {
-                // Text trôi nổi
-                children.push(new Paragraph(node.nodeValue));
+                else if (tag === 'p' || tag === 'div' || tag === 'li') {
+                    // Xử lý nội dung văn bản thường
+                    docChildren.push(createPara(node.innerHTML));
+                }
+                else {
+                    // Các thẻ khác gom về text
+                    docChildren.push(createPara(node.innerText));
+                }
             }
-        }
+        });
 
-        Array.from(root.childNodes).forEach(processBlock);
+        // 4. ĐÓNG GÓI FILE
+        const doc = new Document({
+            sections: [{
+                properties: {},
+                children: docChildren
+            }]
+        });
 
-        // 4. TẠO FILE
-        const doc = new Document({ sections: [{ children: children }] });
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `De_Kiem_Tra_${Date.now()}.docx`);
 
     } catch(e) { 
-        alert("Lỗi xuất file: " + e.message); console.error(e); 
+        alert("Lỗi tạo file: " + e.message); 
+        console.error(e); 
     } finally { 
-        btn.innerText = oldText; btn.disabled = false; 
+        btn.innerText = oldText; 
+        btn.disabled = false; 
     }
 }
