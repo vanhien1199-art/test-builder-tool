@@ -153,7 +153,7 @@ export async function onRequest(context) {
             ================================================================
             ## KẾT QUẢ ĐẦU RA (OUTPUT FORMAT)
             ================================================================
-            Bạn phải xuất ra 4 phần dưới dạng **HTML TABLE** chuẩn (dùng thẻ `<table>`, `<tr>`, `<td>`, `<th>`, `rowspan`, `colspan`).
+            Bạn phải xuất ra 4 phần dưới dạng **HTML TABLE** chuẩn (dùng thẻ '<table>', '<tr>', '<td>', '<th>', 'rowspan', 'colspan').
 
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
             (Cấu trúc bảng 19 cột y hệt như Phụ lục 7991 đã cung cấp ở trên).
@@ -177,9 +177,9 @@ export async function onRequest(context) {
 
             **QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
             1.  Chỉ dùng **HTML Table**. KHÔNG dùng Markdown.
-            2.  Xuống dòng dùng thẻ `<br>`.
+            2.  Xuống dòng dùng thẻ '<br>'.
             3.  Công thức toán dùng LaTeX chuẩn $$...$$.
-            4.  Trắc nghiệm: Các đáp án A, B, C, D xuống dòng riêng biệt (dùng `<br>`).
+            4.  Trắc nghiệm: Các đáp án A, B, C, D xuống dòng riêng biệt (dùng '<br>').
             `;
 
             // --- 5. GỌI API & STREAMING ---
@@ -324,3 +324,4 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
