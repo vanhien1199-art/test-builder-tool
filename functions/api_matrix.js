@@ -192,6 +192,10 @@ export async function onRequest(context) {
             * **Bước 4 **Tổng kết - ***Footer 3 dòng:**
                 - Dòng **Tổng số câu*: * Cột 1-3 (A-C): 'colspan="3"':  Cộng dọc tất cả các cột. (Kết quả mỗi ô phải >0)
                 - Dòng **Tổng điểm*: * Cột 1-3 (A-C): 'colspan="3"': Kiểm tra lại tổng điểm toàn bài phải là 10.0.
+									 * Cột 4-6 (D-F): 'colspan="3"': **Tính tổng số câu hỏi MQC**
+				                     * Cột 7-9 (G-I): 'colspan="3"': **Tính tổng số câu Đúng - Sai**
+				                     * Cột 10-12 (J-L): 'colspan="3"': **Tính tổng số câu Trả lời ngắn**
+				                     * Cột 13-15 (M-O): 'colspan="3"': **Tính tổng số câu Tự luận**
                 - Dòng **Tỉ lệ %*: * Cột 1-3 (A-C): 'colspan="3"': Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
             **C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
@@ -406,5 +410,6 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
