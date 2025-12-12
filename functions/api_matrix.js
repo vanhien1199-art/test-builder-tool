@@ -185,19 +185,19 @@ export async function onRequest(context) {
                 - Tổng số câu Đúng-Sai dọc xuống phải bằng **2** (nếu >= 60p) hoặc **1** (nếu <= 45p).
                 - Tổng số câu Trả lời ngắn dọc xuống phải bằng **4**.
                 - Tổng số câu Tự luận dọc xuống phải bằng **2-3**.
-				- **QUAN TRỌNG:** Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 phải > 0. 
+				- Tổng số câu ở tất cả các cột dọc xuống từ cột 14 đến cột 15 **phải* > 0. 
             * **Bước 3 (Tính tổng):**
                 - Cột 16, 17, 18: Tự động cộng tổng số câu (bất kể loại nào) theo từng mức độ Biết, Hiểu, Vận dụng cho mỗi dòng.
                 - Cột 19: Tính tỉ lệ % điểm dựa trên số lượng và loại câu hỏi của dòng đó (Lưu ý hệ số điểm: MCQ=0.25đ hoặc 0.5đ tùy thời gian, TLN=0.5đ, v.v..).
             * **Bước 4 **Tổng kết - ***Footer 3 dòng:**
                 - Dòng **Tổng số câu*: * Cột 1-3 (A-C): 'colspan="3"':  Cộng dọc tất cả các cột. (Kết quả mỗi ô phải >0)
                 - Dòng **Tổng điểm*: * Cột 1-3 (A-C): 'colspan="3"': Kiểm tra lại tổng điểm toàn bài phải là 10.0.
-									 * Cột 4-6 (D-F): 'colspan="3"': **Tính điểm phần câu hỏi MQC**
-				                     * Cột 7-9 (G-I): 'colspan="3"': **Tính tổng điểm phần số câu Đúng - Sai**
-				                     * Cột 10-12 (J-L): 'colspan="3"': **Tính tổng điểm phần số câu Trả lời ngắn**
-				                     * Cột 13-15 (M-O): 'colspan="3"': **Tính tổng điểm phần số câu Tự luận**
-									 * Cột 16: tổng điểm phần "Biết"; * **Cột 17: tổng điểm phần "Hiểu"; * **Cột 18: tổng điểm phần "Vận dụng"; * Cột 19: tổng toàn bài; 
-                - Dòng **Tỉ lệ %*: * Cột 1-3 (A-C): 'colspan="3"': Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
+									 * Cột 4-6 (D-F): 'colspan="3"': **Tự động Cộng điểm phần câu hỏi MQC**
+				                     * Cột 7-9 (G-I): 'colspan="3"': **Cộng tổng điểm phần số câu Đúng - Sai**
+				                     * Cột 10-12 (J-L): 'colspan="3"': **Cộng tổng điểm phần số câu Trả lời ngắn**
+				                     * Cột 13-15 (M-O): 'colspan="3"': **Cộng tổng điểm phần số câu Tự luận**
+									 * Cột 16: Tự động cộng điểm phần "Biết"; * **Cột 17: Tự động cộng điểm phần "Hiểu"; * **Cột 18: Tự động cộng điểm phần "Vận dụng"; * Cột 19: Tự động cộng toàn bài; 
+                - Dòng **Tỉ lệ %*: * Cột 1-3 (A-C): 'colspan="3"': Tự động cộng Cộng dọc tất cả các cột để ra tổng tỉ lệ % theo từng loại và từng mức độ. Kiểm tra lại tổng tỉ lệ toàn bài phải là 100%.
 
             **C. PHẦN II – BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
             *Tạo bảng HTML có 16 cột:*
@@ -411,6 +411,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
