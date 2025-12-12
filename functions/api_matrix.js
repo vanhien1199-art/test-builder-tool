@@ -235,18 +235,6 @@ BẠN PHẢI TẠO BẢNG HTML VỚI CẤU TRÚC SAU:
 3. **KIỂM TRA TỔNG**: Tổng câu MCQ = ${time >= 60 ? '12' : '6'}, Đúng-Sai = ${time >= 60 ? '2' : '1'}, TLN = 4, TL = ${time >= 60 ? '3' : '2'}
 4. **PHÂN MỨC ĐỘ**: Mỗi bài có ít nhất 1 câu mỗi mức độ
 5. **TỔNG ĐIỂM = 10.0**: Luôn kiểm tra
-
-## ĐỊNH DẠNG ĐẦU RA:
-1. **Chỉ trả về HTML**: Không markdown, không giải thích
-2. **Dùng thẻ <br> để xuống dòng**: Trong nội dung câu hỏi
-3. **Công thức Toán**: Dùng $$...$$ cho công thức
-4. **Câu hỏi trắc nghiệm**:
-   Nội dung câu hỏi<br>
-   A. Phương án A<br>
-   B. Phương án B<br>
-   C. Phương án C<br>
-   D. Phương án D
-
 ## BẢNG ĐẶC TẢ (sau ma trận):
 Tạo bảng 16 cột với:
 - Cột 1-3: TT, Chủ đề, Nội dung (giống ma trận)
@@ -258,7 +246,25 @@ Tạo đề thi với:
 - Phần I: Trắc nghiệm (MCQ + Đúng-Sai + Trả lời ngắn)
 - Phần II: Tự luận
 - Mỗi câu có mã: [Mức độ-Mã]
-BẮT ĐẦU TÍNH TOÁN VÀ TẠO BẢNG NGAY BÂY GIỜ. CHỈ TRẢ VỀ HTML.
+
+**III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
+ 1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
+            2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
+            3. **Xuống dòng (QUAN TRỌNG):**
+               - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
+               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ '<br>'.
+            4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
+            5. **Định dạng Trắc nghiệm (MCQ):**
+               - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... <br> B. ... <br> C. ... <br> D. ...
+               - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
+            6. **Định dạng Câu chùm (Đúng/Sai):**
+               - Nội dung lệnh hỏi <br>
+               - a) Nội dung ý a... <br>
+               - b) Nội dung ý b... <br>
+               - c) Nội dung ý c... <br>
+               - d) Nội dung ý d...
+            7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ '<br>' hoặc dùng thẻ '<p>' bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
+              
 `;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -433,6 +439,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
