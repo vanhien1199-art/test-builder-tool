@@ -105,16 +105,16 @@ export async function onRequest(context) {
 
             * **TRƯỜNG HỢP A: Nếu thời gian >= 60 phút**
               - Tổng số câu MCQ (Phần I): **12 câu** (0.25đ/câu).
-              - Tổng số câu Đúng/Sai (Phần II): **2 câu** (4.0đ).
+              - Tổng số câu Đúng/Sai (Phần II): **2 câu** (2.0đ).
               - Tổng số câu Trả lời ngắn/Tự luận (Phần III/IV):
-                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ) + **1 câu Tự luận** (1.0đ).
+                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ).
                 + Nếu KHÔNG có Trả lời ngắn: **2-3 câu Tự luận** (3.0đ).
 
             * **TRƯỜNG HỢP B: Nếu thời gian <= 45 phút**
               - Tổng số câu MCQ (Phần I): **6 câu** (0.5đ/câu).
-              - Tổng số câu Đúng/Sai (Phần II): **1 câu** (4.0đ).
+              - Tổng số câu Đúng/Sai (Phần II): **1 câu** (2.0đ).
               - Tổng số câu Trả lời ngắn/Tự luận (Phần III/IV):
-                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ) + **1 câu Tự luận** (1.0đ).
+                + Nếu có Trả lời ngắn: **4 câu TLN** (2.0đ) .
                 + Nếu KHÔNG có Trả lời ngắn: **1-2 câu Tự luận** (3.0đ).
 
             **QUY TẮC ĐIỀN DỮ LIỆU VÀO MA TRẬN (KHÔNG ĐƯỢC SAI):**
@@ -254,9 +254,10 @@ export async function onRequest(context) {
 
             2. **Cấu trúc điểm theo dạng câu hỏi (Cố định theo Công văn 7991):**
                - **Phần I (Trắc nghiệm nhiều lựa chọn - MCQ):** 3.0 điểm (30%).
-               - **Phần II (Trắc nghiệm Đúng-Sai):** 4.0 điểm (40%). (Lưu ý: Điểm phần này tính theo thang điểm đặc biệt của câu chùm, nhưng trong bảng ma trận quy ước ghi số lượng câu chùm).
-               - **Phần III (Trắc nghiệm Trả lời ngắn):** 3.0 điểm (30%) hoặc **Tự luận** tùy theo đặc thù môn học (nếu đề bài yêu cầu cả tự luận thì phân bổ lại: MCQ 3.0đ, Đúng-Sai 2.0đ, Trả lời ngắn 2.0đ, Tự luận 3.0đ).
-               - *Mặc định cấu trúc chung:* TNKQ (7.0 điểm) + Tự luận (3.0 điểm) = 10.0 điểm. (Nếu có sử dụng Tự luận).
+               - **Phần II (Trắc nghiệm Đúng-Sai):** 2.0 điểm (20%). (Lưu ý: Điểm phần này tính theo thang điểm đặc biệt của câu chùm, nhưng trong bảng ma trận quy ước ghi số lượng câu chùm).
+               - **Phần III (Trắc nghiệm Trả lời ngắn):** 2.0 điểm (20%).
+			   - **Phần IV (Tự luận):** 3.0 điểm (30%).
+               - *Mặc định cấu trúc chung:* TNKQ (7.0 điểm) + Tự luận (3.0 điểm) = 10.0 điểm.
 
             3. **Cấu trúc điểm theo mức độ nhận thức (Cố định):**
                - **Biết:** ~40% (4.0 điểm).
@@ -508,4 +509,5 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
