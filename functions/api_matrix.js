@@ -280,9 +280,6 @@ Thực hiện TUẦN TỰ Bước 1 → Bước 6.
 KHÔNG bỏ qua bước nào.
 KHÔNG tự ý thay đổi công thức.
 Kết quả cuối cùng phải là HTML table hoàn chỉnh.
-`;
-
-// Ghi chú: Cần thay thế các [biến] bằng giá trị tính toán thực tế
 			`;
 
            // --- 3. GỌI GOOGLE API (FETCH) ---
@@ -457,6 +454,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
