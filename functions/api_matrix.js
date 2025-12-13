@@ -45,10 +45,10 @@ export async function onRequest(context) {
                     if (exam_type === 'hk') {
                         if (unit.p2 > 0) {
                              periodInfo = ` [Thời lượng: ${unit.p2} tiết (Nửa sau HK - TRỌNG TÂM 75%)]`;
-                             weightNote = " (Ưu tiên ra nhiều câu hỏi)";
+                             weightNote = " (Ưu tiên số lượng câu hỏi)";
                         } else {
                              periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu HK - ÔN TẬP 25%)]`;
-                             weightNote = " (Ra ít câu hỏi)";
+                             weightNote = " (Giảm số lượng câu hỏi)";
                         }
                     } else {
                         periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
@@ -63,9 +63,9 @@ export async function onRequest(context) {
             if (use_short_answer) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
-                - Phần I: Trắc nghiệm nhiều lựa chọn (4 phương án chọn 1).
-                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu có 4 ý a,b,c,d).
-                - Phần III: Trắc nghiệm Trả lời ngắn (Điền đáp số/kết quả).
+                - Phần I: Trắc nghiệm MCQ (4 chọn 1).
+                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý).
+                - Phần III: Trắc nghiệm Trả lời ngắn.
                 `;
                 scoreCoefficientInstruction = `
                 **HỆ SỐ ĐIỂM (Variable):** MCQ=0.25; TLN=0.5; Đ/S=1.0 (trung bình); Tự luận=Tùy ý.
@@ -117,13 +117,25 @@ export async function onRequest(context) {
             **B. CÔNG THỨC CỘT 19 (QUAN TRỌNG):**
             ${col19Logic}
 
-            **C. QUY TẮC ĐIỀN:** Phủ kín bài học, Rải đều mức độ (Biết/Hiểu/VD). TUYỆT ĐỐI KHÔNG để trống cột Vận dụng.
+            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC - KHÔNG ĐƯỢC VI PHẠM):**
+            Yêu cầu bắt buộc là **MỌI LOẠI CÂU HỎI** đều phải xuất hiện ở **CẢ 3 MỨC ĐỘ** (Biết - Hiểu - Vận dụng).
+            
+            1. **Đối với TỰ LUẬN (Quan trọng nhất):**
+               - **BẮT BUỘC** phải có ý hỏi mức **NHẬN BIẾT** (Ví dụ: Nêu khái niệm, phát biểu định lý...).
+               - **BẮT BUỘC** phải có ý hỏi mức **THÔNG HIỂU** (Ví dụ: Giải thích, so sánh đơn giản...).
+               - **BẮT BUỘC** phải có ý hỏi mức **VẬN DỤNG** (Ví dụ: Giải bài tập, liên hệ thực tế...).
+               *Lưu ý: Nếu số lượng câu Tự luận ít (ví dụ chỉ 1 câu), hãy chia câu đó thành các ý nhỏ a), b), c) tương ứng với các mức độ Biết/Hiểu/Vận dụng.*
+
+            2. **Đối với TRẮC NGHIỆM (MCQ, Đúng/Sai, TLN):**
+               - Không được dồn hết vào mức Biết. Phải có cả các câu hỏi yêu cầu tư duy (Hiểu/Vận dụng).
+
+            3. **Nguyên tắc Phủ kín:** Tất cả các bài học đều phải có câu hỏi.
 
             ### BƯỚC 3: XUẤT DỮ LIỆU ĐẦU RA (HTML OUTPUT)
             
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
-            *Logic tính toán Footer (CỘT 16, 17, 18, 19):*
-            - **Dòng "Tổng số câu":** Cộng dọc tất cả các con số trong cột tương ứng (Ví dụ: Cột 16 là Tổng số câu Biết của tất cả các phần).
+            *Logic tính toán Footer:*
+            - **Dòng "Tổng số câu":** Cộng dọc tất cả các con số trong cột tương ứng.
             - **Dòng "Tổng điểm":** Tính tổng điểm dựa trên số câu và hệ số điểm (${scoreCoefficientInstruction}).
               + Ô Cột 16 (Điểm Biết) = (Số câu MCQ Biết * 0.25) + ... + (Điểm TL Biết).
               + Ô Cột 17 (Điểm Hiểu) = (Số câu MCQ Hiểu * 0.25) + ...
@@ -204,36 +216,17 @@ export async function onRequest(context) {
             \`\`\`
 
             **2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
-            *Tạo bảng HTML có 16 cột:*
-            * Cột 1-3: Giống phần Ma trận.
-            * Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>').
-            * Cột 5-16: Số câu hỏi ở các mức độ (Copy chính xác số liệu từ các cột D-O ở ma trận xuống).
+            (Tạo bảng HTML 16 cột. Cột "Yêu cầu cần đạt" mô tả chi tiết Biết/Hiểu/Vận dụng cho từng đơn vị kiến thức).
 
             **3. ĐỀ KIỂM TRA**
             - Tiêu đề: ĐỀ KIỂM TRA ${exam_type === 'hk' ? 'CUỐI' : 'GIỮA'} HỌC KÌ ${semester} - MÔN ${subject.toUpperCase()} ${grade}
             - **Cấu trúc:** I. TRẮC NGHIỆM, II. TỰ LUẬN.
+            - **Yêu cầu nội dung Tự Luận:** Phải có các câu hỏi nhỏ a), b), c) để phân loại học sinh (Ví dụ: a-Nhận biết, b-Thông hiểu, c-Vận dụng).
             - **Lưu ý:** Đáp án MCQ xuống dòng (A... <br> B...). Công thức toán dùng LaTeX $$...$$.
 
             **4. HƯỚNG DẪN CHẤM**
             - Đáp án và thang điểm chi tiết.
-			**III. QUY ĐỊNH KỸ THUẬT (BẮT BUỘC):**
-            1. **Định dạng:** Chỉ trả về mã **HTML Table** ('<table border="1">...</table>') cho các bảng.
-            2. **Không dùng Markdown:** Tuyệt đối không dùng \`\`\`html\`\`\` hoặc |---| .
-            3. **Xuống dòng (QUAN TRỌNG):**
-               - Trong HTML, ký tự xuống dòng (\n) không có tác dụng. **BẮT BUỘC phải dùng thẻ '<br>'** để ngắt dòng.
-               - Mỗi khi kết thúc một ý, một câu, hoặc một đáp án, phải chèn thẻ '<br>'.
-            4. **Công thức Toán:** Sử dụng LaTeX chuẩn, bao quanh bởi dấu $$ (ví dụ: $$x^2 + \sqrt{5}$$). Không dùng MathML.
-            5. **Định dạng Trắc nghiệm (MCQ):**
-               - Cấu trúc bắt buộc: Nội dung câu hỏi '<br>' A. ... <br> B. ... <br> C. ... <br> D. ...
-               - **Tuyệt đối không** viết các đáp án nối liền nhau trên cùng một dòng.
-            6. **Định dạng Câu chùm (Đúng/Sai):**
-               - Nội dung lệnh hỏi <br>
-               - a) Nội dung ý a... <br>
-               - b) Nội dung ý b... <br>
-               - c) Nội dung ý c... <br>
-               - d) Nội dung ý d...
-            7. **Khoảng cách giữa các câu:** Giữa Câu 1 và Câu 2 (và các câu tiếp theo) phải có thêm một thẻ '<br>' hoặc dùng thẻ '<p>' bao quanh từng câu để tạo khoảng cách rõ ràng, dễ đọc.
-             
+
             ### TÀI LIỆU THAM KHẢO:
             ${DOCUMENT_CONTENT_7991}
 
@@ -313,5 +306,5 @@ export async function onRequest(context) {
 const DOCUMENT_CONTENT_7991 = `
 BỘ GIÁO DỤC VÀ ĐÀO TẠO
 CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
-(Giữ nguyên nội dung văn bản pháp lý 7991...)
+(Nội dung văn bản giữ nguyên)
 `;
