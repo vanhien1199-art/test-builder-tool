@@ -22,13 +22,17 @@ export async function onRequest(context) {
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
             const body = await request.json();
-            const { 
+            let { 
                 license_key, topics, subject, grade, semester, 
                 exam_type, time, use_short_answer, 
                 totalPeriodsHalf1, totalPeriodsHalf2,
                 book_series 
             } = body;
             
+            // Ép kiểu số để tính toán cho chính xác
+            totalPeriodsHalf1 = parseFloat(totalPeriodsHalf1) || 1;
+            totalPeriodsHalf2 = parseFloat(totalPeriodsHalf2) || 1;
+
             if (env.TEST_TOOL && license_key) { 
                 const creditStr = await env.TEST_TOOL.get(license_key); 
                 if (!creditStr || parseInt(creditStr) <= 0) {
@@ -36,43 +40,43 @@ export async function onRequest(context) {
                 }
             }
 
-            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ & TỔNG HỢP THỜI LƯỢNG ---
+            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ & TÍNH TOÁN TỈ LỆ TRƯỚC (PRE-CALCULATION) ---
             let topicsDescription = "";
+            
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
                 topic.units.forEach((unit, uIndex) => {
-                    let periodInfo = "";
-                    let weightNote = "";
+                    let p1 = parseFloat(unit.p1) || 0;
+                    let p2 = parseFloat(unit.p2) || 0;
+                    let calculatedRatio = 0;
+                    let timeLabel = "";
+
                     if (exam_type === 'hk') {
-                        if (unit.p2 > 0) {
-                             periodInfo = ` [Thời lượng: ${unit.p2} tiết (Nửa sau HK - TRỌNG TÂM 75%)]`;
-                             weightNote = " (Ưu tiên số lượng câu hỏi)";
+                        // Logic phân bổ 25/75 cho Cuối kỳ
+                        if (p2 > 0) {
+                             // Thuộc nửa sau: Chia cho tổng tiết HK2 nhân 75
+                             calculatedRatio = (p2 / totalPeriodsHalf2) * 75;
+                             timeLabel = `(Nửa sau - Trọng tâm)`;
                         } else {
-                             periodInfo = ` [Thời lượng: ${unit.p1} tiết (Nửa đầu HK - ÔN TẬP 25%)]`;
-                             weightNote = " (Giảm số lượng câu hỏi)";
+                             // Thuộc nửa đầu: Chia cho tổng tiết HK1 nhân 25
+                             calculatedRatio = (p1 / totalPeriodsHalf1) * 25;
+                             timeLabel = `(Nửa đầu - Ôn tập)`;
                         }
                     } else {
-                        periodInfo = ` [Thời lượng: ${unit.p1} tiết]`;
+                        // Giữa kỳ: Chia cho tổng tiết nhân 100
+                        calculatedRatio = (p1 / totalPeriodsHalf1) * 100;
+                        timeLabel = `(Số tiết: ${p1})`;
                     }
-                    topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}${weightNote}\n`;
+
+                    // Làm tròn 1 chữ số thập phân (ví dụ 12.5)
+                    let ratioStr = calculatedRatio.toFixed(1);
+                    if (ratioStr === "0.0" && (p1 > 0 || p2 > 0)) ratioStr = "2.5"; // Fallback tối thiểu
+
+                    // Gắn cứng con số này vào chuỗi mô tả để AI đọc
+                    topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content} ${timeLabel} -> [BẮT BUỘC ĐIỀN CỘT 19 LÀ: ${ratioStr}%]\n`;
                 });
             });
-
-            // --- BỔ SUNG BIẾN TỔNG SỐ TIẾT (CHECKSUM) VÀO INPUT ---
-            // Đây là phần bổ sung quan trọng để AI có mẫu số chính xác
-            topicsDescription += `\n------------------------------------------------`;
-            if (exam_type === 'hk') {
-                topicsDescription += `\n**TỔNG HỢP THỜI LƯỢNG (DỮ LIỆU GỐC ĐỂ TÍNH TOÁN CỘT 19):**`;
-                topicsDescription += `\n1. Tổng số tiết Nửa đầu HK (Mẫu số 1): **${totalPeriodsHalf1} tiết**`;
-                topicsDescription += `\n2. Tổng số tiết Nửa sau HK (Mẫu số 2): **${totalPeriodsHalf2} tiết**`;
-                topicsDescription += `\n(LƯU Ý QUAN TRỌNG: Khi tính % cho bài học, hãy lấy số tiết của bài đó chia cho Mẫu số tương ứng ở trên).`;
-            } else {
-                topicsDescription += `\n**TỔNG HỢP THỜI LƯỢNG:**`;
-                topicsDescription += `\n- Tổng số tiết toàn bộ nội dung (Mẫu số chung): **${totalPeriodsHalf1} tiết**`;
-            }
-            topicsDescription += `\n------------------------------------------------\n`;
            
-            // --- 3. CẤU TRÚC ĐỀ THI ---
             let structurePrompt = "";
             let scoreCoefficientInstruction = "";
             
@@ -80,87 +84,60 @@ export async function onRequest(context) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
-                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý a,b,c,d).
-                - Phần III: Trắc nghiệm Trả lời ngắn (Điền đáp số/kết quả).
+                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý).
+                - Phần III: Trắc nghiệm Trả lời ngắn.
                 `;
                 scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM (Variable):** MCQ=0.25; TLN=0.5; Đ/S=1.0 (trung bình); Tự luận=Tùy ý.
+                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0; Tự luận=Tùy ý.
                 `;
             } else {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (2 PHẦN):
-                - Phần I: Trắc nghiệm khách quan (4 lựa chọn).
-                - Phần II: Tự luận (Giải chi tiết).
+                - Phần I: Trắc nghiệm MCQ.
+                - Phần II: Tự luận.
                 *** CẤM: KHÔNG SOẠN TRẢ LỜI NGẮN ***
                 `;
                 scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM (Variable):** MCQ=0.25; Tự luận=Tùy ý.
-                `;
-            }
-
-            // --- 4. LOGIC TÍNH TOÁN TỈ LỆ (CẬP NHẬT THAM CHIẾU MẪU SỐ) ---
-            let col19Logic = "";
-            let scoreLogic = "";
-            
-            if (exam_type === 'hk') {
-                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Kiến thức Nửa đầu ~25%, Kiến thức Nửa sau ~75%.`;
-                col19Logic = `
-                **CÔNG THỨC CỘT 19 (TỈ LỆ %):**
-                - Nếu bài thuộc Nửa đầu HK: % = (Số tiết bài / ${totalPeriodsHalf1}) * 25
-                - Nếu bài thuộc Nửa sau HK: % = (Số tiết bài / ${totalPeriodsHalf2}) * 75
-                *(Lưu ý: ${totalPeriodsHalf1} và ${totalPeriodsHalf2} là các con số Tổng hợp thời lượng đã cung cấp ở trên)*.
-                `;
-            } else {
-                scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tỷ lệ thuận với số tiết.`;
-                col19Logic = `
-                **CÔNG THỨC CỘT 19 (TỈ LỆ %):**
-                - % = (Số tiết bài / ${totalPeriodsHalf1}) * 100
+                **HỆ SỐ ĐIỂM:** MCQ=0.25; Tự luận=Tùy ý.
                 `;
             }
 
             const prompt = `
             Bạn là một trợ lý chuyên gia khảo thí hàng đầu. Nhiệm vụ: Xây dựng Ma trận chính xác tuyệt đối.
 
-            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO
+            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO (ĐÃ ĐƯỢC TÍNH TOÁN TRƯỚC)
             1. Môn: ${subject} - Lớp ${grade} - Bộ sách: **${book_series}**.
             2. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester} - Thời gian: ${time} phút.
             3. Cấu trúc: ${structurePrompt}
-            4. Nội dung & Thời lượng chi tiết: 
+            4. Nội dung & Chỉ số phần trăm bắt buộc:
             ${topicsDescription}
             
-            ### BƯỚC 2: LOGIC TÍNH TOÁN SỐ LIỆU (BẮT BUỘC TUÂN THỦ)
+            ### BƯỚC 2: LOGIC PHÂN BỔ (BẮT BUỘC TUÂN THỦ)
             **A. QUOTA SỐ LƯỢNG CÂU HỎI (Dựa trên thời gian ${time} phút):**
             * Nếu >= 60 phút: 12 MCQ + 2 Đúng/Sai + (4 TLN + 1 Tự luận HOẶC 3 Tự luận).
             * Nếu <= 45 phút: 6 MCQ + 1 Đúng/Sai + (4 TLN + 1 Tự luận HOẶC 2 Tự luận).
 
-            **B. CÔNG THỨC CỘT 19 (QUAN TRỌNG):**
-            ${col19Logic}
+            **B. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
+            - Bạn KHÔNG cần tự tính toán.
+            - Hãy nhìn vào dữ liệu đầu vào, tôi đã ghi rõ **[BẮT BUỘC ĐIỀN CỘT 19 LÀ: ...%]** cho từng bài học.
+            - Nhiệm vụ của bạn là **Copy y nguyên con số đó** vào cột 19 của dòng tương ứng.
 
-            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC - KHÔNG ĐƯỢC VI PHẠM):**
-            Yêu cầu bắt buộc là **MỌI LOẠI CÂU HỎI** đều phải xuất hiện ở **CẢ 3 MỨC ĐỘ** (Biết - Hiểu - Vận dụng).
-            
-            1. **Đối với TỰ LUẬN (Quan trọng nhất):**
-               - **BẮT BUỘC** phải có ý hỏi mức **NHẬN BIẾT** (Ví dụ: Nêu khái niệm, phát biểu định lý...).
-               - **BẮT BUỘC** phải có ý hỏi mức **THÔNG HIỂU** (Ví dụ: Giải thích, so sánh đơn giản...).
-               - **BẮT BUỘC** phải có ý hỏi mức **VẬN DỤNG** (Ví dụ: Giải bài tập, liên hệ thực tế...).
-               *Lưu ý: Nếu số lượng câu Tự luận ít, hãy chia câu đó thành các ý nhỏ a), b), c) tương ứng với các mức độ Biết/Hiểu/Vận dụng.*
-
-            2. **Đối với TRẮC NGHIỆM (MCQ, Đúng/Sai, TLN):**
-               - Không được dồn hết vào mức Biết. Phải có cả các câu hỏi yêu cầu tư duy (Hiểu/Vận dụng).
-
-            3. **Nguyên tắc Phủ kín:** Tất cả các bài học đều phải có câu hỏi.
+            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC CÓ ĐỦ 3 MỨC):**
+            1. **Tự luận:** Phải có ý nhỏ mức Biết, Hiểu và Vận dụng.
+            2. **Trắc nghiệm:** Phải có cả câu Biết, Hiểu và Vận dụng. TUYỆT ĐỐI KHÔNG để trống cột Vận dụng.
+            3. **Phủ kín:** Tất cả các bài học trong danh sách trên phải có mặt trong ma trận.
 
             ### BƯỚC 3: XUẤT DỮ LIỆU ĐẦU RA (HTML OUTPUT)
             
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
-            *Logic tính toán Footer:*
+            *Logic tính toán Footer (CỘT 16, 17, 18, 19):*
             - **Dòng "Tổng số câu":** Cộng dọc tất cả các con số trong cột tương ứng.
             - **Dòng "Tổng điểm":** Tính tổng điểm dựa trên số câu và hệ số điểm (${scoreCoefficientInstruction}).
               + Ô Cột 16 (Điểm Biết) = (Số câu MCQ Biết * 0.25) + ... + (Điểm TL Biết).
               + Ô Cột 17 (Điểm Hiểu) = (Số câu MCQ Hiểu * 0.25) + ...
               + Ô Cột 18 (Điểm VD) = (Số câu MCQ VD * 0.25) + ...
               => Tổng 3 ô này phải bằng 10.0.
-            - **Dòng "Tỉ lệ %":** Quy đổi điểm ra %. (Điểm * 10).
+            - **Dòng "Tỉ lệ %":** Quy đổi điểm ra % (Điểm * 10).
 
             *Copy chính xác cấu trúc Header sau và điền dữ liệu:*
             \`\`\`html
@@ -235,7 +212,7 @@ export async function onRequest(context) {
             \`\`\`
 
             **2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
-            (Tạo bảng HTML 16 cột. Cột "Yêu cầu cần đạt" mô tả chi tiết Biết/Hiểu/Vận dụng cho từng đơn vị kiến thức).
+            (Tạo bảng HTML 16 cột theo mẫu Phụ lục. Cột "Yêu cầu cần đạt" mô tả chi tiết Biết/Hiểu/Vận dụng).
 
             **3. ĐỀ KIỂM TRA**
             - Tiêu đề: ĐỀ KIỂM TRA ${exam_type === 'hk' ? 'CUỐI' : 'GIỮA'} HỌC KÌ ${semester} - MÔN ${subject.toUpperCase()} ${grade}
@@ -253,7 +230,7 @@ export async function onRequest(context) {
             1. **Đúng Bộ Sách:** Chỉ dùng nội dung sách ${book_series}.
             2. **Đúng Lớp:** Chỉ dùng kiến thức lớp ${grade}.
             3. **Không bịa đặt:** Chỉ ra đề trong phạm vi các bài học đã cung cấp.
-            4. **Đúng Công Thức:** Cột 19 phải tính đúng theo công thức.
+            4. **Đúng Số Liệu:** Cột 19 phải copy đúng con số KPI đã cho.
             `;
 
             // --- 6. GỌI API ---
@@ -325,5 +302,5 @@ export async function onRequest(context) {
 const DOCUMENT_CONTENT_7991 = `
 BỘ GIÁO DỤC VÀ ĐÀO TẠO
 CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
-(Giữ nguyên nội dung văn bản pháp lý 7991...)
+(Nội dung văn bản pháp lý 7991 giữ nguyên...)
 `;
