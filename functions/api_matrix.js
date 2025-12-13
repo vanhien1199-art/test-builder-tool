@@ -182,21 +182,25 @@ export async function onRequest(context) {
                         <th></th>
                     </tr>
                      <tr>
-                        <th colspan="3">TỔNG ĐIỂM</th>
+                        <th colspan="3">Tổng điểm</th>
                         <th colspan="3">3.0</th>
-                        <th colspan="3">4.0</th>
+                        <th colspan="3">2.0</th>
                         <th colspan="3">2.0 (hoặc 0)</th>
-                        <th colspan="3">1.0 (hoặc 3.0)</th>
-                        <th colspan="3"></th>
-                        <th>10.0</th>
+                        <th colspan="3">3.0 (hoặc 3.0)</th>
+                        <th>(Điểm Biết)</th>
+                        <th>(Điểm Hiểu)</th>
+                        <th>(Điểm VD)</th>
+						<th>10.0</th>
                     </tr>
                     <tr>
-                        <th colspan="3">TỈ LỆ %</th>
+                        <th colspan="3">Tỉ lệ %</th>
                         <th colspan="3">30%</th>
                         <th colspan="3">40%</th>
                         <th colspan="3">20%</th>
                         <th colspan="3">10%</th>
-                        <th colspan="3"></th>
+                        <th>(% Biết)</th>
+                        <th>(% Hiểu)</th>
+                        <th>(% VD)</th>
                         <th>100%</th>
                     </tr>
                 </tfoot>
@@ -204,7 +208,10 @@ export async function onRequest(context) {
             \`\`\`
 
             **2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
-            (Tạo bảng HTML 16 cột theo mẫu Phụ lục. Cột "Yêu cầu cần đạt" phải mô tả chi tiết: Biết..., Hiểu..., Vận dụng...).
+           *Tạo bảng HTML có 16 cột:*
+            * Cột 1-3: Giống phần Ma trận.
+            * Cột 4: **Yêu cầu cần đạt** (Mô tả chi tiết kiến thức/kỹ năng cần kiểm tra cho từng mức độ Biết/Hiểu/Vận dụng, mỗi ý xuống dòng bằng thẻ '<br>').
+            * Cột 5-16: Số câu hỏi ở các mức độ (Copy chính xác số liệu từ các cột D-O ở ma trận xuống).
 
             **3. ĐỀ KIỂM TRA**
             - Tiêu đề: ĐỀ KIỂM TRA ${exam_type === 'hk' ? 'CUỐI' : 'GIỮA'} HỌC KÌ ${semester} - MÔN ${subject.toUpperCase()} ${grade}
@@ -509,5 +516,6 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
