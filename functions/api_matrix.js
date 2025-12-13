@@ -36,6 +36,7 @@ export async function onRequest(context) {
                 }
             }
 
+            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ & TỔNG HỢP THỜI LƯỢNG ---
             let topicsDescription = "";
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
@@ -56,7 +57,22 @@ export async function onRequest(context) {
                     topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content}${periodInfo}${weightNote}\n`;
                 });
             });
+
+            // --- BỔ SUNG BIẾN TỔNG SỐ TIẾT (CHECKSUM) VÀO INPUT ---
+            // Đây là phần bổ sung quan trọng để AI có mẫu số chính xác
+            topicsDescription += `\n------------------------------------------------`;
+            if (exam_type === 'hk') {
+                topicsDescription += `\n**TỔNG HỢP THỜI LƯỢNG (DỮ LIỆU GỐC ĐỂ TÍNH TOÁN CỘT 19):**`;
+                topicsDescription += `\n1. Tổng số tiết Nửa đầu HK (Mẫu số 1): **${totalPeriodsHalf1} tiết**`;
+                topicsDescription += `\n2. Tổng số tiết Nửa sau HK (Mẫu số 2): **${totalPeriodsHalf2} tiết**`;
+                topicsDescription += `\n(LƯU Ý QUAN TRỌNG: Khi tính % cho bài học, hãy lấy số tiết của bài đó chia cho Mẫu số tương ứng ở trên).`;
+            } else {
+                topicsDescription += `\n**TỔNG HỢP THỜI LƯỢNG:**`;
+                topicsDescription += `\n- Tổng số tiết toàn bộ nội dung (Mẫu số chung): **${totalPeriodsHalf1} tiết**`;
+            }
+            topicsDescription += `\n------------------------------------------------\n`;
            
+            // --- 3. CẤU TRÚC ĐỀ THI ---
             let structurePrompt = "";
             let scoreCoefficientInstruction = "";
             
@@ -64,8 +80,8 @@ export async function onRequest(context) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
-                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý).
-                - Phần III: Trắc nghiệm Trả lời ngắn.
+                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý a,b,c,d).
+                - Phần III: Trắc nghiệm Trả lời ngắn (Điền đáp số/kết quả).
                 `;
                 scoreCoefficientInstruction = `
                 **HỆ SỐ ĐIỂM (Variable):** MCQ=0.25; TLN=0.5; Đ/S=1.0 (trung bình); Tự luận=Tùy ý.
@@ -82,15 +98,17 @@ export async function onRequest(context) {
                 `;
             }
 
-            let scoreLogic = "";
+            // --- 4. LOGIC TÍNH TOÁN TỈ LỆ (CẬP NHẬT THAM CHIẾU MẪU SỐ) ---
             let col19Logic = "";
+            let scoreLogic = "";
             
             if (exam_type === 'hk') {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (CUỐI KÌ): Kiến thức Nửa đầu ~25%, Kiến thức Nửa sau ~75%.`;
                 col19Logic = `
                 **CÔNG THỨC CỘT 19 (TỈ LỆ %):**
-                - Bài Nửa đầu HK: % = (Số tiết bài / ${totalPeriodsHalf1}) * 25
-                - Bài Nửa sau HK: % = (Số tiết bài / ${totalPeriodsHalf2}) * 75
+                - Nếu bài thuộc Nửa đầu HK: % = (Số tiết bài / ${totalPeriodsHalf1}) * 25
+                - Nếu bài thuộc Nửa sau HK: % = (Số tiết bài / ${totalPeriodsHalf2}) * 75
+                *(Lưu ý: ${totalPeriodsHalf1} và ${totalPeriodsHalf2} là các con số Tổng hợp thời lượng đã cung cấp ở trên)*.
                 `;
             } else {
                 scoreLogic = `*LƯU Ý PHÂN BỐ ĐIỂM (GIỮA KÌ): Tỷ lệ thuận với số tiết.`;
@@ -107,7 +125,8 @@ export async function onRequest(context) {
             1. Môn: ${subject} - Lớp ${grade} - Bộ sách: **${book_series}**.
             2. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester} - Thời gian: ${time} phút.
             3. Cấu trúc: ${structurePrompt}
-            4. Nội dung: ${topicsDescription}
+            4. Nội dung & Thời lượng chi tiết: 
+            ${topicsDescription}
             
             ### BƯỚC 2: LOGIC TÍNH TOÁN SỐ LIỆU (BẮT BUỘC TUÂN THỦ)
             **A. QUOTA SỐ LƯỢNG CÂU HỎI (Dựa trên thời gian ${time} phút):**
@@ -124,7 +143,7 @@ export async function onRequest(context) {
                - **BẮT BUỘC** phải có ý hỏi mức **NHẬN BIẾT** (Ví dụ: Nêu khái niệm, phát biểu định lý...).
                - **BẮT BUỘC** phải có ý hỏi mức **THÔNG HIỂU** (Ví dụ: Giải thích, so sánh đơn giản...).
                - **BẮT BUỘC** phải có ý hỏi mức **VẬN DỤNG** (Ví dụ: Giải bài tập, liên hệ thực tế...).
-               *Lưu ý: Nếu số lượng câu Tự luận ít (ví dụ chỉ 1 câu), hãy chia câu đó thành các ý nhỏ a), b), c) tương ứng với các mức độ Biết/Hiểu/Vận dụng.*
+               *Lưu ý: Nếu số lượng câu Tự luận ít, hãy chia câu đó thành các ý nhỏ a), b), c) tương ứng với các mức độ Biết/Hiểu/Vận dụng.*
 
             2. **Đối với TRẮC NGHIỆM (MCQ, Đúng/Sai, TLN):**
                - Không được dồn hết vào mức Biết. Phải có cả các câu hỏi yêu cầu tư duy (Hiểu/Vận dụng).
@@ -306,5 +325,5 @@ export async function onRequest(context) {
 const DOCUMENT_CONTENT_7991 = `
 BỘ GIÁO DỤC VÀ ĐÀO TẠO
 CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
-(Nội dung văn bản giữ nguyên)
+(Giữ nguyên nội dung văn bản pháp lý 7991...)
 `;
