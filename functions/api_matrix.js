@@ -41,7 +41,7 @@ export async function onRequest(context) {
                 }
             }
 
-            // --- 2. PRE-CALCULATION (TÍNH TOÁN TRƯỚC) ---
+            // --- 2. PRE-CALCULATION ---
             let topicsDescription = "";
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
@@ -71,45 +71,46 @@ export async function onRequest(context) {
                 });
             });
            
-            // --- 3. XỬ LÝ LOGIC CẤU TRÚC & QUOTA CỨNG (FIX LỖI MẤT TLN) ---
+            // --- 3. XỬ LÝ LOGIC CẤU TRÚC & QUOTA CỨNG ---
             let structurePrompt = "";
             let scoreCoefficientInstruction = "";
             let quotaPrompt = "";
 
             if (use_short_answer) {
-                // === TRƯỜNG HỢP CÓ TRẢ LỜI NGẮN ===
+                // === TRƯỜNG HỢP CÓ TRẢ LỜI NGẮN (4 PHẦN) ===
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (4 PHẦN - BẮT BUỘC):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
-                - Phần II: Trắc nghiệm Đúng/Sai (4 ý/câu).
+                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý).
                 - Phần III: Trắc nghiệm Trả lời ngắn.
                 - Phần IV: Tự luận.
                 `;
-                scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0; Tự luận=1.0.
-                `;
 
-                // Xây dựng Quota cứng cho trường hợp CÓ TLN
                 if (timeInt >= 60) {
+                    // >= 60 phút: Giữ nguyên cấu trúc chuẩn
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (>= 60 phút):**
-                      - Phần I (MCQ): **12 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
-                      - Phần III (Trả lời ngắn): **4 câu** (2.0 điểm).
-                      - Phần IV (Tự luận): **1 đến 3 câu** (3.0 điểm).
+                      - Phần I (MCQ): **12 câu** (0.25đ/câu -> 3.0đ).
+                      - Phần II (Đúng/Sai): **4 câu** (1.0đ/câu -> 4.0đ).
+                      - Phần III (Trả lời ngắn): **4 câu** (0.5đ/câu -> 2.0đ).
+                      - Phần IV (Tự luận): **1 đến 3 câu** (1.0-2.0đ/câu -> 3.0đ).
                     `;
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0/câu chùm; Tự luận=1.0-2.0đ.`;
                 } else {
+                    // <= 45 phút: CẬP NHẬT THEO YÊU CẦU MỚI
                     quotaPrompt = `
-                    * **QUOTA BẮT BUỘC (<= 45 phút):**
-                      - Phần I (MCQ): **6 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **1 câu** (2.0 điểm).
-                      - Phần III (Trả lời ngắn): **4 câu** (2.0 điểm).
-                      - Phần IV (Tự luận): **1 đến 3 câu** (3.0 điểm).
+                    * **QUOTA BẮT BUỘC (<= 45 phút) - LƯU Ý ĐIỂM SỐ:**
+                      - Phần I (MCQ): **6 câu** (0.5 điểm/câu -> Tổng 3.0đ).
+                      - Phần II (Đúng/Sai): **1 câu** (4 ý, mỗi ý đúng 0.5đ -> Tổng 2.0đ).
+                      - Phần III (Trả lời ngắn): **4 câu** (0.5 điểm/câu -> Tổng 2.0đ).
+                      - Phần IV (Tự luận): **1 đến 3 câu** (1.0-2.0đ/câu -> 3.0đ).
                     `;
+                    // Cập nhật hệ số điểm để AI tính Footer đúng
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM ĐẶC BIỆT (45p):** MCQ=0.5; TLN=0.5; Đ/S=0.5 (mỗi ý nhỏ); Tự luận=Tổng 3.0đ.`;
                 }
 
             } else {
-                // === TRƯỜNG HỢP KHÔNG CÓ TRẢ LỜI NGẮN ===
+                // === TRƯỜNG HỢP KHÔNG CÓ TRẢ LỜI NGẮN (2 PHẦN) ===
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (2 PHẦN):
                 - Phần I: Trắc nghiệm MCQ.
@@ -117,68 +118,67 @@ export async function onRequest(context) {
                 - Phần III: Tự luận.
                 *** CẤM: KHÔNG ĐƯỢC TẠO CÂU HỎI TRẢ LỜI NGẮN ***
                 `;
-                scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM:** MCQ=0.25; Đ/S=1.0; Tự luận=Tùy ý.
-                `;
-
-                // Xây dựng Quota cứng cho trường hợp KHÔNG TLN
+                
                 if (timeInt >= 60) {
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (>= 60 phút):**
                       - Phần I (MCQ): **12 câu** (3.0 điểm).
                       - Phần II (Đúng/Sai): **4 câu** (4.0 điểm).
                       - Phần III (Tự luận): **2-3 câu** (3.0 điểm).
-                      (KHÔNG CÓ PHẦN TRẢ LỜI NGẮN).
                     `;
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM:** MCQ=0.25; Đ/S=1.0; Tự luận=Tùy ý.`;
                 } else {
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (<= 45 phút):**
-                      - Phần I (MCQ): **6 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **2 câu** (4.0 điểm).
-                      - Phần III (Tự luận): **2-3 câu** (3.0 điểm).
-                      (KHÔNG CÓ PHẦN TRẢ LỜI NGẮN).
+                      - Phần I (MCQ): **6 câu** (0.5 điểm/câu -> Tổng 3.0đ).
+                      - Phần II (Đúng/Sai): **2 câu** (4 ý, mỗi ý đúng 0.5đ -> Tổng 4.0đ).
+                      - Phần IV (Tự luận): ***1 đến 3 câu** (1.0-2.0đ/câu -> 3.0đ).
                     `;
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM ĐẶC BIỆT (45p):** MCQ=0.5; TLN=0.5; Đ/S=0.5 (mỗi ý nhỏ); Tự luận=Tổng 3.0đ.`;
                 }
             }
 
             const prompt = `
-            Bạn là một trợ lý chuyên gia khảo thí hàng đầu. Nhiệm vụ: Xây dựng Ma trận chính xác tuyệt đối.
+            Bạn là Chuyên gia Khảo thí. Nhiệm vụ: Xây dựng Ma trận đề thi chuẩn 2025.
 
-            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO
+            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO & GIỚI HẠN ĐỘ KHÓ
             1. Môn: ${subject} - Lớp ${grade} - Bộ sách: **${book_series}**.
-            2. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester} - Thời gian: ${time} phút.
-            3. Cấu trúc: 
+            2. Cấu trúc: 
             ${structurePrompt}
-            4. Nội dung & Chỉ số phần trăm bắt buộc:
+            3. Nội dung chi tiết & Giới hạn mức độ nhận thức (Scope):
             ${topicsDescription}
+            *(Lưu ý: Hãy tuân thủ nghiêm ngặt chỉ dẫn [Mức độ cho phép...] ở trên. Nếu bài ghi "Cấm Vận dụng" thì tuyệt đối không tích vào ô Vận dụng).*
+
+            ### BƯỚC 2: QUY TẮC PHÂN BỔ TỈ LỆ NHẬN THỨC (LOGIC 4-3-3)
+            Bạn phải phân bổ số câu hỏi sao cho tổng điểm đạt tỉ lệ chuẩn sau:
             
-            ### BƯỚC 2: LOGIC PHÂN BỔ (BẮT BUỘC TUÂN THỦ)
+            1. **Mức NHẬN BIẾT (Chiếm ~40% = 4.0 điểm):**
+               - Ưu tiên dồn vào phần **MCQ** (Trắc nghiệm nhiều lựa chọn).
+               - Hầu hết các bài học đều phải có câu hỏi mức Biết.
             
-            **A. QUOTA SỐ LƯỢNG CÂU HỎI (ĐÃ ĐƯỢC CHỐT CỨNG):**
+            2. **Mức THÔNG HIỂU (Chiếm ~30% = 3.0 điểm):**
+               - Phân bổ vào phần **MCQ** và **Đúng/Sai**.
+               - Phần Tự luận cũng cần có ý nhỏ mức Hiểu.
+
+            3. **Mức VẬN DỤNG (Chiếm ~30% = 3.0 điểm) - GIỚI HẠN TRẦN:**
+               - **CẢNH BÁO:** Tổng điểm các câu mức Vận dụng **KHÔNG ĐƯỢC VƯỢT QUÁ 3.5 điểm**. Đừng làm đề quá khó.
+               - Dồn mức này vào phần **Trả lời ngắn** và **Tự luận**.
+               - Phần MCQ hạn chế tối đa mức Vận dụng (chỉ 1-2 câu nếu cần thiết).
+
+            ### BƯỚC 3: QUOTA SỐ LƯỢNG (HARD CONSTRAINT)
             ${quotaPrompt}
-            -> Yêu cầu: Bạn phải điền đúng số lượng câu hỏi vào các cột tương ứng theo Quota trên. Không được tự ý thay đổi.
+            *(Bắt buộc điền đúng số lượng này vào dòng Tổng số câu)*.
 
-            **B. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
-            - Nhìn vào dữ liệu đầu vào -> Copy y nguyên con số **[BẮT BUỘC ĐIỀN CỘT 19 LÀ: ...%]** vào cột 19.
-
-            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC ĐỦ 3 MỨC):**
-            1. **Tự luận:** Phải có ý nhỏ mức Biết, Hiểu và Vận dụng. (Ví dụ câu 1a: Biết, 1b: Hiểu, 2: Vận dụng).
-            2. **Trắc nghiệm:** Phải có cả câu Biết, Hiểu và Vận dụng. TUYỆT ĐỐI KHÔNG để trống cột Vận dụng của phần Trắc nghiệm.
-            3. **Phủ kín:** Tất cả các bài học trong danh sách phải có mặt.
-
-            ### BƯỚC 3: XUẤT DỮ LIỆU ĐẦU RA (HTML OUTPUT)
+            ### BƯỚC 4: XUẤT DỮ LIỆU (HTML OUTPUT)
             
-            **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
-            *Logic tính toán Footer:*
-            - **Dòng "Tổng số câu":** Cộng dọc tất cả các con số trong cột tương ứng.
-            - **Dòng "Tổng điểm":** Tính tổng điểm dựa trên số câu và hệ số điểm (${scoreCoefficientInstruction}).
-              + Ô Cột 16 (Điểm Biết) = (Số câu MCQ Biết * 0.25) + ... + (Điểm TL Biết).
-              + Ô Cột 17 (Điểm Hiểu) = (Số câu MCQ Hiểu * 0.25) + ...
-              + Ô Cột 18 (Điểm VD) = (Số câu MCQ VD * 0.25) + ...
-              => Tổng 3 ô này phải bằng 10.0.
-            - **Dòng "Tỉ lệ %":** Quy đổi điểm ra % (Điểm * 10).
+            **1. MA TRẬN ĐỀ KIỂM TRA**
+            *Logic Footer:*
+            - Cột 19: Copy y nguyên con số [KPI CỘT 19: ...] từ dữ liệu đầu vào.
+            - Dòng Tổng điểm: Tính tổng điểm Biết/Hiểu/VD dựa trên hệ số (${scoreCoefficientInstruction}).
+              + Kiểm tra lại: Tổng điểm Biết phải xấp xỉ 4.0.
+              + Tổng điểm VD phải xấp xỉ 3.0 (không quá cao).
 
-            *Copy chính xác cấu trúc Header sau và điền dữ liệu:*
+            *Copy cấu trúc Table sau:*
             \`\`\`html
             <table border="1" style="border-collapse:collapse; width:100%; text-align:center;">
                 <thead>
@@ -219,9 +219,9 @@ export async function onRequest(context) {
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
                         <th>(Sum)</th><th>(Sum)</th><th>(Sum)</th>
-                        <th>(=Tổng tất cả câu Biết)</th>
-                        <th>(=Tổng tất cả câu Hiểu)</th>
-                        <th>(=Tổng tất cả câu VD)</th>
+                        <th>(=Tổng câu Biết)</th>
+                        <th>(=Tổng câu Hiểu)</th>
+                        <th>(=Tổng câu VD)</th>
                         <th></th>
                     </tr>
                      <tr>
@@ -230,9 +230,9 @@ export async function onRequest(context) {
                         <th colspan="3">4.0 (hoặc 2.0)</th>
                         <th colspan="3">2.0 (hoặc 0)</th>
                         <th colspan="3">1.0 (hoặc 3.0)</th>
-                        <th>(=Tính tổng điểm Biết)</th>
-                        <th>(=Tính tổng điểm Hiểu)</th>
-                        <th>(=Tính tổng điểm VD)</th>
+                        <th>(=Điểm Biết ~4.0)</th>
+                        <th>(=Điểm Hiểu ~3.0)</th>
+                        <th>(=Điểm VD ~3.0)</th>
 						<th>10.0</th>
                     </tr>
                     <tr>
@@ -241,9 +241,9 @@ export async function onRequest(context) {
                         <th colspan="3">40% (hoặc 20%)</th>
                         <th colspan="3">20% (hoặc 0%)</th>
                         <th colspan="3">10% (hoặc 30%)</th>
-                        <th>(=Điểm Biết * 10)%</th>
-                        <th>(=Điểm Hiểu * 10)%</th>
-                        <th>(=Điểm VD * 10)%</th>
+                        <th>~40%</th>
+                        <th>~30%</th>
+                        <th>~30%</th>
                         <th>100%</th>
                     </tr>
                 </tfoot>
@@ -435,6 +435,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
