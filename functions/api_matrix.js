@@ -32,6 +32,7 @@ export async function onRequest(context) {
             // Ép kiểu số
             totalPeriodsHalf1 = parseFloat(totalPeriodsHalf1) || 1;
             totalPeriodsHalf2 = parseFloat(totalPeriodsHalf2) || 1;
+            let timeInt = parseInt(time);
 
             if (env.TEST_TOOL && license_key) { 
                 const creditStr = await env.TEST_TOOL.get(license_key); 
@@ -70,55 +71,73 @@ export async function onRequest(context) {
                 });
             });
            
+            // --- 3. XỬ LÝ LOGIC CẤU TRÚC & QUOTA CỨNG (FIX LỖI MẤT TLN) ---
             let structurePrompt = "";
             let scoreCoefficientInstruction = "";
-            
+            let quotaPrompt = "";
+
             if (use_short_answer) {
+                // === TRƯỜNG HỢP CÓ TRẢ LỜI NGẮN ===
                 structurePrompt = `
-                CẤU TRÚC ĐỀ THI (3 PHẦN):
+                CẤU TRÚC ĐỀ THI (4 PHẦN - BẮT BUỘC):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
                 - Phần II: Trắc nghiệm Đúng/Sai (4 ý/câu).
                 - Phần III: Trắc nghiệm Trả lời ngắn.
+                - Phần IV: Tự luận.
                 `;
-                // Logic điểm chuẩn: MCQ(3.0) + Đ/S(4.0) + TLN(2.0) + TL(1.0)
                 scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0 (trung bình 1 câu chùm); Tự luận=Tùy ý.
+                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0; Tự luận=1.0.
                 `;
+
+                // Xây dựng Quota cứng cho trường hợp CÓ TLN
+                if (timeInt >= 60) {
+                    quotaPrompt = `
+                    * **QUOTA BẮT BUỘC (>= 60 phút):**
+                      - Phần I (MCQ): **12 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **4 câu** (4.0 điểm).
+                      - Phần III (Trả lời ngắn): **4 câu** (2.0 điểm).
+                      - Phần IV (Tự luận): **1 câu** (1.0 điểm).
+                    `;
+                } else {
+                    quotaPrompt = `
+                    * **QUOTA BẮT BUỘC (<= 45 phút):**
+                      - Phần I (MCQ): **12 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
+                      - Phần III (Trả lời ngắn): **2 câu** (1.0 điểm).
+                      - Phần IV (Tự luận): **2 câu** (4.0 điểm).
+                    `;
+                }
+
             } else {
+                // === TRƯỜNG HỢP KHÔNG CÓ TRẢ LỜI NGẮN ===
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (2 PHẦN):
                 - Phần I: Trắc nghiệm MCQ.
                 - Phần II: Tự luận.
-                *** CẤM: KHÔNG SOẠN TRẢ LỜI NGẮN ***
+                *** CẤM: KHÔNG ĐƯỢC TẠO CÂU HỎI TRẢ LỜI NGẮN ***
                 `;
-                // Logic điểm chuẩn: MCQ(3.0) + Đ/S(4.0) + TL(3.0)
                 scoreCoefficientInstruction = `
                 **HỆ SỐ ĐIỂM:** MCQ=0.25; Đ/S=1.0; Tự luận=Tùy ý.
                 `;
-            }
 
-            // --- 4. LOGIC QUOTA CÂU HỎI (ĐÃ ĐIỀU CHỈNH ĐỂ GIẢM TỰ LUẬN) ---
-            let quotaPrompt = "";
-            if (parseInt(time) >= 60) {
-                // Tăng số câu Đ/S lên 4 để chiếm 4.0 điểm -> Tự luận chỉ còn dư 3.0 điểm
-                quotaPrompt = `
-                * **TRƯỜNG HỢP A (>= 60 phút):**
-                  - Phần I (MCQ): **12 câu** (3.0 điểm).
-                  - Phần II (Đúng/Sai): **4 câu** (4.0 điểm). <--- (Đã tăng lên để giảm tải cho tự luận)
-                  - Phần III/IV:
-                    + Nếu có TLN: **4 câu TLN** (2.0đ) + **1 câu Tự luận** (1.0đ).
-                    + Nếu KHÔNG TLN: **2-3 câu Tự luận** (Tổng tối đa 3.0đ).
-                `;
-            } else {
-                // Thời gian ngắn: Giảm MCQ, giữ Đ/S vừa phải
-                quotaPrompt = `
-                * **TRƯỜNG HỢP B (<= 45 phút):**
-                  - Phần I (MCQ): **12 câu** (3.0 điểm - mỗi câu 0.25đ).
-                  - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
-                  - Phần III/IV:
-                    + Nếu có TLN: **2 câu TLN** (1.0đ) + **2 câu Tự luận** (4.0đ).
-                    + Nếu KHÔNG TLN: **2-3 câu Tự luận** (Tổng khoảng 5.0đ).
-                `;
+                // Xây dựng Quota cứng cho trường hợp KHÔNG TLN
+                if (timeInt >= 60) {
+                    quotaPrompt = `
+                    * **QUOTA BẮT BUỘC (>= 60 phút):**
+                      - Phần I (MCQ): **12 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **4 câu** (4.0 điểm).
+                      - Phần III (Tự luận): **2-3 câu** (3.0 điểm).
+                      (KHÔNG CÓ PHẦN TRẢ LỜI NGẮN).
+                    `;
+                } else {
+                    quotaPrompt = `
+                    * **QUOTA BẮT BUỘC (<= 45 phút):**
+                      - Phần I (MCQ): **12 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
+                      - Phần III (Tự luận): **2-3 câu** (5.0 điểm).
+                      (KHÔNG CÓ PHẦN TRẢ LỜI NGẮN).
+                    `;
+                }
             }
 
             const prompt = `
@@ -127,24 +146,21 @@ export async function onRequest(context) {
             ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO
             1. Môn: ${subject} - Lớp ${grade} - Bộ sách: **${book_series}**.
             2. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester} - Thời gian: ${time} phút.
-            3. Cấu trúc: ${structurePrompt}
+            3. Cấu trúc: 
+            ${structurePrompt}
             4. Nội dung & Chỉ số phần trăm bắt buộc:
             ${topicsDescription}
             
             ### BƯỚC 2: LOGIC PHÂN BỔ (BẮT BUỘC TUÂN THỦ)
             
-            **A. QUOTA SỐ LƯỢNG CÂU HỎI (CÂN ĐỐI ĐIỂM SỐ):**
+            **A. QUOTA SỐ LƯỢNG CÂU HỎI (ĐÃ ĐƯỢC CHỐT CỨNG):**
             ${quotaPrompt}
+            -> Yêu cầu: Bạn phải điền đúng số lượng câu hỏi vào các cột tương ứng theo Quota trên. Không được tự ý thay đổi.
 
-            **B. GIỚI HẠN ĐIỂM TỰ LUẬN (HARD LIMIT):**
-            - Nếu đề thi có phần Trắc nghiệm Đúng/Sai và Trả lời ngắn: Tổng điểm Tự luận **KHÔNG ĐƯỢC VƯỢT QUÁ 1.5 điểm**.
-            - Nếu đề thi KHÔNG có Trả lời ngắn: Tổng điểm Tự luận **KHÔNG ĐƯỢC VƯỢT QUÁ 3.0 điểm**.
-            -> Hãy dồn trọng số điểm vào phần Trắc nghiệm (Đúng/Sai) thay vì Tự luận.
-
-            **C. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
+            **B. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
             - Nhìn vào dữ liệu đầu vào -> Copy y nguyên con số **[BẮT BUỘC ĐIỀN CỘT 19 LÀ: ...%]** vào cột 19.
 
-            **D. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC ĐỦ 3 MỨC):**
+            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC ĐỦ 3 MỨC):**
             1. **Tự luận:** Phải có ý nhỏ mức Biết, Hiểu và Vận dụng. (Ví dụ câu 1a: Biết, 1b: Hiểu, 2: Vận dụng).
             2. **Trắc nghiệm:** Phải có cả câu Biết, Hiểu và Vận dụng. TUYỆT ĐỐI KHÔNG để trống cột Vận dụng của phần Trắc nghiệm.
             3. **Phủ kín:** Tất cả các bài học trong danh sách phải có mặt.
@@ -232,7 +248,6 @@ export async function onRequest(context) {
                 </tfoot>
             </table>
             \`\`\`
-
             **2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA**
            *Tạo bảng HTML có 16 cột:*
             * Cột 1-3: Giống phần Ma trận.
@@ -419,6 +434,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
