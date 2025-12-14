@@ -161,7 +161,7 @@ export async function onRequest(context) {
                - Phần Tự luận cũng cần có ý nhỏ mức Hiểu.
 
             3. **Mức VẬN DỤNG (Chiếm ~30% = 3.0 điểm) - GIỚI HẠN TRẦN:**
-               - **CẢNH BÁO:** Tổng điểm các câu mức Vận dụng **KHÔNG ĐƯỢC VƯỢT QUÁ 3.5 điểm**. Đừng làm đề quá khó.
+               - **CẢNH BÁO:** Tổng điểm các câu mức Vận dụng **KHÔNG ĐƯỢC VƯỢT QUÁ 3.0 điểm**. Đừng làm đề quá khó.
                - Dồn mức này vào phần **Trả lời ngắn** và **Tự luận**.
                - Phần MCQ hạn chế tối đa mức Vận dụng (chỉ 1-2 câu nếu cần thiết).
 
@@ -176,7 +176,7 @@ export async function onRequest(context) {
             - Cột 19: Copy y nguyên con số [KPI CỘT 19: ...] từ dữ liệu đầu vào.
             - Dòng Tổng điểm: Tính tổng điểm Biết/Hiểu/VD dựa trên hệ số (${scoreCoefficientInstruction}).
               + Kiểm tra lại: Tổng điểm Biết phải xấp xỉ 4.0.
-              + Tổng điểm VD phải xấp xỉ 3.0 (không quá cao).
+              + Tổng điểm VD phải  3.0 (không quá cao).
 
             *Copy cấu trúc Table sau:*
             \`\`\`html
@@ -435,6 +435,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
