@@ -32,6 +32,7 @@ export async function onRequest(context) {
             // Ép kiểu số
             totalPeriodsHalf1 = parseFloat(totalPeriodsHalf1) || 1;
             totalPeriodsHalf2 = parseFloat(totalPeriodsHalf2) || 1;
+			let timeInt = parseInt(time); // Chuyển đổi thời gian sang số nguyên để so sánh
             let timeInt = parseInt(time);
 
             if (env.TEST_TOOL && license_key) { 
@@ -77,7 +78,7 @@ export async function onRequest(context) {
             let quotaPrompt = "";
 
             if (use_short_answer) {
-                // === TRƯỜNG HỢP CÓ TRẢ LỜI NGẮN (4 PHẦN) ===
+                // === TRƯỜNG HỢP CÓ TRẢ LỜI NGẮN (4 PHẦN - BẮT BUỘC) ===
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (4 PHẦN - BẮT BUỘC):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
@@ -87,28 +88,31 @@ export async function onRequest(context) {
                 `;
 
                 if (timeInt >= 60) {
-                    // >= 60 phút: Giữ nguyên cấu trúc chuẩn
+                    // >= 60 phút: Giữ nguyên cấu trúc chuẩn (12-4-4-1)
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (>= 60 phút):**
                       - Phần I (MCQ): **12 câu** (0.25đ/câu -> 3.0đ).
-                      - Phần II (Đúng/Sai): **4 câu** (1.0đ/câu -> 4.0đ).
+                      - Phần II (Đúng/Sai): **2 câu** (1.0đ/câu -> 2.0đ).
                       - Phần III (Trả lời ngắn): **4 câu** (0.5đ/câu -> 2.0đ).
-                      - Phần IV (Tự luận): **1 đến 3 câu** (1.0-2.0đ/câu -> 3.0đ).
+                      - Phần IV (Tự luận): **1 đến 3 câu** (3.0đ).
                     `;
-                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0/câu chùm; Tự luận=1.0-2.0đ.`;
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0 (cho 1 câu chùm); Tự luận=Tùy ý.`;
                 } else {
-                    // <= 45 phút: CẬP NHẬT THEO YÊU CẦU MỚI
+                    // <= 45 phút: CẬP NHẬT THEO YÊU CẦU MỚI CỦA BẠN
+                    // MCQ 6 câu (3đ) - Đ/S 1 câu (2đ) - TLN 4 câu (2đ) - Tự luận (3đ)
                     quotaPrompt = `
-                    * **QUOTA BẮT BUỘC (<= 45 phút) - LƯU Ý ĐIỂM SỐ:**
+                    * **QUOTA BẮT BUỘC (<= 45 phút) - LƯU Ý SỐ LƯỢNG VÀ ĐIỂM:**
                       - Phần I (MCQ): **6 câu** (0.5 điểm/câu -> Tổng 3.0đ).
                       - Phần II (Đúng/Sai): **1 câu** (4 ý, mỗi ý đúng 0.5đ -> Tổng 2.0đ).
                       - Phần III (Trả lời ngắn): **4 câu** (0.5 điểm/câu -> Tổng 2.0đ).
-                      - Phần IV (Tự luận): **1 đến 3 câu** (1.0-2.0đ/câu -> 3.0đ).
+                      - Phần IV (Tự luận): **1-3 câu** (Tổng 3.0đ).
                     `;
-                    // Cập nhật hệ số điểm để AI tính Footer đúng
-                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM ĐẶC BIỆT (45p):** MCQ=0.5; TLN=0.5; Đ/S=0.5 (mỗi ý nhỏ); Tự luận=Tổng 3.0đ.`;
+                    
+                    // Cập nhật hệ số điểm đặc biệt này để AI tính Footer đúng
+                    scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM ĐẶC BIỆT (45p):** MCQ=0.5; TLN=0.5; Đ/S=2.0 (cho 1 câu chùm 4 ý); Tự luận=Tổng 3.0đ.`;
                 }
-
+            }
+			
             } else {
                 // === TRƯỜNG HỢP KHÔNG CÓ TRẢ LỜI NGẮN (2 PHẦN) ===
                 structurePrompt = `
@@ -435,6 +439,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
