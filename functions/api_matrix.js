@@ -111,8 +111,6 @@ export async function onRequest(context) {
                     // Cập nhật hệ số điểm đặc biệt này để AI tính Footer đúng
                     scoreCoefficientInstruction = `**HỆ SỐ ĐIỂM ĐẶC BIỆT (45p):** MCQ=0.5; TLN=0.5; Đ/S=2.0 (cho 1 câu chùm 4 ý); Tự luận=Tổng 3.0đ.`;
                 }
-            }
-			
             } else {
                 // === TRƯỜNG HỢP KHÔNG CÓ TRẢ LỜI NGẮN (2 PHẦN) ===
                 structurePrompt = `
@@ -439,6 +437,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
