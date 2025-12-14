@@ -29,7 +29,7 @@ export async function onRequest(context) {
                 book_series 
             } = body;
             
-            // Ép kiểu số để tính toán cho chính xác
+            // Ép kiểu số
             totalPeriodsHalf1 = parseFloat(totalPeriodsHalf1) || 1;
             totalPeriodsHalf2 = parseFloat(totalPeriodsHalf2) || 1;
 
@@ -40,9 +40,8 @@ export async function onRequest(context) {
                 }
             }
 
-            // --- 2. XỬ LÝ MÔ TẢ CHỦ ĐỀ & TÍNH TOÁN TỈ LỆ TRƯỚC (PRE-CALCULATION) ---
+            // --- 2. PRE-CALCULATION (TÍNH TOÁN TRƯỚC) ---
             let topicsDescription = "";
-            
             topics.forEach((topic, index) => {
                 topicsDescription += `\nCHƯƠNG ${index + 1}: ${topic.name}\n`;
                 topic.units.forEach((unit, uIndex) => {
@@ -52,27 +51,21 @@ export async function onRequest(context) {
                     let timeLabel = "";
 
                     if (exam_type === 'hk') {
-                        // Logic phân bổ 25/75 cho Cuối kỳ
                         if (p2 > 0) {
-                             // Thuộc nửa sau: Chia cho tổng tiết HK2 nhân 75
                              calculatedRatio = (p2 / totalPeriodsHalf2) * 75;
                              timeLabel = `(Nửa sau - Trọng tâm)`;
                         } else {
-                             // Thuộc nửa đầu: Chia cho tổng tiết HK1 nhân 25
                              calculatedRatio = (p1 / totalPeriodsHalf1) * 25;
                              timeLabel = `(Nửa đầu - Ôn tập)`;
                         }
                     } else {
-                        // Giữa kỳ: Chia cho tổng tiết nhân 100
                         calculatedRatio = (p1 / totalPeriodsHalf1) * 100;
                         timeLabel = `(Số tiết: ${p1})`;
                     }
 
-                    // Làm tròn 1 chữ số thập phân (ví dụ 12.5)
                     let ratioStr = calculatedRatio.toFixed(1);
-                    if (ratioStr === "0.0" && (p1 > 0 || p2 > 0)) ratioStr = "2.5"; // Fallback tối thiểu
+                    if (ratioStr === "0.0" && (p1 > 0 || p2 > 0)) ratioStr = "2.5"; 
 
-                    // Gắn cứng con số này vào chuỗi mô tả để AI đọc
                     topicsDescription += `   - Bài ${uIndex + 1}: ${unit.content} ${timeLabel} -> [BẮT BUỘC ĐIỀN CỘT 19 LÀ: ${ratioStr}%]\n`;
                 });
             });
@@ -84,11 +77,12 @@ export async function onRequest(context) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (3 PHẦN):
                 - Phần I: Trắc nghiệm MCQ (4 chọn 1).
-                - Phần II: Trắc nghiệm Đúng/Sai (Mỗi câu 4 ý).
+                - Phần II: Trắc nghiệm Đúng/Sai (4 ý/câu).
                 - Phần III: Trắc nghiệm Trả lời ngắn.
                 `;
+                // Logic điểm chuẩn: MCQ(3.0) + Đ/S(4.0) + TLN(2.0) + TL(1.0)
                 scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0; Tự luận=Tùy ý.
+                **HỆ SỐ ĐIỂM:** MCQ=0.25; TLN=0.5; Đ/S=1.0 (trung bình 1 câu chùm); Tự luận=Tùy ý.
                 `;
             } else {
                 structurePrompt = `
@@ -97,15 +91,40 @@ export async function onRequest(context) {
                 - Phần II: Tự luận.
                 *** CẤM: KHÔNG SOẠN TRẢ LỜI NGẮN ***
                 `;
+                // Logic điểm chuẩn: MCQ(3.0) + Đ/S(4.0) + TL(3.0)
                 scoreCoefficientInstruction = `
-                **HỆ SỐ ĐIỂM:** MCQ=0.25; Tự luận=Tùy ý.
+                **HỆ SỐ ĐIỂM:** MCQ=0.25; Đ/S=1.0; Tự luận=Tùy ý.
+                `;
+            }
+
+            // --- 4. LOGIC QUOTA CÂU HỎI (ĐÃ ĐIỀU CHỈNH ĐỂ GIẢM TỰ LUẬN) ---
+            let quotaPrompt = "";
+            if (parseInt(time) >= 60) {
+                // Tăng số câu Đ/S lên 4 để chiếm 4.0 điểm -> Tự luận chỉ còn dư 3.0 điểm
+                quotaPrompt = `
+                * **TRƯỜNG HỢP A (>= 60 phút):**
+                  - Phần I (MCQ): **12 câu** (3.0 điểm).
+                  - Phần II (Đúng/Sai): **4 câu** (4.0 điểm). <--- (Đã tăng lên để giảm tải cho tự luận)
+                  - Phần III/IV:
+                    + Nếu có TLN: **4 câu TLN** (2.0đ) + **1 câu Tự luận** (1.0đ).
+                    + Nếu KHÔNG TLN: **2-3 câu Tự luận** (Tổng tối đa 3.0đ).
+                `;
+            } else {
+                // Thời gian ngắn: Giảm MCQ, giữ Đ/S vừa phải
+                quotaPrompt = `
+                * **TRƯỜNG HỢP B (<= 45 phút):**
+                  - Phần I (MCQ): **12 câu** (3.0 điểm - mỗi câu 0.25đ).
+                  - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
+                  - Phần III/IV:
+                    + Nếu có TLN: **2 câu TLN** (1.0đ) + **2 câu Tự luận** (4.0đ).
+                    + Nếu KHÔNG TLN: **2-3 câu Tự luận** (Tổng khoảng 5.0đ).
                 `;
             }
 
             const prompt = `
             Bạn là một trợ lý chuyên gia khảo thí hàng đầu. Nhiệm vụ: Xây dựng Ma trận chính xác tuyệt đối.
 
-            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO (ĐÃ ĐƯỢC TÍNH TOÁN TRƯỚC)
+            ### BƯỚC 1: DỮ LIỆU ĐẦU VÀO
             1. Môn: ${subject} - Lớp ${grade} - Bộ sách: **${book_series}**.
             2. Kỳ thi: ${exam_type === 'hk' ? 'Cuối học kì' : 'Giữa học kì'} ${semester} - Thời gian: ${time} phút.
             3. Cấu trúc: ${structurePrompt}
@@ -113,24 +132,27 @@ export async function onRequest(context) {
             ${topicsDescription}
             
             ### BƯỚC 2: LOGIC PHÂN BỔ (BẮT BUỘC TUÂN THỦ)
-            **A. QUOTA SỐ LƯỢNG CÂU HỎI (Dựa trên thời gian ${time} phút):**
-            * Nếu >= 60 phút: 12 MCQ + 2 Đúng/Sai + (4 TLN + 1 Tự luận HOẶC 3 Tự luận).
-            * Nếu <= 45 phút: 6 MCQ + 1 Đúng/Sai + (4 TLN + 1 Tự luận HOẶC 2 Tự luận).
+            
+            **A. QUOTA SỐ LƯỢNG CÂU HỎI (CÂN ĐỐI ĐIỂM SỐ):**
+            ${quotaPrompt}
 
-            **B. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
-            - Bạn KHÔNG cần tự tính toán.
-            - Hãy nhìn vào dữ liệu đầu vào, tôi đã ghi rõ **[BẮT BUỘC ĐIỀN CỘT 19 LÀ: ...%]** cho từng bài học.
-            - Nhiệm vụ của bạn là **Copy y nguyên con số đó** vào cột 19 của dòng tương ứng.
+            **B. GIỚI HẠN ĐIỂM TỰ LUẬN (HARD LIMIT):**
+            - Nếu đề thi có phần Trắc nghiệm Đúng/Sai và Trả lời ngắn: Tổng điểm Tự luận **KHÔNG ĐƯỢC VƯỢT QUÁ 1.5 điểm**.
+            - Nếu đề thi KHÔNG có Trả lời ngắn: Tổng điểm Tự luận **KHÔNG ĐƯỢC VƯỢT QUÁ 3.0 điểm**.
+            -> Hãy dồn trọng số điểm vào phần Trắc nghiệm (Đúng/Sai) thay vì Tự luận.
 
-            **C. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC CÓ ĐỦ 3 MỨC):**
-            1. **Tự luận:** Phải có ý nhỏ mức Biết, Hiểu và Vận dụng.
-            2. **Trắc nghiệm:** Phải có cả câu Biết, Hiểu và Vận dụng. TUYỆT ĐỐI KHÔNG để trống cột Vận dụng.
-            3. **Phủ kín:** Tất cả các bài học trong danh sách trên phải có mặt trong ma trận.
+            **C. QUY TẮC ĐIỀN CỘT 19 (TỈ LỆ %):**
+            - Nhìn vào dữ liệu đầu vào -> Copy y nguyên con số **[BẮT BUỘC ĐIỀN CỘT 19 LÀ: ...%]** vào cột 19.
+
+            **D. QUY TẮC RẢI MỨC ĐỘ (BẮT BUỘC ĐỦ 3 MỨC):**
+            1. **Tự luận:** Phải có ý nhỏ mức Biết, Hiểu và Vận dụng. (Ví dụ câu 1a: Biết, 1b: Hiểu, 2: Vận dụng).
+            2. **Trắc nghiệm:** Phải có cả câu Biết, Hiểu và Vận dụng. TUYỆT ĐỐI KHÔNG để trống cột Vận dụng của phần Trắc nghiệm.
+            3. **Phủ kín:** Tất cả các bài học trong danh sách phải có mặt.
 
             ### BƯỚC 3: XUẤT DỮ LIỆU ĐẦU RA (HTML OUTPUT)
             
             **1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ**
-            *Logic tính toán Footer (CỘT 16, 17, 18, 19):*
+            *Logic tính toán Footer:*
             - **Dòng "Tổng số câu":** Cộng dọc tất cả các con số trong cột tương ứng.
             - **Dòng "Tổng điểm":** Tính tổng điểm dựa trên số câu và hệ số điểm (${scoreCoefficientInstruction}).
               + Ô Cột 16 (Điểm Biết) = (Số câu MCQ Biết * 0.25) + ... + (Điểm TL Biết).
@@ -188,9 +210,9 @@ export async function onRequest(context) {
                      <tr>
                         <th colspan="3">Tổng điểm</th>
                         <th colspan="3">3.0</th>
-                        <th colspan="3">2.0 (hoặc 4.0)</th>
+                        <th colspan="3">4.0 (hoặc 2.0)</th>
                         <th colspan="3">2.0 (hoặc 0)</th>
-                        <th colspan="3">3.0 (hoặc 3.0)</th>
+                        <th colspan="3">1.0 (hoặc 3.0)</th>
                         <th>(=Tính tổng điểm Biết)</th>
                         <th>(=Tính tổng điểm Hiểu)</th>
                         <th>(=Tính tổng điểm VD)</th>
@@ -199,9 +221,9 @@ export async function onRequest(context) {
                     <tr>
                         <th colspan="3">Tỉ lệ %</th>
                         <th colspan="3">30%</th>
-                        <th colspan="3">20% (hoặc 40%)</th>
+                        <th colspan="3">40% (hoặc 20%)</th>
                         <th colspan="3">20% (hoặc 0%)</th>
-                        <th colspan="3">30%</th>
+                        <th colspan="3">10% (hoặc 30%)</th>
                         <th>(=Điểm Biết * 10)%</th>
                         <th>(=Điểm Hiểu * 10)%</th>
                         <th>(=Điểm VD * 10)%</th>
@@ -323,6 +345,80 @@ export async function onRequest(context) {
 const DOCUMENT_CONTENT_7991 = `
 BỘ GIÁO DỤC VÀ ĐÀO TẠO
 CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM
-(Nội dung văn bản pháp lý 7991 giữ nguyên...)
+
+Độc lập - Tự do - Hạnh phúc
+
+Số: 7991/BGDĐT-GDTrH
+V/v thực hiện kiểm tra, đánh giá đối với cấp THCS, THPT
+Hà Nội, ngày 17 tháng 12 năm 2024
+
+Kính gửi: Các Sở Giáo dục và Đào tạo
+
+Để thực hiện việc kiểm tra, đánh giá theo quy định tại Thông tư số 22/2021/TT-BGDĐT ngày 20/7/2021 quy định về đánh giá học sinh trung học cơ sở và học sinh trung học phổ thông của Bộ trưởng Bộ Giáo dục và Đào tạo (GDĐT), Bộ GDĐT đề nghị các Sở GDĐT căn cứ nội dung đã được tập huấn cho giáo viên cốt cán vào tháng 11/2024(1), tổ chức tập huấn cho cán bộ quản lí, giáo viên của các cơ sở giáo dục có thực hiện chương trình giáo dục phổ thông trên địa bàn quản lí.
+
+Đối với các môn học đánh giá bằng nhận xét kết hợp đánh giá bằng điểm số, Sở GDĐT hướng dẫn các cơ sở giáo dục ở cấp trung học phổ thông xây dựng ma trận, bản đặc tả, đề kiểm tra và hướng dẫn chấm đề kiểm tra định kì bảo đảm các yêu cầu về chuyên môn, kĩ thuật (tham khảo Phụ lục kèm theo); trong năm học 2024-2025 triển khai thực hiện từ học kì 2.
+
+Trong quá trình thực hiện, nếu có vướng mắc, đề nghị Sở GDĐT phản ánh về Bộ GDĐT (qua Vụ Giáo dục Trung học).
+
+Nơi nhận
+
+Như trên;
+
+Bộ trưởng (để báo cáo);
+
+TT. Phạm Ngọc Thưởng (để báo cáo);
+
+Vụ trưởng (để báo cáo);
+
+Lưu: VT, Vụ GDTrH.
+
+TL. BỘ TRƯỞNG
+KT. VỤ TRƯỞNG VỤ GIÁO DỤC TRUNG HỌC
+PHÓ VỤ TRƯỞNG
+
+(đã ký)
+Đỗ Đức Quế
+
+(1) Công văn số 6569/BGDĐT-GDTrH ngày 16/10/2024 về việc tập huấn giáo viên cốt cán về tăng cường năng lực thực hiện CT GDPT 2018 của Bộ GDĐT.
+
+📎 PHỤ LỤC
+
+(Kèm theo Công văn số 7991/BGDĐT-GDTrH ngày 17/12/2024 của Bộ GDĐT)
+1. MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ
+| TT | Chủ đề/Chương | Nội dung/ĐV kiến thức | TNKQ – Nhiều lựa chọn | TNKQ – Đúng/Sai | TNKQ – Trả lời ngắn | Tự luận | Tổng | Tỉ lệ % |
+|----|----------------|------------------------|------------------------|------------------|----------------------|----------|--------|----------|
+| 1 | Chủ đề 1 | | Biết / Hiểu / VD | Biết / Hiểu / VD | Biết / Hiểu / VD | Biết / Hiểu / VD | (n) |    |
+| 2 | Chủ đề 2 | | | | | | | |
+| … | Chủ đề … | | | | | | | |
+
+**Tổng số câu:**  
+**Tổng số điểm:** 3.0 – 2.0 – 2.0 – 3.0 – 4.0 – 3.0 – 3.0  
+**Tỉ lệ %:** 30 – 20 – 20 – 30 – 40 – 30 – 30
+Ghi chú
+
+(2) Mỗi câu hỏi Đúng – Sai gồm 4 ý nhỏ.
+
+(3) Nếu môn không dùng dạng “Trả lời ngắn” → chuyển điểm sang Đúng – Sai.
+
+(4) “n” = số câu.
+
+(5) Phân phối điểm để đạt tỉ lệ khoảng 30%.
+2. BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ
+| TT | Chủ đề/Chương | Đơn vị kiến thức | Yêu cầu cần đạt | Số câu TNKQ | Số câu tự luận |
+|----|----------------|------------------|------------------|--------------|-----------------|
+| 1 | Chủ đề 1 | - Biết…  |  | (n) / NL? |  |
+|   |              | - Hiểu… |  |            |  |
+|   |              | - Vận dụng… | |            |  |
+| 2 | Chủ đề 2 | - Biết… | | | |
+| … | Chủ đề … | | | | |
+
+**Tổng số câu:**  
+**Tổng số điểm:** 3.0 – 2.0 – 2.0 – 3.0  
+**Tỉ lệ %:** 30 – 20 – 20 – 30
+Ghi chú
+
+(6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
+
 
