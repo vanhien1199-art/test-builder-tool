@@ -94,17 +94,17 @@ export async function onRequest(context) {
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (>= 60 phút):**
                       - Phần I (MCQ): **12 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **4 câu** (4.0 điểm).
+                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
                       - Phần III (Trả lời ngắn): **4 câu** (2.0 điểm).
-                      - Phần IV (Tự luận): **1 câu** (1.0 điểm).
+                      - Phần IV (Tự luận): **1 đến 3 câu** (3.0 điểm).
                     `;
                 } else {
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (<= 45 phút):**
-                      - Phần I (MCQ): **12 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
-                      - Phần III (Trả lời ngắn): **2 câu** (1.0 điểm).
-                      - Phần IV (Tự luận): **2 câu** (4.0 điểm).
+                      - Phần I (MCQ): **6 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **1 câu** (2.0 điểm).
+                      - Phần III (Trả lời ngắn): **4 câu** (2.0 điểm).
+                      - Phần IV (Tự luận): **1 đến 3 câu** (3.0 điểm).
                     `;
                 }
 
@@ -113,7 +113,8 @@ export async function onRequest(context) {
                 structurePrompt = `
                 CẤU TRÚC ĐỀ THI (2 PHẦN):
                 - Phần I: Trắc nghiệm MCQ.
-                - Phần II: Tự luận.
+				- Phần II (Đúng/Sai).
+                - Phần III: Tự luận.
                 *** CẤM: KHÔNG ĐƯỢC TẠO CÂU HỎI TRẢ LỜI NGẮN ***
                 `;
                 scoreCoefficientInstruction = `
@@ -132,9 +133,9 @@ export async function onRequest(context) {
                 } else {
                     quotaPrompt = `
                     * **QUOTA BẮT BUỘC (<= 45 phút):**
-                      - Phần I (MCQ): **12 câu** (3.0 điểm).
-                      - Phần II (Đúng/Sai): **2 câu** (2.0 điểm).
-                      - Phần III (Tự luận): **2-3 câu** (5.0 điểm).
+                      - Phần I (MCQ): **6 câu** (3.0 điểm).
+                      - Phần II (Đúng/Sai): **2 câu** (4.0 điểm).
+                      - Phần III (Tự luận): **2-3 câu** (3.0 điểm).
                       (KHÔNG CÓ PHẦN TRẢ LỜI NGẮN).
                     `;
                 }
@@ -434,6 +435,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
