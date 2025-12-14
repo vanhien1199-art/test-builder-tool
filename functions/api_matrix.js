@@ -57,7 +57,7 @@ export async function onRequest(context) {
                              timeLabel = `(Nửa sau - Trọng tâm)`;
                         } else {
                              calculatedRatio = (p1 / totalPeriodsHalf1) * 25;
-                             timeLabel = `(Nửa đầu - Ôn tập)`;
+                             timeLabel = `(Nửa đầu)`;
                         }
                     } else {
                         calculatedRatio = (p1 / totalPeriodsHalf1) * 100;
@@ -435,6 +435,7 @@ Ghi chú
 
 (6) “NL” là ghi tắt tên năng lực theo chương trình môn học.
 `;
+
 
 
 
